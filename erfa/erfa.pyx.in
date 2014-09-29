@@ -1,0 +1,99 @@
+import numpy
+cimport numpy
+
+numpy.import_array()
+
+__all__ = [{{ funcs|map(attribute='name')|surround("'","'")|join(", ") }}]
+
+
+cdef extern from "erfa.h":
+    struct eraASTROM:
+        pass
+    struct eraLDBODY:
+        pass
+{%- for func in funcs %}
+    {{ func.ret }} {{ func.name }}({{ func.args_by_inout('in|inout|out')|map(attribute='ctype_ptr')|join(', ') }})
+{%- endfor %}
+
+dt_eraASTROM = numpy.dtype([('pmt','d'),
+                         ('eb','d',(3,)),
+                         ('eh','d',(3,)),
+                         ('em','d'),
+                         ('v','d',(3,)),
+                         ('bm1 ','d'),
+                         ('bpn','d',(3,3)),
+                         ('along','d'),
+                         ('phi','d'),
+                         ('xpl','d'),
+                         ('ypl','d'),
+                         ('sphi','d'),
+                         ('cphi','d'),
+                         ('diurab','d'),
+                         ('eral','d'),
+                         ('refa','d'),
+                         ('refb','d')], align=True)
+
+
+{% for func in funcs %}
+def {{ func.pyname }}({{ func.args_by_inout('in|inout')|map(attribute='name')|join(', ') }}):
+    
+    {%- if func.args_by_inout('in|inout') %}
+    shape = numpy.broadcast({{ func.args_by_inout('in|inout')|map(attribute='name')|join(', ') }}).shape
+    {%- for arg in func.args_by_inout('out|ret') %}
+    {{ arg.name }}_out = numpy.empty(shape, dtype={{ arg.dtype }})
+    {%- endfor %}
+    {%- for arg in func.args_by_inout('inout') %}
+    {{ arg.name }}_out = numpy.array(numpy.broadcast_arrays({{ func.args_by_inout('in|inout')|map(attribute='name')|join(', ') }})[{{ func.args.index(arg) }}], dtype={{ arg.dtype }})
+    {%- endfor %}
+    
+    cdef numpy.broadcast it = numpy.broadcast({{ (func.args_by_inout('in')|map(attribute='name')|list + func.args_by_inout('inout|out|ret')|map(attribute='name')|postfix('_out')|list) |join(', ') }})
+    {%- for arg in func.args_by_inout('in|inout|out|ret') %}
+    cdef {{ arg.ctype_ptr }} _{{ arg.name }}
+    {%- endfor %}
+    
+    while numpy.PyArray_MultiIter_NOTDONE(it):
+        
+        {%- for arg in func.args_by_inout('in|inout|out') %}
+        {%- if arg.ctype_ptr[-1] == '*' %}
+        _{{ arg.name }} = (<{{ arg.ctype_ptr }}>numpy.PyArray_MultiIter_DATA(it, {{ func.args.index(arg) }}))
+        {%- else %}
+        _{{ arg.name }} = (<{{ arg.ctype_ptr }}*>numpy.PyArray_MultiIter_DATA(it, {{ func.args.index(arg) }}))[0]
+        {%- endif %}
+        {%- endfor %}
+        
+        {{ func.args_by_inout('ret')|map(attribute='name')|surround('_',' = ')|join }}{{ func.name }}({{ func.args_by_inout('in|out|inout')|map(attribute='name')|prefix('_')|join(', ') }})
+        
+        {%- for arg in func.args_by_inout('ret') %}
+        (<{{ arg.ctype_ptr }}*>numpy.PyArray_MultiIter_DATA(it, {{ func.args.index(arg) }}))[0] = _{{ arg.name }}
+        {%- endfor %}
+        
+        numpy.PyArray_MultiIter_NEXT(it)
+    {%- else %}
+    shape = []
+    {%- for arg in func.args_by_inout('out') %}
+    {{ arg.name }}_out = numpy.empty(shape, dtype={{ arg.dtype }})
+    {%- endfor %}
+    
+    cdef numpy.broadcast it = numpy.broadcast({{ (func.args_by_inout('in')|map(attribute='name')|list + func.args_by_inout('inout|out|ret')|map(attribute='name')|postfix('_out')|list) |join(', ') }})
+    {%- for arg in func.args_by_inout('out') %}
+    cdef {{ arg.ctype_ptr }} _{{ arg.name }}
+    {%- endfor %}
+    
+    while numpy.PyArray_MultiIter_NOTDONE(it):
+        
+        {%- for arg in func.args_by_inout('in|inout|out') %}
+        {%- if arg.ctype_ptr[-1] == '*' %}
+        _{{ arg.name }} = (<{{ arg.ctype_ptr }}>numpy.PyArray_MultiIter_DATA(it, {{ func.args.index(arg) }}))
+        {%- else %}
+        _{{ arg.name }} = (<{{ arg.ctype_ptr }}*>numpy.PyArray_MultiIter_DATA(it, {{ func.args.index(arg) }}))[0]
+        {%- endif %}
+        {%- endfor %}
+    
+        {{ func.name }}({{ func.args_by_inout('in|out|inout')|map(attribute='name')|prefix('_')|join(', ') }})
+        
+        numpy.PyArray_MultiIter_NEXT(it)
+    {%- endif %}
+    
+    return {{ func.args_by_inout('inout|out|ret')|map(attribute='name')|postfix('_out')|join(', ') }}
+
+{% endfor %}
