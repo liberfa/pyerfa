@@ -1,0 +1,13 @@
+include LICENSE.rst
+include README.rst
+include pyproject.toml
+
+include setup.cfg
+recursive-include astropy *.pyx *.c *.h *.map *.templ
+
+recursive-include licenses *
+recursive-include cextern *
+
+prune build
+
+global-exclude *.pyc *.o
