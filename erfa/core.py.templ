@@ -8,10 +8,6 @@
 """
 Python wrappers for the ufunc wrappers of the ERFA library.
 
-..warning::
-    This is currently *not* part of the public Astropy API, and may change in
-    the future.
-
 The key idea is that any function can be called with inputs that are arrays,
 and the ufuncs will automatically vectorize and call the ERFA functions for
 each item using broadcasting rules for numpy.  So the return values are always
@@ -32,11 +28,6 @@ import warnings
 
 import numpy
 
-# we import these exceptions from astropy locations instead of defining them
-# in this file because otherwise there are circular dependencies
-from astropy.utils.exceptions import ErfaError, ErfaWarning
-from astropy.utils.misc import check_broadcast
-
 from . import ufunc
 
 __all__ = ['ErfaError', 'ErfaWarning',
@@ -44,6 +35,28 @@ __all__ = ['ErfaError', 'ErfaWarning',
            {{ constants|map(attribute='name')|surround("'","'")|join(", ") }},
            # TODO: delete the functions below when they can get auto-generated
            'version', 'version_major', 'version_minor', 'version_micro', 'sofa_version']
+
+
+class ErfaError(ValueError):
+    """
+    A class for errors triggered by ERFA functions (status codes < 0)
+
+    Note: this class should *not* be referenced by fully-qualified name, because
+    it may move to ERFA in a future version.  In a future such move it will
+    still be imported here as an alias, but the true namespace of the class may
+    change.
+    """
+
+
+class ErfaWarning(UserWarning):
+    """
+    A class for warnings triggered by ERFA functions (status codes > 0)
+
+    Note: this class should *not* be referenced by fully-qualified name, because
+    it may move to ERFA in a future version.  In a future such move it will
+    still be imported here as an alias, but the true namespace of the class may
+    change.
+    """
 
 
 # <---------------------------------Error-handling---------------------------->

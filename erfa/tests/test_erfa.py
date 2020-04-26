@@ -5,9 +5,18 @@ import pytest
 import numpy as np
 from numpy.testing import assert_array_equal
 
-from astropy import _erfa as erfa
-from astropy.time import Time
-from astropy.tests.helper import catch_warnings
+import erfa
+from erfa.tests.helper import catch_warnings
+
+try:
+    from astropy.time import Time
+except ImportError:
+    # astropy not available for testing
+    class Time:
+        _DUMMY = True
+
+        def __init__(self, *args, **kwargs):
+            pass
 
 
 def test_erfa_wrapper():
@@ -384,7 +393,9 @@ class TestLeapSeconds:
     @pytest.mark.parametrize('expiration', [
         datetime(2345, 1, 1),
         '1 January 2345',
-        Time('2345-01-01', scale='tai')])
+        pytest.param(Time('2345-01-01', scale='tai'),
+                     marks=pytest.mark.skipif(hasattr(Time, '_DUMMY'),
+                                              reason='astropy not available'))])
     def test_with_expiration(self, expiration):
         class ExpiringArray(np.ndarray):
             expires = expiration

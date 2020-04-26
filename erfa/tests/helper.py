@@ -1,7 +1,7 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
+# Code imported form astropy/tests/helper.py
 """
-This module provides the tools used to internally run the astropy test suite
-from the installed astropy.  It makes use of the `pytest` testing framework.
+This module provides the tools used to internally run the erfa test suite.
 """
 import sys
 import types
@@ -10,42 +10,17 @@ from distutils.version import LooseVersion
 
 
 _deprecations_as_exceptions = False
-_modules_to_ignore_on_import = set([
-    r'compiler',  # A deprecated stdlib module used by py.test
-    r'scipy',
-    r'pygments',
-    r'ipykernel',
-    r'IPython',   # deprecation warnings for async and await
-    r'setuptools'])
+_modules_to_ignore_on_import = set([])
 _warnings_to_ignore_entire_module = set([])
 _warnings_to_ignore_by_pyver = {
-    None: set([  # Python version agnostic
-        # https://github.com/astropy/astropy/pull/7372
-        (r"Importing from numpy\.testing\.decorators is deprecated, "
-         r"import from numpy\.testing instead\.", DeprecationWarning),
-        # inspect raises this slightly different warning on Python 3.6-3.7.
-        # Keeping it since e.g. lxml as of 3.8.0 is still calling getargspec()
-        (r"inspect\.getargspec\(\) is deprecated, use "
-         r"inspect\.signature\(\) or inspect\.getfullargspec\(\)",
-         DeprecationWarning),
-        # https://github.com/astropy/pytest-doctestplus/issues/29
-        (r"split\(\) requires a non-empty pattern match", FutureWarning),
-        # Package resolution warning that we can do nothing about
-        (r"can't resolve package from __spec__ or __package__, "
-         r"falling back on __name__ and __path__", ImportWarning)]),
-    (3, 7): set([
-        # Deprecation warning for collections.abc, fixed in Astropy but still
-        # used in lxml, and maybe others
-        (r"Using or importing the ABCs from 'collections'",
-         DeprecationWarning)])
+    None: set([]),  # Python version agnostic
 }
 
 
 def treat_deprecations_as_exceptions():
     """
     Turn all DeprecationWarnings (which indicate deprecated uses of
-    Python itself or Numpy, but not within Astropy, where we use our
-    own deprecation warning class) into exceptions so that we find
+    Python itself or Numpy) into exceptions so that we find
     out about them early.
 
     This completely resets the warning filters and any "already seen"
@@ -84,16 +59,10 @@ def treat_deprecations_as_exceptions():
     # Now, turn these warnings into exceptions
     _all_warns = [DeprecationWarning, FutureWarning, ImportWarning]
 
-    # Only turn astropy deprecation warnings into exceptions if requested
-    if _include_astropy_deprecations:
-        _all_warns += [AstropyDeprecationWarning,
-                       AstropyPendingDeprecationWarning]
-
     for w in _all_warns:
         warnings.filterwarnings("error", ".*", w)
 
-    # This ignores all specified warnings from given module(s),
-    # not just on import, for use of Astropy affiliated packages.
+    # This ignores all specified warnings from given module(s).
     for m in _warnings_to_ignore_entire_module:
         for w in _all_warns:
             warnings.filterwarnings('ignore', category=w, module=m)

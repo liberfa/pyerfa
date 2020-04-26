@@ -14,9 +14,8 @@ import re
 import os.path
 from collections import OrderedDict
 
-DEFAULT_ERFA_LOC = os.path.join(os.path.split(__file__)[0],
-                                '../../cextern/erfa')
-DEFAULT_TEMPLATE_LOC = os.path.split(__file__)[0]
+DEFAULT_ERFA_LOC = os.path.join(os.path.split(__file__)[0], 'cextern/erfa')
+DEFAULT_TEMPLATE_LOC = os.path.join(os.path.split(__file__)[0], 'erfa')
 
 NDIMS_REX = re.compile(re.escape("numpy.dtype([('fi0', '.*', <(.*)>)])").replace(r'\.\*', '.*').replace(r'\<', '(').replace(r'\>', ')'))
 
@@ -585,15 +584,7 @@ def main(srcdir=DEFAULT_ERFA_LOC, outfn='core.py', ufuncfn='ufunc.c',
         flags=re.DOTALL | re.MULTILINE)
     for section, subsection, functions in section_subsection_functions:
         print_(f"{section}.{subsection}")
-        # Right now, we compile everything, but one could be more selective.
-        # In particular, at the time of writing (2018-06-11), what was
-        # actually require for astropy was not quite everything, but:
-        # ((section == 'Extra')
-        #       or (section == "Astronomy")
-        #       or (subsection == "AngleOps")
-        #       or (subsection == "SphericalCartesian")
-        #       or (subsection == "MatrixVectorProducts")
-        #       or (subsection == 'VectorOps'))
+
         if True:
 
             func_names = re.findall(r' (\w+)\(.*?\);', functions,
@@ -677,8 +668,7 @@ if __name__ == '__main__':
                     help='Directory where the ERFA c and header files '
                          'can be found or to a single erfa.c file '
                          '(which must be in the same directory as '
-                         'erfa.h). Defaults to the builtin astropy '
-                         'erfa: "{}"'.format(DEFAULT_ERFA_LOC))
+                         'erfa.h). Default: "{}"'.format(DEFAULT_ERFA_LOC))
     ap.add_argument('-o', '--output', default='core.py',
                     help='The output filename for the pure-python output.')
     ap.add_argument('-u', '--ufunc', default='ufunc.c',

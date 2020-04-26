@@ -1,56 +1,71 @@
+# -*- coding: utf-8 -*-
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
 import os
-import glob
 
-from distutils.extension import Extension
+import setuptools
 
-import numpy
-from extension_helpers import import_file
 
-ERFAPKGDIR = os.path.relpath(os.path.dirname(__file__))
+ERFAPKGDIR = os.path.abspath(os.path.dirname(__file__))
 
-ERFA_SRC = os.path.abspath(os.path.join(ERFAPKGDIR, '..', '..',
-                                        'cextern', 'erfa'))
+ERFA_SRC = os.path.abspath(os.path.join(ERFAPKGDIR, 'cextern', 'erfa'))
 
-SRC_FILES = glob.glob(os.path.join(ERFA_SRC, '*'))
-SRC_FILES += [os.path.join(ERFAPKGDIR, filename)
-              for filename in ['pav2pv.c', 'pv2pav.c', 'erfa_additions.h',
-                               'ufunc.c.templ', 'core.py.templ',
-                               'erfa_generator.py']]
 
-GEN_FILES = [os.path.join(ERFAPKGDIR, 'core.py'),
-             os.path.join(ERFAPKGDIR, 'ufunc.c')]
+# https://mail.python.org/pipermail/distutils-sig/2007-September/008253.html
+class NumpyExtension(setuptools.Extension):
+    """Extension type that adds the NumPy include directory to include_dirs."""
+
+    def __init__(self, *args, **kwargs):
+        self.cython_directives = kwargs.pop('cython_directives', {})
+        super().__init__(*args, **kwargs)
+
+    @property
+    def include_dirs(self):
+        from numpy import get_include
+        return self._include_dirs + [get_include()]
+
+    @include_dirs.setter
+    def include_dirs(self, include_dirs):
+        self._include_dirs = include_dirs
 
 
 def get_extensions():
+    if not os.path.exists(os.path.join('erfa', 'ufunc.c')):
+        import sys
+        import subprocess
+        cmd = [
+            sys.executable, os.path.join(ERFAPKGDIR, 'erfa_generator.py'),
+            ERFA_SRC, '--quiet',
+        ]
+        subprocess.run(cmd, check=True)
 
-    gen = import_file(os.path.join(ERFAPKGDIR, 'erfa_generator.py'))
-    gen.main(verbose=False)
-
-    sources = [os.path.join(ERFAPKGDIR, fn)
+    sources = [os.path.join(ERFAPKGDIR, 'erfa', fn)
                for fn in ("ufunc.c", "pav2pv.c", "pv2pav.c")]
 
-    include_dirs = [numpy.get_include()]
+    include_dirs = []
 
     libraries = []
 
-    if (int(os.environ.get('ASTROPY_USE_SYSTEM_ERFA', 0)) or
-            int(os.environ.get('ASTROPY_USE_SYSTEM_ALL', 0))):
+    if (int(os.environ.get('PYERFA_USE_SYSTEM_ERFA', 0)) or
+            int(os.environ.get('PYERFA_USE_SYSTEM_ALL', 0))):
         libraries.append('erfa')
     else:
         # get all of the .c files in the cextern/erfa directory
         erfafns = os.listdir(ERFA_SRC)
-        sources.extend(['cextern/erfa/' + fn
-                        for fn in erfafns if fn.endswith('.c')])
+        sources.extend([os.path.join(ERFA_SRC, fn)
+                        for fn in erfafns
+                        if fn.endswith('.c') and not fn.startswith('t_')])
 
-        include_dirs.append('cextern/erfa')
+        include_dirs.append(ERFA_SRC)
 
-    erfa_ext = Extension(
-        name="astropy._erfa.ufunc",
+    erfa_ext = NumpyExtension(
+        name="erfa.ufunc",
         sources=sources,
         include_dirs=include_dirs,
         libraries=libraries,
         language="c",)
 
     return [erfa_ext]
+
+
+setuptools.setup(ext_modules=get_extensions())

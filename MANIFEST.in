@@ -1,13 +1,15 @@
 include LICENSE.rst
 include README.rst
 include pyproject.toml
-
 include setup.cfg
-recursive-include astropy *.pyx *.c *.h *.map *.templ
+include Makefile
+
+recursive-include erfa *.c *.h *.templ
 
 recursive-include licenses *
-recursive-include cextern *
+recursive-include cextern/erfa *
 
+exclude .gitignore
 prune build
 
 global-exclude *.pyc *.o
