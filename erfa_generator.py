@@ -696,4 +696,4 @@ if __name__ == '__main__':
 
     args = ap.parse_args()
     main(args.srcdir, args.output, args.ufunc, args.template_loc,
-         args.extra)
+         args.extra, args.verbose)
