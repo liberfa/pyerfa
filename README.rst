@@ -30,7 +30,6 @@ and similarly a Python_ wheel_ can be created with::
 
   $ pip wheel .
 
-
 .. _wheel: https://github.com/pypa/wheel
 
 
