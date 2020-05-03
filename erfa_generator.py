@@ -23,7 +23,10 @@ NDIMS_REX = re.compile(re.escape("numpy.dtype([('fi0', '.*', <(.*)>)])").replace
 class FunctionDoc:
 
     def __init__(self, doc):
-        self.doc = doc.replace("**", "  ").replace("/*\n", "").replace("*/", "")
+        self.doc = doc.replace("**", "      ").replace("/*\n", "").replace("*/", "")
+        self.doc = self.doc.replace("/*+\n", "")        # accommodate eraLdn
+        self.doc = self.doc.replace("*  ", "    " * 2)  # accommodate eraAticqn
+        self.doc = self.doc.replace("*\n", "\n")        # accommodate eraAticqn
         self.__input = None
         self.__output = None
         self.__ret_info = None

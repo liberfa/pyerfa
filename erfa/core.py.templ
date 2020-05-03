@@ -155,6 +155,9 @@ def {{ func.pyname }}({{ func.args_by_inout('in|inout')|map(attribute='name')|jo
     | map(attribute='name')|join(', ') }} in-place.
     {%- endif %}
 
+
+    ::
+
 {{ func.doc }}
     """
 
