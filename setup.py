@@ -8,7 +8,7 @@ import setuptools
 
 ERFAPKGDIR = os.path.abspath(os.path.dirname(__file__))
 
-ERFA_SRC = os.path.abspath(os.path.join(ERFAPKGDIR, 'cextern', 'erfa'))
+ERFA_SRC = os.path.abspath(os.path.join(ERFAPKGDIR, 'liberfa', 'erfa', 'src'))
 
 
 # https://mail.python.org/pipermail/distutils-sig/2007-September/008253.html
@@ -50,7 +50,7 @@ def get_extensions():
             int(os.environ.get('PYERFA_USE_SYSTEM_ALL', 0))):
         libraries.append('erfa')
     else:
-        # get all of the .c files in the cextern/erfa directory
+        # get all of the .c files in the liberfa/erfa/src directory
         erfafns = os.listdir(ERFA_SRC)
         sources.extend([os.path.join(ERFA_SRC, fn)
                         for fn in erfafns
