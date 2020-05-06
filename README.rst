@@ -2,46 +2,33 @@
 PyERFA
 ======
 
-PyERFA is the Python_ wrapper for the ERFA_ library.
+PyERFA is the Python_ wrapper for the ERFA_ library (Essential Routines for
+Fundamental Astronomy), a C library containing key algorithms for astronomy,
+which is based on the SOFA library published by the International Astronomical
+Union (IAU).  All C routines are wrapped as Numpy_ `universal functions
+<https://numpy.org/devdocs/reference/ufuncs.html>`_, so that they can be
+called with scalar or array inputs.
 
-ERFA (Essential Routines for Fundamental Astronomy) is a C library containing
-key algorithms for astronomy, and is based on the SOFA library published by
-the International Astronomical Union (IAU).
-
-The project is a split of `astropy._erfa` sub-module, developed in the
-context of Astropy_ project, the into a standalone package.
-
-See also https://github.com/astropy/astropy/issues/9802.
+The project is a split of ``astropy._erfa`` module, developed in the
+context of Astropy_ project, into a standalone package.  It contains
+the ERFA_ C source code as a git submodule.
 
 .. _Python: https://www.python.org/
 .. _ERFA: https://github.com/liberfa/erfa
+.. _Numpy: https://numpy.org/
 .. _Astropy: https://www.astropy.org
 
 
-Setup the ERFA_ source code
----------------------------
+Installation instructions
+-------------------------
 
-The ERFA_ source code, necessary to build the `erfa` Python_ package, is
-not included in the repository.
-It can be downloaded and extracted into the proper directory (`cextern/erfa`)
-using the following command::
+The package can be installed from the package directory using a simple::
 
-  $ make cextern/erfa
+  $ pip install .
 
+and similarly a Python_ wheel_ can be created with::
 
-Build instructions
-------------------
-
-Once the  ERFA_ source code is set-up the standard procedure to build
-Python packages can be used::
-
-  $ python3 setup.py sdist
-
-produces the source distribution including the generated `C` wrapper code.
-
-For Python_ wheel_ the procedure is the following::
-
-  $ python3 -m pip wheel .
+  $ pip wheel .
 
 
 .. _wheel: https://github.com/pypa/wheel
@@ -50,11 +37,16 @@ For Python_ wheel_ the procedure is the following::
 Testing
 -------
 
-The following commands can be used to test the PyERFA package::
+For testing, one can install the packages together with its testing
+dependencies and then test it with::
 
-  $ python3 setup.py build_ext --inplace
-  $ python3 -m pytest -v
+  $ pip install .[test]
+  $ pytest
 
+Alternatively, one can use ``tox``, which will set up a separate testing
+environment for you, with::
+
+  $ tox -e test
 
 License
 -------
