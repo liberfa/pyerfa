@@ -14,7 +14,7 @@ import re
 import os.path
 from collections import OrderedDict
 
-DEFAULT_ERFA_LOC = os.path.join(os.path.split(__file__)[0], 'cextern/erfa')
+DEFAULT_ERFA_LOC = os.path.join(os.path.split(__file__)[0], 'liberfa/erfa/src')
 DEFAULT_TEMPLATE_LOC = os.path.join(os.path.split(__file__)[0], 'erfa')
 
 NDIMS_REX = re.compile(re.escape("numpy.dtype([('fi0', '.*', <(.*)>)])").replace(r'\.\*', '.*').replace(r'\<', '(').replace(r'\>', ')'))

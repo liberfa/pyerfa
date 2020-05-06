@@ -1,0 +1,32 @@
+language: python
+
+# We need a full clone to make sure setuptools_scm works properly
+git:
+    depth: false
+
+os:
+    - linux
+
+dist: bionic
+
+env:
+    global:
+        # The following three variables are for tox. TOXENV is a standard
+        # variable that tox uses to determine the environment to run,
+        # TOXARGS are arguments passed to tox, and TOXPOSARGS are arguments
+        # that tox passes through to the {posargs} indicator in tox.ini.
+        # The latter can be used for example to pass arguments to pytest.
+        - TOXARGS='-v'
+        - TOXPOSARGS=''
+
+jobs:
+    include:
+        - name: Tests that all the basics are covered.
+          python: 3.8
+          env: TOXENV=test
+
+install:
+    - pip install tox;
+
+script:
+    - tox $TOXARGS -- $TOXPOSARGS;

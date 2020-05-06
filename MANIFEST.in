@@ -7,7 +7,7 @@ include Makefile
 recursive-include erfa *.c *.h *.templ
 
 recursive-include licenses *
-recursive-include cextern/erfa *
+recursive-include liberfa/erfa *
 
 exclude .gitignore
 prune build
