@@ -3,5 +3,5 @@ Quickstart
 ==========
 
 .. include:: ../README.rst
-   :start-after: See also https://github.com/astropy/astropy/issues/9802.
+   :start-after: .. _Astropy: https://www.astropy.org
    :end-before: License

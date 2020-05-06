@@ -1,5 +1,5 @@
 .. include:: ../README.rst
-   :end-before: Setup the ERFA_ source code
+   :end-before: Installation instructions
 
 .. toctree::
    :maxdepth: 2
