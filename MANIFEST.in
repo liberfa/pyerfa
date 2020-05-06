@@ -2,7 +2,6 @@ include LICENSE.rst
 include README.rst
 include pyproject.toml
 include setup.cfg
-include Makefile
 
 recursive-include erfa *.c *.h *.templ
 
