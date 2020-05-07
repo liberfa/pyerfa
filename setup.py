@@ -2,8 +2,9 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
 import os
-
+import sys
 import setuptools
+import subprocess
 
 
 ERFAPKGDIR = os.path.abspath(os.path.dirname(__file__))
@@ -30,14 +31,11 @@ class NumpyExtension(setuptools.Extension):
 
 
 def get_extensions():
-    if not os.path.exists(os.path.join('erfa', 'ufunc.c')):
-        import sys
-        import subprocess
-        cmd = [
-            sys.executable, os.path.join(ERFAPKGDIR, 'erfa_generator.py'),
-            ERFA_SRC, '--quiet',
-        ]
-        subprocess.run(cmd, check=True)
+    cmd = [
+        sys.executable, os.path.join(ERFAPKGDIR, 'erfa_generator.py'),
+        ERFA_SRC, '--quiet',
+    ]
+    subprocess.run(cmd, check=True)
 
     sources = [os.path.join(ERFAPKGDIR, 'erfa', fn)
                for fn in ("ufunc.c", "pav2pv.c", "pv2pav.c")]
