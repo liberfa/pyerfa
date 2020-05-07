@@ -74,5 +74,6 @@ script:
         python3 -m venv --system-site-packages tests;
         source tests/bin/activate;
         pip3 install --no-deps --editable .[test];
+        nm erfa/ufunc.cpython-*.so | grep eraA2af;
         pytest-3;
       fi
