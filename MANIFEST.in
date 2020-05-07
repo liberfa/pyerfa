@@ -2,6 +2,7 @@ include LICENSE.rst
 include README.rst
 include pyproject.toml
 include setup.cfg
+include erfa_generator.py
 
 recursive-include erfa *.c *.h *.templ
 
