@@ -36,7 +36,7 @@ env:
 
         # Also allow tests without tox, getting our packages using apt;
         # Here, we still need pip to install pyerfa.
-        - APT_DEPENDENCIES='python3-numpy python3-venv python3-pip python3-jinja2 python3-pytest-astropy'
+        - APT_DEPENDENCIES='python3-numpy python3-venv python3-pip python3-jinja2 python3-pytest-astropy liberfa-dev'
 
 jobs:
     include:
@@ -56,6 +56,7 @@ jobs:
           stage: Comprehensive tests
           language: c
           env: SETUP_METHOD='apt'
+               PYERFA_USE_SYSTEM_LIBERFA=1
 
 install:
     - if [[ $SETUP_METHOD == 'tox' ]]; then
