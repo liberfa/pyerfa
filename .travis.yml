@@ -9,6 +9,15 @@ os:
 
 dist: bionic
 
+stages:
+   # Do a single test job, don't proceed if it fails
+   - name: Initial tests
+   # Test docs and (eventually) dev.
+   - name: Comprehensive tests
+   # These will only run when cron is opted in
+   - name: Cron tests
+     if: type = cron
+
 env:
     global:
         # The following three variables are for tox. TOXENV is a standard
@@ -22,8 +31,14 @@ env:
 jobs:
     include:
         - name: Tests that all the basics are covered.
+          stage: Initial tests
           python: 3.8
           env: TOXENV=test
+
+        - name: Documentation build
+          stage: Comprehensive tests
+          python: 3.8
+          env: TOXENV=build_docs
 
 install:
     - pip install tox;
