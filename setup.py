@@ -44,8 +44,7 @@ def get_extensions():
 
     libraries = []
 
-    if (int(os.environ.get('PYERFA_USE_SYSTEM_ERFA', 0)) or
-            int(os.environ.get('PYERFA_USE_SYSTEM_ALL', 0))):
+    if int(os.environ.get('PYERFA_USE_SYSTEM_LIBERFA', 0)):
         libraries.append('erfa')
     else:
         # get all of the .c files in the liberfa/erfa/src directory
