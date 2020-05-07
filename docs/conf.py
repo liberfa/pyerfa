@@ -79,6 +79,8 @@ templates_path.append('_templates')
 
 nitpicky = True
 
+# Misc.
+highlight_language = 'none'
 
 # -- Options for HTML output -------------------------------------------------
 
