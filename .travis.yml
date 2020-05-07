@@ -51,9 +51,11 @@ jobs:
           env: TOXENV=build_docs
 
         # We try our apt test on the big-endian s390x architecture,
-        # to check that things work there as well.
+        # to check that things work there as well. We also test that
+        # we can use a system library.
         - name: install with apt
           stage: Comprehensive tests
+          arch: s390x
           language: c
           env: SETUP_METHOD='apt'
                PYERFA_USE_SYSTEM_LIBERFA=1
