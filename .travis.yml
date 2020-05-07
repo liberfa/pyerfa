@@ -20,13 +20,23 @@ stages:
 
 env:
     global:
+        # The following versions are the 'default' for tests, unless
+        # overridden underneath. They are defined here in order to save having
+        # to repeat them for all configurations.
+        - SETUP_METHOD='tox'
+
         # The following three variables are for tox. TOXENV is a standard
         # variable that tox uses to determine the environment to run,
         # TOXARGS are arguments passed to tox, and TOXPOSARGS are arguments
         # that tox passes through to the {posargs} indicator in tox.ini.
         # The latter can be used for example to pass arguments to pytest.
+        - TOXENV='test'
         - TOXARGS='-v'
         - TOXPOSARGS=''
+
+        # Also allow tests without tox, getting our packages using apt;
+        # Here, we still need pip to install pyerfa.
+        - APT_DEPENDENCIES='python3-numpy python3-pip python3-pytest-astropy'
 
 jobs:
     include:
@@ -40,8 +50,27 @@ jobs:
           python: 3.8
           env: TOXENV=build_docs
 
+        # We try our apt test on the big-endian s390x architecture,
+        # to check that things work there as well.
+        - name: install with apt
+          stage: Comprehensive tests
+          language: c
+          env: SETUP_METHOD='apt'
+
 install:
-    - pip install tox;
+    - if [[ $SETUP_METHOD == 'tox' ]]; then
+        pip install tox;
+      else
+        curl https://ftp-master.debian.org/keys/archive-key-10.asc | sudo apt-key add -;
+        echo "deb http://ftp.us.debian.org/debian testing main" | sudo tee -a /etc/apt/sources.list;
+        sudo apt-get -qq update;
+        sudo apt-get install -y --no-install-recommends ${APT_DEPENDENCIES};
+      fi
 
 script:
-    - tox $TOXARGS -- $TOXPOSARGS;
+    - if [[ $SETUP_METHOD == 'tox' ]]; then
+        tox $TOXARGS -- $TOXPOSARGS;
+      else
+        pip3 install .;
+        pytest-3;
+      fi
