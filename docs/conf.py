@@ -124,8 +124,6 @@ html_extra_path = ['robots.txt']
 latex_documents = [('index', project + '.tex', project + u' Documentation',
                     author, 'manual')]
 
-latex_logo = '_static/astropy_logo.pdf'
-
 
 # -- Options for manual page output ------------------------------------------
 
