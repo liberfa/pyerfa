@@ -20,13 +20,23 @@ stages:
 
 env:
     global:
+        # The following versions are the 'default' for tests, unless
+        # overridden underneath. They are defined here in order to save having
+        # to repeat them for all configurations.
+        - SETUP_METHOD='tox'
+
         # The following three variables are for tox. TOXENV is a standard
         # variable that tox uses to determine the environment to run,
         # TOXARGS are arguments passed to tox, and TOXPOSARGS are arguments
         # that tox passes through to the {posargs} indicator in tox.ini.
         # The latter can be used for example to pass arguments to pytest.
+        - TOXENV='test'
         - TOXARGS='-v'
         - TOXPOSARGS=''
+
+        # Also allow tests without tox, getting our packages using apt;
+        # Here, we still need pip to install pyerfa.
+        - APT_DEPENDENCIES='python3-numpy python3-venv python3-pip python3-jinja2 python3-pytest-astropy liberfa-dev'
 
 jobs:
     include:
@@ -40,8 +50,33 @@ jobs:
           python: 3.8
           env: TOXENV=build_docs
 
+        # We try our apt test on the big-endian s390x architecture,
+        # to check that things work there as well. We also test that
+        # we can use a system library.
+        - name: install with apt
+          stage: Comprehensive tests
+          arch: s390x
+          language: c
+          env: SETUP_METHOD='apt'
+               PYERFA_USE_SYSTEM_LIBERFA=1
+
 install:
-    - pip install tox;
+    - if [[ $SETUP_METHOD == 'tox' ]]; then
+        pip install tox;
+      else
+        curl https://ftp-master.debian.org/keys/archive-key-10.asc | sudo apt-key add -;
+        echo "deb http://ftp.us.debian.org/debian testing main" | sudo tee -a /etc/apt/sources.list;
+        sudo apt-get -qq update;
+        sudo apt-get install -y --no-install-recommends ${APT_DEPENDENCIES};
+      fi
 
 script:
-    - tox $TOXARGS -- $TOXPOSARGS;
+    - if [[ $SETUP_METHOD == 'tox' ]]; then
+        tox $TOXARGS -- $TOXPOSARGS;
+      else
+        python3 -m venv --system-site-packages tests;
+        source tests/bin/activate;
+        pip3 install --no-deps --editable .[test];
+        (nm -u erfa/ufunc.cpython-*.so | grep eraA2af) || exit 1;
+        pytest-3;
+      fi
