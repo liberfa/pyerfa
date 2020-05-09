@@ -1,0 +1,36 @@
+variables:
+  CIBW_BUILD: cp36-* cp37-* cp38-*
+
+resources:
+  repositories:
+  - repository: OpenAstronomy
+    type: github
+    endpoint: liberfa
+    name: OpenAstronomy/azure-pipelines-templates
+    ref: master
+
+trigger:
+  branches:
+    include:
+    - '*'
+  tags:
+    include:
+    - 'v*'
+
+jobs:
+
+# The following is the configuration to automatically release a new version
+# to PyPI if a tag is pushed - for more details, see:
+# https://openastronomy-azure-pipelines.readthedocs.io/en/latest/publish.html
+
+- template: publish.yml@OpenAstronomy
+  parameters:
+    ${{ if startsWith(variables['Build.SourceBranch'], 'refs/tags/v') }}:
+      pypi_connection_name: 'pypi_endpoint'
+    test_extras: test
+    test_command: pytest --pyargs erfa
+    targets:
+    - sdist
+    - wheels_linux
+    - wheels_macos
+    - wheels_windows
