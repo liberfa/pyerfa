@@ -15,6 +15,13 @@ PGP keys set up. Then, push the tag to GitHub, e.g.::
 
     git push upstream v0.1
 
-and the build should happen automatically on Azure pipelines. See
-the [OpenAstronomy Azure Pipelines Templates Documentation](https://openastronomy-azure-pipelines.readthedocs.io/en/latest/publish.html)
-for more details.
+and the build should happen automatically on Azure pipelines. You can
+follow the progress of the build here:
+
+https://dev.azure.com/liberfa/pyerfa/_build
+
+If there are any failures, you can always delete the tag, fix the
+issues, tag the release again, and push the tag to GitHub.
+
+See the `OpenAstronomy Azure Pipelines Templates Documentation <https://openastronomy-azure-pipelines.readthedocs.io/en/latest/publish.html>`_
+for more details about the Azure Pipelines set-up.
