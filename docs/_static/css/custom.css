@@ -1,0 +1,18 @@
+@import '../bootstrap-astropy.css';
+
+/*
+div.topbar ul li a.homelink:hover {
+  background-color: #333;
+  background-color: rgba(255, 255, 255, 0.05);
+}
+*/
+
+div.topbar ul li a.homelink {
+  visibility: hidden;
+}
+
+div.topbar a.brand {
+  padding-left: 12px;
+  background: none;
+  background-image: none;
+}
