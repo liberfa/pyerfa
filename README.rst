@@ -26,9 +26,14 @@ The package can be installed from the package directory using a simple::
 
   $ pip install .
 
-and similarly a Python_ wheel_ can be created with::
+and similarly a wheel_ can be created with::
 
   $ pip wheel .
+
+.. note:: If you already have the C library ``liberfa`` on your
+  system, you can use that by setting environment variable
+  ``PYERFA_USE_SYSTEM_LIBERFA=1``.
+
 
 .. _wheel: https://github.com/pypa/wheel
 
