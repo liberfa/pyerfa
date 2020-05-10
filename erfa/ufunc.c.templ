@@ -717,6 +717,8 @@ PyMODINIT_FUNC PyInit_ufunc(void)
 {
     /* module and its dict */
     PyObject *m, *d;
+    /* version information */
+    PyObject *erfa_version, *sofa_version;
     /* structured dtypes and their definition */
     PyObject *dtype_def;
     PyArray_Descr *dt_double = NULL, *dt_int = NULL;
@@ -746,7 +748,23 @@ PyMODINIT_FUNC PyInit_ufunc(void)
     if (d == NULL) {
         goto fail;
     }
-
+    /*
+     * Make the version information available in the module.
+     * Note that this gets run every time _erfa is imported,
+     * hence if the library is provided by the system rather
+     * than bundled with astropy, one correctly gets the version
+     * information from the system library.
+     */
+    erfa_version = PyUnicode_FromString(eraVersion());
+    sofa_version = PyUnicode_FromString(eraSofaVersion());
+    if (erfa_version == NULL || sofa_version == NULL) {
+        goto fail;
+    }
+    PyDict_SetItemString(d, "erfa_version", erfa_version);
+    PyDict_SetItemString(d, "sofa_version", sofa_version);
+    /*
+     * Get ready for arrays and ufuncs
+     */
     import_array();
     import_umath();
     /*

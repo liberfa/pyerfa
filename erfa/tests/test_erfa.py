@@ -19,6 +19,22 @@ except ImportError:
             pass
 
 
+class TestVersion:
+    def test_basic(self):
+        assert hasattr(erfa.version, 'erfa_version')
+        erfa_version = erfa.version.erfa_version
+        assert isinstance(erfa_version, str)
+        assert len(erfa_version.split('.')) == 3
+
+    def test_sofa_version(self):
+        assert hasattr(erfa.version, 'sofa_version')
+        sofa_version = erfa.version.sofa_version
+        assert isinstance(sofa_version, str)
+        assert len(sofa_version) == 8
+        # Sorry, future 22nd century person, you may have to adjust!
+        assert sofa_version.startswith('20')
+
+
 def test_erfa_wrapper():
     """
     Runs a set of tests that mostly make sure vectorization is
