@@ -7,9 +7,7 @@ import setuptools
 import subprocess
 
 
-ERFAPKGDIR = os.path.abspath(os.path.dirname(__file__))
-
-ERFA_SRC = os.path.abspath(os.path.join(ERFAPKGDIR, 'liberfa', 'erfa', 'src'))
+ERFA_SRC = os.path.join('liberfa', 'erfa', 'src')
 
 
 # https://mail.python.org/pipermail/distutils-sig/2007-September/008253.html
@@ -31,13 +29,10 @@ class NumpyExtension(setuptools.Extension):
 
 
 def get_extensions():
-    cmd = [
-        sys.executable, os.path.join(ERFAPKGDIR, 'erfa_generator.py'),
-        ERFA_SRC, '--quiet',
-    ]
+    cmd = [sys.executable, 'erfa_generator.py', ERFA_SRC, '--quiet']
     subprocess.run(cmd, check=True)
 
-    sources = [os.path.join(ERFAPKGDIR, 'erfa', fn)
+    sources = [os.path.join('erfa', fn)
                for fn in ("ufunc.c", "pav2pv.c", "pv2pav.c")]
 
     include_dirs = []
@@ -60,7 +55,7 @@ def get_extensions():
         sources=sources,
         include_dirs=include_dirs,
         libraries=libraries,
-        language="c",)
+        language="c")
 
     return [erfa_ext]
 
