@@ -51,10 +51,9 @@ copyright = '2011–{0}, {1}'.format(datetime.utcnow().year, author)
 try:
     release = get_distribution(project).version
 except Exception:
-    import configparser
-    metadata = configparser.ConfigParser()
-    metadata.read('../setup.cfg')
-    release = metadata['metadata']['version']
+    # assume local build
+    sys.path.append('..')
+    from erfa import __version__ as release
 
 # The short X.Y version.
 version = '.'.join(release.split('.')[:2])
