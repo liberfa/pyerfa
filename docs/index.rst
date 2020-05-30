@@ -7,3 +7,4 @@
    quickstart
    api
    license
+   credits

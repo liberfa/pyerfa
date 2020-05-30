@@ -11,12 +11,14 @@ called with scalar or array inputs.
 
 The project is a split of ``astropy._erfa`` module, developed in the
 context of Astropy_ project, into a standalone package.  It contains
-the ERFA_ C source code as a git submodule.
+the ERFA_ C source code as a git submodule.  The wrapping is done
+with help of the Jinja2_ template engine.
 
 .. _Python: https://www.python.org/
 .. _ERFA: https://github.com/liberfa/erfa
 .. _Numpy: https://numpy.org/
 .. _Astropy: https://www.astropy.org
+.. _Jinja2: https://palletsprojects.com/p/jinja/
 
 
 Installation instructions
