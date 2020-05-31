@@ -32,8 +32,7 @@ def get_extensions():
     cmd = [sys.executable, 'erfa_generator.py', ERFA_SRC, '--quiet']
     subprocess.run(cmd, check=True)
 
-    sources = [os.path.join('erfa', fn)
-               for fn in ("ufunc.c", "pav2pv.c", "pv2pav.c")]
+    sources = [os.path.join('erfa', 'ufunc.c')]
 
     include_dirs = []
 
