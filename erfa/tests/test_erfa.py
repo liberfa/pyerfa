@@ -20,7 +20,7 @@ except ImportError:
 
 
 class TestVersion:
-    def test_basic(self):
+    def test_erfa_version(self):
         assert hasattr(erfa.version, 'erfa_version')
         erfa_version = erfa.version.erfa_version
         assert isinstance(erfa_version, str)
@@ -33,6 +33,14 @@ class TestVersion:
         assert len(sofa_version) == 8
         # Sorry, future 22nd century person, you may have to adjust!
         assert sofa_version.startswith('20')
+
+    def test_version(self):
+        assert hasattr(erfa, '__version__')
+        version = erfa.__version__
+        assert version is erfa.version.version
+        # Oops, we had the wrong version for quite a while...
+        assert (erfa.version.erfa_version == '1.6.0' and version.startswith('1.7.0')
+                or version.startswith(erfa.version.erfa_version))
 
 
 def test_erfa_wrapper():

@@ -5,18 +5,16 @@ import os
 import sys
 import setuptools
 import subprocess
+from warnings import warn
 
 
-ERFA_SRC = os.path.join('liberfa', 'erfa', 'src')
+LIBERFADIR = os.path.join('liberfa', 'erfa')
+ERFA_SRC = os.path.join(LIBERFADIR, 'src')
 
 
 # https://mail.python.org/pipermail/distutils-sig/2007-September/008253.html
 class NumpyExtension(setuptools.Extension):
     """Extension type that adds the NumPy include directory to include_dirs."""
-
-    def __init__(self, *args, **kwargs):
-        self.cython_directives = kwargs.pop('cython_directives', {})
-        super().__init__(*args, **kwargs)
 
     @property
     def include_dirs(self):
@@ -88,7 +86,38 @@ else:
     del get_version
 """.lstrip()
 
-setuptools.setup(use_scm_version={
+
+def guess_next_dev(version):
+    from setuptools_scm import git
+    from setuptools_scm.version import guess_next_version
+
+    erfa_version = git.parse(LIBERFADIR)
+    if not erfa_version.exact:
+        warn(f'liberfa/erfa not at a tagged release, but at {erfa_version}')
+
+    erfa_tag = erfa_version.format_with("{tag}")
+    version_string = str(version.tag)
+
+    if version.exact:
+        if not version_string.startswith(erfa_tag):
+            warn(f'tag {version_string} does not start with liberfa/erfa tag {erfa_tag}')
+
+        return version_string
+
+    else:
+        if erfa_tag > version_string:
+            guessed = erfa_tag
+        elif 'dev' in version_string or len(version_string.split('.')) > 3:
+            return guess_next_version(version.tag)
+        else:
+            guessed = version_string.partition("+")[0] + '.1'
+        return version.format_with("{guessed}.dev{distance}", guessed=guessed)
+
+
+use_scm_version = {
     'write_to': os.path.join('erfa', 'version.py'),
-    'write_to_template': VERSION_TEMPLATE},
-      ext_modules=get_extensions())
+    'write_to_template': VERSION_TEMPLATE,
+    'version_scheme': guess_next_dev}
+
+setuptools.setup(use_scm_version=use_scm_version,
+                 ext_modules=get_extensions())
