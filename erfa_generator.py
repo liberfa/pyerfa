@@ -538,8 +538,7 @@ class ExtraFunction(Function):
 
 
 def main(srcdir=DEFAULT_ERFA_LOC, outfn='core.py', ufuncfn='ufunc.c',
-         templateloc=DEFAULT_TEMPLATE_LOC, extra='erfa_additions.h',
-         verbose=True):
+         templateloc=DEFAULT_TEMPLATE_LOC, verbose=True):
     from jinja2 import Environment, FileSystemLoader
 
     if verbose:
@@ -576,10 +575,6 @@ def main(srcdir=DEFAULT_ERFA_LOC, outfn='core.py', ufuncfn='ufunc.c',
     with open(erfahfn, "r") as f:
         erfa_h = f.read()
         print_("read erfa header")
-    if extra:
-        with open(os.path.join(templateloc or '.', extra), "r") as f:
-            erfa_h += f.read()
-        print_("read extra header")
 
     funcs = OrderedDict()
     section_subsection_functions = re.findall(
@@ -680,13 +675,8 @@ if __name__ == '__main__':
                     default=DEFAULT_TEMPLATE_LOC,
                     help='the location where the "core.py.templ" and '
                          '"ufunc.c.templ templates can be found.')
-    ap.add_argument('-x', '--extra',
-                    default='erfa_additions.h',
-                    help='header file for any extra files in the template '
-                         'location that should be included.')
     ap.add_argument('-q', '--quiet', action='store_false', dest='verbose',
                     help='Suppress output normally printed to stdout.')
 
     args = ap.parse_args()
-    main(args.srcdir, args.output, args.ufunc, args.template_loc,
-         args.extra, args.verbose)
+    main(args.srcdir, args.output, args.ufunc, args.template_loc, args.verbose)
