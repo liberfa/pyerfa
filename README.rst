@@ -14,13 +14,8 @@ context of Astropy_ project, into a standalone package.  It contains
 the ERFA_ C source code as a git submodule.  The wrapping is done
 with help of the Jinja2_ template engine.
 
-.. _Python: https://www.python.org/
-.. _ERFA: https://github.com/liberfa/erfa
-.. _Numpy: https://numpy.org/
-.. _Astropy: https://www.astropy.org
-.. _Jinja2: https://palletsprojects.com/p/jinja/
 
-
+.. Installation
 Installation instructions
 -------------------------
 
@@ -54,8 +49,58 @@ environment for you, with::
 
   $ tox -e test
 
+
+Usage
+-----
+
+The package can be imported as ``erfa`` which has all ERFA_ ufuncs wrapped with
+python code that tallies errors and warnings.  Also exposed are the constants
+defined by ERFA_ in `erfam.h
+<https://github.com/liberfa/erfa/blob/master/src/erfam.h>`_, as well
+as `numpy.dtype` corresponding to structures used by ERFA_.  Examples::
+
+  >>> import erfa
+  >>> erfa.jd2cal(2460000., [0, 1, 2, 3])
+  (array([2023, 2023, 2023, 2023], dtype=int32),
+   array([2, 2, 2, 2], dtype=int32),
+   array([24, 25, 26, 27], dtype=int32),
+   array([0.5, 0.5, 0.5, 0.5]))
+  >>> erfa.plan94(2460000., [0, 1, 2, 3], 1)
+  array([([ 0.09083713, -0.39041392, -0.21797389], [0.02192341, 0.00705449, 0.00149618]),
+         ([ 0.11260694, -0.38275202, -0.21613731], [0.02160375, 0.00826891, 0.00217806]),
+         ([ 0.13401992, -0.37387798, -0.21361622], [0.0212094 , 0.00947838, 0.00286503]),
+         ([ 0.15500031, -0.36379788, -0.21040601], [0.02073822, 0.01068061, 0.0035561 ])],
+        dtype={'names':['p','v'], 'formats':[('<f8', (3,)),('<f8', (3,))], 'offsets':[0,24], 'itemsize':48, 'aligned':True})
+  >>> erfa.dt_pv
+  dtype([('p', '<f8', (3,)), ('v', '<f8', (3,))], align=True)
+  >>> erfa.dt_eraLDBODY
+  dtype([('bm', '<f8'), ('dl', '<f8'), ('pv', '<f8', (2, 3))], align=True)
+  >>> erfa.DAYSEC
+  86400.0
+
+It is also possible to use the ufuncs directly, though then one has to
+deal with the warning and error states explicitly.  For instance, compare::
+
+  >>> erfa.jd2cal(-600000., [0, 1, 2, 3])
+  Traceback (most recent call last):
+  ...
+  ErfaError: ERFA function "jd2cal" yielded 4 of "unacceptable date (Note 1)"
+  >>> erfa.ufunc.jd2cal(-600000., [0, 1, 2, 3])
+  (array([-1, -1, -1, -1], dtype=int32),
+   ...,
+   array([-1, -1, -1, -1], dtype=int32))
+
+
 License
 -------
 
 PyERFA is licensed under a 3-clause BSD style license - see the
 `LICENSE.rst <LICENSE.rst>`_ file.
+
+
+.. References
+.. _Python: https://www.python.org/
+.. _ERFA: https://github.com/liberfa/erfa
+.. _Numpy: https://numpy.org/
+.. _Astropy: https://www.astropy.org
+.. _Jinja2: https://palletsprojects.com/p/jinja/
