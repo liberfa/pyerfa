@@ -1,13 +1,12 @@
-========================
-PyERFA repository import
-========================
+PyERFA repository import from Astropy
+=====================================
 
-:copytight: 2020 Antonio Valentino
+:copyright: 2020 Antonio Valentino
 
 Python wrapper for ERFA_, Essential Routines for Fundamental Astronomy.
 
-The project is a split of `astropy._erfa` sub-module, developed in the
-context of Astropy_ project, the into a standalone package.
+The project is a split of the ``astropy._erfa`` sub-module, developed in the
+context of Astropy_ project, into a standalone package.
 
 See also https://github.com/astropy/astropy/issues/9802.
 
@@ -83,15 +82,15 @@ setup.cfg                       setup.cfg
 
 Please note that some of the files have been slightly modified (e.g. import
 statements have been updated) to allow the code to work properly as a
-standalone package totally independent form Astropy_.
+standalone package totally independent from Astropy_.
 
-The `erfa.tests.helpers` module is duplicated form the original Astropy_
-project, but all the code not strictly necessary to the `erfa`
+The ``erfa.tests.helpers`` module is duplicated form the original Astropy_
+project, but all the code not strictly necessary to the PyERFA
 package has been removed.
 
 In addition:
 
-* the `ErfaError` and `ErfaWarning` classes have been copied form
-  `astropy/utils/exceptions.py` into `erfa/core.py.templ`
-* the `classproperty` has been copied form `astropy/utils/decorators.py`
-  into `erfa/helpers.py`
+* the ``ErfaError`` and ``ErfaWarning`` classes have been copied form
+  ``astropy/utils/exceptions.py`` into ``erfa/core.py.templ``.
+* the ``classproperty`` has been copied form ``astropy/utils/decorators.py``
+  into ``erfa/helpers.py``.

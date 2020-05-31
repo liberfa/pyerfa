@@ -8,5 +8,6 @@
 
    quickstart
    api
+   changelog
    license
    credits
