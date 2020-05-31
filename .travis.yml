@@ -51,6 +51,10 @@ jobs:
         - name: Documentation build
           stage: Comprehensive tests
           env: TOXENV=build_docs
+          addons:
+              apt:
+                  packages:
+                      - graphviz
 
         - name: Test with oldest supported versions of our dependencies
           stage: Comprehensive tests
