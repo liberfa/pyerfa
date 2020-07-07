@@ -6,10 +6,15 @@ import sys
 import setuptools
 import subprocess
 from warnings import warn
+from distutils.dep_util import newer
 
 
 LIBERFADIR = os.path.join('liberfa', 'erfa')
 ERFA_SRC = os.path.join(LIBERFADIR, 'src')
+GEN_FILES = [
+    os.path.join('erfa', 'core.py'),
+    os.path.join('erfa', 'ufunc.c'),
+]
 
 
 # https://mail.python.org/pipermail/distutils-sig/2007-September/008253.html
@@ -27,13 +32,26 @@ class NumpyExtension(setuptools.Extension):
 
 
 def get_extensions():
-    cmd = [sys.executable, 'erfa_generator.py', ERFA_SRC, '--quiet']
-    subprocess.run(cmd, check=True)
+    gen_files_exist = all(os.path.isfile(fn) for fn in GEN_FILES)
+    gen_files_outdated = False
+    if os.path.isdir(ERFA_SRC):
+        # assume thet 'erfaversion.c' is updated at each release at least
+        src = os.path.join(ERFA_SRC, 'erfaversion.c')
+        gen_files_outdated = any(newer(src, fn) for fn in GEN_FILES)
+    elif not gen_files_exist:
+        raise RuntimeError(
+            'Missing "liberfa" source files, unable to generate '
+            '"erfa/ufunc.c" and "erfa/core.py". '
+            'Please check your source tree. '
+            'Maybe "git submodule update" could help.')
+
+    if not gen_files_exist or gen_files_outdated:
+        print('Run "erfa_generator.py"')
+        cmd = [sys.executable, 'erfa_generator.py', ERFA_SRC, '--quiet']
+        subprocess.run(cmd, check=True)
 
     sources = [os.path.join('erfa', 'ufunc.c')]
-
     include_dirs = []
-
     libraries = []
 
     if int(os.environ.get('PYERFA_USE_SYSTEM_LIBERFA', 0)):
