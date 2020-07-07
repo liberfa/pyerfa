@@ -40,7 +40,9 @@ env:
         # We include liberfa-dev so we can test using a system library,
         # and python3-astropy to run a few tests that rely on Time.
         # We need venv for a test environment and pip to install pyerfa itself.
-        - APT_DEPENDENCIES='python3-numpy python3-venv python3-pip python3-jinja2 python3-pytest-astropy liberfa-dev python3-astropy'
+        # Here, we need to include python3-attr, since the version on bionic
+        # is too old.
+        - APT_DEPENDENCIES='python3-numpy python3-venv python3-pip python3-jinja2 python3-pytest-astropy liberfa-dev python3-astropy python3-attr'
 
 jobs:
     include:
