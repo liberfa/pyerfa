@@ -2,7 +2,7 @@
 PyERFA
 ======
 
-|PyPI Status| |Travis Status| |Documentation Status|
+|PyPI Status| |Zenodo| |Travis Status| |Documentation Status|
 
 PyERFA is the Python_ wrapper for the ERFA_ library (Essential Routines for
 Fundamental Astronomy), a C library containing key algorithms for astronomy,
@@ -16,6 +16,8 @@ context of Astropy_ project, into a standalone package.  It contains
 the ERFA_ C source code as a git submodule.  The wrapping is done
 with help of the Jinja2_ template engine.
 
+If you use this package in your research, please cita it via DOI
+`10.5281/zenodo.3940699 <https://doi.org/10.5281/zenodo.3940699>`_.
 
 .. Installation
 
@@ -110,6 +112,9 @@ PyERFA is licensed under a 3-clause BSD style license - see the
 .. |PyPI Status| image:: https://img.shields.io/pypi/v/pyerfa.svg
     :target: https://pypi.python.org/pypi/pyerfa
     :alt: PyPI Status
+.. |Zenodo| image:: https://zenodo.org/badge/261332899.svg
+   :target: https://zenodo.org/badge/latestdoi/261332899
+   :alt: DOI 10.5281/zenodo.3940699
 .. |Travis Status| image:: https://img.shields.io/travis/liberfa/pyerfa/master?logo=travis%20ci&logoColor=white&label=Travis%20CI
     :target: https://travis-ci.org/liberfa/pyerfa
     :alt: Travis CI Status
