@@ -1,4 +1,4 @@
-Copyright (c) 2011-2017, Astropy Developers
+Copyright (c) 2011-2017, PyERFA Developers
 
 All rights reserved.
 
