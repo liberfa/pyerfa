@@ -26,7 +26,7 @@
 # See sphinx_astropy.conf for which values are set there.
 
 from datetime import datetime
-import sys
+import os, sys, time
 
 from pkg_resources import get_distribution
 
@@ -41,6 +41,9 @@ except ImportError:
 
 project = 'PyERFA'
 author = 'The PyERFA Developers'
+build_date = datetime.utcfromtimestamp(
+    int(os.environ.get('SOURCE_DATE_EPOCH', time.time()))
+)
 copyright = '2011–{0}, {1}'.format(datetime.utcnow().year, author)
 
 # The version info for the project you're documenting, acts as replacement for
