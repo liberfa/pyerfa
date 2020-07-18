@@ -44,7 +44,7 @@ author = 'The PyERFA Developers'
 build_date = datetime.utcfromtimestamp(
     int(os.environ.get('SOURCE_DATE_EPOCH', time.time()))
 )
-copyright = '2011–{0}, {1}'.format(datetime.utcnow().year, author)
+copyright = '2011–{0}, {1}'.format(build_date.year, author)
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
