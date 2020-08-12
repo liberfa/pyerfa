@@ -53,13 +53,19 @@ def test_erfa_wrapper():
     ra = np.linspace(0.0, np.pi*2.0, 5)
     dec = np.linspace(-np.pi/2.0, np.pi/2.0, 4)
 
-    aob, zob, hob, dob, rob, eo = erfa.atco13(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, jd, 0.0, 0.0, 0.0, np.pi/4.0, 0.0, 0.0, 0.0, 1014.0, 0.0, 0.0, 0.5)
+    aob, zob, hob, dob, rob, eo = erfa.atco13(
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, jd,
+        0.0, 0.0, 0.0, np.pi/4.0, 0.0, 0.0, 0.0, 1014.0, 0.0, 0.0, 0.5)
     assert aob.shape == (121,)
 
-    aob, zob, hob, dob, rob, eo = erfa.atco13(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, jd[0], 0.0, 0.0, 0.0, np.pi/4.0, 0.0, 0.0, 0.0, 1014.0, 0.0, 0.0, 0.5)
+    aob, zob, hob, dob, rob, eo = erfa.atco13(
+        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, jd[0],
+        0.0, 0.0, 0.0, np.pi/4.0, 0.0, 0.0, 0.0, 1014.0, 0.0, 0.0, 0.5)
     assert aob.shape == ()
 
-    aob, zob, hob, dob, rob, eo = erfa.atco13(ra[:, None, None], dec[None, :, None], 0.0, 0.0, 0.0, 0.0, jd[None, None, :], 0.0, 0.0, 0.0, np.pi/4.0, 0.0, 0.0, 0.0, 1014.0, 0.0, 0.0, 0.5)
+    aob, zob, hob, dob, rob, eo = erfa.atco13(
+        ra[:, None, None], dec[None, :, None], 0.0, 0.0, 0.0, 0.0, jd[None, None, :],
+        0.0, 0.0, 0.0, np.pi/4.0, 0.0, 0.0, 0.0, 1014.0, 0.0, 0.0, 0.5)
     (aob.shape) == (5, 4, 121)
 
     iy, im, id, ihmsf = erfa.d2dtf("UTC", 3, jd, 0.0)
@@ -167,7 +173,8 @@ def test_errwarn_reporting():
         erfa.dat(200, [1, 34, 2], [1, 1, 43], 0.5)
     except erfa.ErfaError as e:
         if 'warning' in e.args[0]:
-            assert False, 'Raised the correct type of error, but there were warnings mixed in: ' + e.args[0]
+            assert False, ('Raised the correct type of error, but there were '
+                           'warnings mixed in: ' + e.args[0])
 
 
 def test_vector_inouts():

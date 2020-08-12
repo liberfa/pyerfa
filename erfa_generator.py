@@ -17,7 +17,10 @@ from collections import OrderedDict
 DEFAULT_ERFA_LOC = os.path.join(os.path.split(__file__)[0], 'liberfa/erfa/src')
 DEFAULT_TEMPLATE_LOC = os.path.join(os.path.split(__file__)[0], 'erfa')
 
-NDIMS_REX = re.compile(re.escape("numpy.dtype([('fi0', '.*', <(.*)>)])").replace(r'\.\*', '.*').replace(r'\<', '(').replace(r'\>', ')'))
+NDIMS_REX = re.compile(re.escape("numpy.dtype([('fi0', '.*', <(.*)>)])")
+                       .replace(r'\.\*', '.*')
+                       .replace(r'\<', '(')
+                       .replace(r'\>', ')'))
 
 
 class FunctionDoc:
@@ -101,7 +104,8 @@ class FunctionDoc:
     def ret_info(self):
         if self.__ret_info is None:
             ret_info = []
-            result = re.search("Returned \\(function value\\)([^\n]*):\n(.+?)  \n", self.doc, re.DOTALL)
+            result = re.search("Returned \\(function value\\)([^\n]*):\n(.+?)  \n",
+                               self.doc, re.DOTALL)
             if result is not None:
                 ret_info.append(ReturnDoc(result.group(2)))
 
@@ -110,7 +114,8 @@ class FunctionDoc:
             elif len(ret_info) == 1:
                 self.__ret_info = ret_info[0]
             else:
-                raise ValueError("Multiple C return sections found in this doc:\n" + self.doc)
+                raise ValueError("Multiple C return sections found in this doc:\n"
+                                 + self.doc)
 
         return self.__ret_info
 
@@ -133,7 +138,8 @@ class FunctionDoc:
         return '\n    '.join(description)
 
     def __repr__(self):
-        return self.doc.replace("  \n", "\n")
+        return '\n'.join([(ln.rstrip() if ln.strip() else '')
+                          for ln in self.doc.split('\n')])
 
 
 class ArgumentDoc:
@@ -142,7 +148,7 @@ class ArgumentDoc:
         match = re.search("^ +([^ ]+)[ ]+([^ ]+)[ ]+(.+)", doc)
         if match is not None:
             self.name = match.group(1)
-            if self.name.startswith('*'):  # easier than getting the regex to behave...
+            if self.name.startswith('*'):  # Easier than getting the regex to behave...
                 self.name = self.name.replace('*', '')
             self.type = match.group(2)
             self.doc = match.group(3)
@@ -305,7 +311,8 @@ class Argument(Variable):
             return '*_'+self.name
 
     def __repr__(self):
-        return f"Argument('{self.definition}', name='{self.name}', ctype='{self.ctype}', inout_state='{self.inout_state}')"
+        return (f"Argument('{self.definition}', name='{self.name}', "
+                f"ctype='{self.ctype}', inout_state='{self.inout_state}')")
 
 
 class ReturnDoc:
@@ -472,14 +479,24 @@ class Function:
 
     @property
     def python_call(self):
-        outnames = [arg.name for arg in self.args_by_inout('inout|out|stat|ret')]
-        argnames = [arg.name for arg in self.args_by_inout('in|inout')]
-        return '{out} = {func}({args})'.format(out=', '.join(outnames),
-                                               func='ufunc.' + self.pyname,
-                                               args=', '.join(argnames))
+        out = ', '.join([arg.name for arg in self.args_by_inout('inout|out|stat|ret')])
+        args = ', '.join([arg.name for arg in self.args_by_inout('in|inout')])
+        result = '{out} = {func}({args})'.format(out=out,
+                                                 func='ufunc.' + self.pyname,
+                                                 args=args)
+        if len(result) < 75:
+            return result
+
+        if result.index('(') < 75:
+            return result.replace('(', '(\n        ')
+
+        split_point = result[:75].rfind(',') + 1
+        return ('(' + result[:split_point] + '\n    '
+                + result[split_point:].replace(' =', ') ='))
 
     def __repr__(self):
-        return f"Function(name='{self.name}', pyname='{self.pyname}', filename='{self.filename}', filepath='{self.filepath}')"
+        return (f"Function(name='{self.name}', pyname='{self.pyname}', "
+                f"filename='{self.filename}', filepath='{self.filepath}')")
 
 
 class Constant:
@@ -517,20 +534,20 @@ class ExtraFunction(Function):
         incomment = False
         lastcomment = None
         with open(pathfordoc, 'r') as f:
-            for l in f:
+            for ln in f:
                 if incomment:
-                    if l.lstrip().startswith('*/'):
+                    if ln.lstrip().startswith('*/'):
                         incomment = False
                         lastcomment = ''.join(lastcomment)
                     else:
-                        if l.startswith('**'):
-                            l = l[2:]
-                        lastcomment.append(l)
+                        if ln.startswith('**'):
+                            ln = ln[2:]
+                        lastcomment.append(ln)
                 else:
-                    if l.lstrip().startswith('/*'):
+                    if ln.lstrip().startswith('/*'):
                         incomment = True
                         lastcomment = []
-                    if l.startswith(self.prototype):
+                    if ln.startswith(self.prototype):
                         self.doc = lastcomment
                         break
             else:
@@ -560,9 +577,10 @@ def main(srcdir=DEFAULT_ERFA_LOC, outfn='core.py', ufuncfn='ufunc.c',
     from jinja2 import Environment, FileSystemLoader
 
     if verbose:
-        print_ = lambda *args, **kwargs: print(*args, **kwargs)
+        print_ = print
     else:
-        print_ = lambda *args, **kwargs: None
+        def print_(*args, **kwargs):
+            return None
 
     # Prepare the jinja2 templating environment
     env = Environment(loader=FileSystemLoader(templateloc))
