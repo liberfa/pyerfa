@@ -114,6 +114,24 @@ class FunctionDoc:
 
         return self.__ret_info
 
+    @property
+    def title(self):
+        # Used for the docstring title.
+        lines = [line.strip() for line in self.doc.split('\n')[4:10]]
+        # Always include the first line, then stop at either an empty
+        # line or at the end of a sentence.
+        description = lines[:1]
+        for line in lines[1:]:
+            if line == '':
+                break
+            if '. ' in line:
+                line = line[:line.index('. ')+1]
+            description.append(line)
+            if line.endswith('.'):
+                break
+
+        return '\n    '.join(description)
+
     def __repr__(self):
         return self.doc.replace("  \n", "\n")
 

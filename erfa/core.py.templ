@@ -131,7 +131,7 @@ dt_bytes12 = numpy.dtype('S12')
 {% for func in funcs -%}
 def {{ func.pyname }}({{ func.args_by_inout('in|inout')|map(attribute='name')|join(', ') }}):
     """
-    Wrapper for ERFA function ``{{ func.name }}``.
+    {{ func.doc.title }}
 
     Parameters
     ----------
@@ -147,14 +147,11 @@ def {{ func.pyname }}({{ func.args_by_inout('in|inout')|map(attribute='name')|jo
 
     Notes
     -----
-    The ERFA documentation is below.  {% if func.args_by_inout('inout') -%}
-    Note that, unlike the erfa routine,
+    Wraps ERFA function ``{{ func.name }}``.
+    {%- if func.args_by_inout('inout') %} Note that, unlike the erfa routine,
     the python wrapper does not change {{ func.args_by_inout('inout')
     | map(attribute='name')|join(', ') }} in-place.
-    {%- endif %}
-
-
-    ::
+    {%- endif %} The ERFA documentation is::
 
 {{ func.doc }}
     """
