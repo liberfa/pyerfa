@@ -30,9 +30,12 @@ import numpy
 
 from . import ufunc
 
-__all__ = ['ErfaError', 'ErfaWarning',
-           {{ funcs|map(attribute='pyname')|surround("'","'")|join(", ") }},
-           {{ constants|map(attribute='name')|surround("'","'")|join(", ") }}]
+__all__ = [
+    'ErfaError', 'ErfaWarning',
+    {{ funcs | map(attribute='pyname') | surround("'","'")
+       | join(", ") | wordwrap(wrapstring='\n    ') }},
+    {{ constants | map(attribute='name') | surround("'","'")
+       | join(", ") | wordwrap(wrapstring='\n    ') }}]
 
 
 class ErfaError(ValueError):
@@ -78,41 +81,48 @@ def check_errwarn(statcodes, func_name):
             statcodes[statcodes == before] = after
             STATUS_CODES[func_name][after] = STATUS_CODES[func_name][before]
 
-    if numpy.any(statcodes<0):
-        # errors present - only report the errors.
+    if numpy.any(statcodes < 0):
+        # Errors present - only report the errors.
         if statcodes.shape:
-            statcodes = statcodes[statcodes<0]
+            statcodes = statcodes[statcodes < 0]
 
         errcodes = numpy.unique(statcodes)
 
-        errcounts = dict([(e, numpy.sum(statcodes==e)) for e in errcodes])
+        errcounts = dict([(e, numpy.sum(statcodes == e)) for e in errcodes])
 
         elsemsg = STATUS_CODES[func_name].get('else', None)
         if elsemsg is None:
-            errmsgs = dict([(e, STATUS_CODES[func_name].get(e, 'Return code ' + str(e))) for e in errcodes])
+            errmsgs = dict([(e, STATUS_CODES[func_name].get(
+                e, 'Return code ' + str(e))) for e in errcodes])
         else:
-            errmsgs = dict([(e, STATUS_CODES[func_name].get(e, elsemsg)) for e in errcodes])
+            errmsgs = dict([(e, STATUS_CODES[func_name].get(
+                e, elsemsg)) for e in errcodes])
 
-        emsg = ', '.join(['{0} of "{1}"'.format(errcounts[e], errmsgs[e]) for e in errcodes])
+        emsg = ', '.join(['{0} of "{1}"'.format(errcounts[e], errmsgs[e])
+                          for e in errcodes])
         raise ErfaError('ERFA function "' + func_name + '" yielded ' + emsg)
 
-    elif numpy.any(statcodes>0):
-        #only warnings present
+    elif numpy.any(statcodes > 0):
+        # Only warnings present.
         if statcodes.shape:
-            statcodes = statcodes[statcodes>0]
+            statcodes = statcodes[statcodes > 0]
 
         warncodes = numpy.unique(statcodes)
 
-        warncounts = dict([(w, numpy.sum(statcodes==w)) for w in warncodes])
+        warncounts = dict([(w, numpy.sum(statcodes == w)) for w in warncodes])
 
         elsemsg = STATUS_CODES[func_name].get('else', None)
         if elsemsg is None:
-            warnmsgs = dict([(w, STATUS_CODES[func_name].get(w, 'Return code ' + str(w))) for w in warncodes])
+            warnmsgs = dict([(w, STATUS_CODES[func_name].get(
+                w, 'Return code ' + str(w))) for w in warncodes])
         else:
-            warnmsgs = dict([(w, STATUS_CODES[func_name].get(w, elsemsg)) for w in warncodes])
+            warnmsgs = dict([(w, STATUS_CODES[func_name].get(
+                w, elsemsg)) for w in warncodes])
 
-        wmsg = ', '.join(['{0} of "{1}"'.format(warncounts[w], warnmsgs[w]) for w in warncodes])
-        warnings.warn('ERFA function "' + func_name + '" yielded ' + wmsg, ErfaWarning)
+        wmsg = ', '.join(['{0} of "{1}"'.format(warncounts[w], warnmsgs[w])
+                          for w in warncodes])
+        warnings.warn('ERFA function {!r} yielded {}'.format(func_name, wmsg),
+                      ErfaWarning)
 
 
 # <------------------------structured dtype conversion------------------------>
@@ -124,14 +134,16 @@ dt_bytes12 = numpy.dtype('S12')
 
 {% for constant in constants %}
 {{ constant.name }} = {{ constant.value }}
-"""{{ constant.doc|join(' ') }}"""
+"""{{ constant.doc|join(' ')|wordwrap() }}"""
 {%- endfor %}
 
 
-{% for func in funcs -%}
+{%- for func in funcs %}
+
+
 def {{ func.pyname }}({{ func.args_by_inout('in|inout')|map(attribute='name')|join(', ') }}):
     """
-    Wrapper for ERFA function ``{{ func.name }}``.
+    {{ func.doc.title }}
 
     Parameters
     ----------
@@ -147,14 +159,11 @@ def {{ func.pyname }}({{ func.args_by_inout('in|inout')|map(attribute='name')|jo
 
     Notes
     -----
-    The ERFA documentation is below.  {% if func.args_by_inout('inout') -%}
-    Note that, unlike the erfa routine,
+    Wraps ERFA function ``{{ func.name }}``.
+    {%- if func.args_by_inout('inout') %} Note that, unlike the erfa routine,
     the python wrapper does not change {{ func.args_by_inout('inout')
     | map(attribute='name')|join(', ') }} in-place.
-    {%- endif %}
-
-
-    ::
+    {%- endif %} The ERFA documentation is::
 
 {{ func.doc }}
     """
@@ -183,15 +192,21 @@ def {{ func.pyname }}({{ func.args_by_inout('in|inout')|map(attribute='name')|jo
      #}
     return {{ func.args_by_inout('inout|out|ret')|map(attribute='name')|join(', ') }}
 
-
-{#
+{#-
  # Define the status codes that this function returns.
  #}
-{%- if func.args_by_inout('stat') -%}
-{%- for stat in func.args_by_inout('stat') -%}
-{%- if stat.doc_info.statuscodes -%}
-STATUS_CODES['{{ func.pyname }}'] = {{ stat.doc_info.statuscodes|string }}
-{% endif %}
-{% endfor %}
-{% endif -%}
-{% endfor -%}
+{%- if func.args_by_inout('stat') %}
+{%- for stat in func.args_by_inout('stat') %}
+{%- if stat.doc_info.statuscodes %}
+
+
+STATUS_CODES['{{ func.pyname }}'] = {
+{%- for key, value in stat.doc_info.statuscodes.items() %}
+    {{ '{!r}'.format(key) }}: {{ '{!r}'.format(value) }},
+{%- endfor %}
+}
+{%- endif %}
+{%- endfor %}
+{%- endif %}
+{%- endfor %}
+{# done! (note: this comment also ensures final new line!) #}

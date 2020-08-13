@@ -29,7 +29,7 @@
     "Returns\n" \
     "-------\n" \
     "leap_seconds : `~numpy.ndarray`\n" \
-    "    With structured dtype `~astropy._erfa.dt_eraLEAPSECOND`,\n" \
+    "    With structured dtype `~erfa.dt_eraLEAPSECOND`,\n" \
     "    containing items 'year', 'month', and 'tai_utc'."
 #define SET_LEAP_SECONDS_DOCSTRING \
     "set_leap_seconds([table])\n\n" \
@@ -37,7 +37,7 @@
     "Parameters\n" \
     "----------\n" \
     "leap_seconds : array_like, optional\n" \
-    "    With structured dtype `~astropy._erfa.dt_eraLEAPSECOND`,\n" \
+    "    With structured dtype `~erfa.dt_eraLEAPSECOND`,\n" \
     "    containing items 'year', 'month', and 'tai_utc'.\n" \
     "    If not given, reset to the ERFA built-in table.\n\n" \
     "Notes\n" \
@@ -751,7 +751,7 @@ PyMODINIT_FUNC PyInit_ufunc(void)
      * Make the version information available in the module.
      * Note that this gets run every time _erfa is imported,
      * hence if the library is provided by the system rather
-     * than bundled with astropy, one correctly gets the version
+     * than bundled with pyerfa, one correctly gets the version
      * information from the system library.
      */
     erfa_version = PyUnicode_FromString(eraVersion());
