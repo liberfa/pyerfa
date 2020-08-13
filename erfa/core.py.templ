@@ -121,7 +121,7 @@ def check_errwarn(statcodes, func_name):
 
         wmsg = ', '.join(['{0} of "{1}"'.format(warncounts[w], warnmsgs[w])
                           for w in warncodes])
-        warnings.warn('ERFA function {!r} yielded {}'.format(func_name, wmsg),
+        warnings.warn('ERFA function "{}" yielded {}'.format(func_name, wmsg),
                       ErfaWarning)
 
 
