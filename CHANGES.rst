@@ -1,3 +1,11 @@
+1.7.1 (UNDER DEVELOPMENT)
+=========================
+
+- Bundled liberfa version update to v1.7.1.
+- Improved the setup machinery to ensure a proper configuration of the
+  embedded liberfa (see also https://github.com/liberfa/erfa/pull/73).
+
+
 1.7 (2020-05-31)
 ================
 

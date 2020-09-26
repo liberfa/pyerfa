@@ -2,11 +2,13 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
 import os
+import re
 import sys
 import setuptools
 import subprocess
 from warnings import warn
 from distutils.dep_util import newer
+import packaging.version
 
 
 LIBERFADIR = os.path.join('liberfa', 'erfa')
@@ -31,6 +33,35 @@ class NumpyExtension(setuptools.Extension):
         self._include_dirs = include_dirs
 
 
+def get_liberfa_versions(path=os.path.join(LIBERFADIR, 'configure.ac')):
+    assert os.path.exists(LIBERFADIR)
+
+    with open(path) as fd:
+        s = fd.read()
+
+    mobj = re.search(r'AC_INIT\(\[erfa\],\[(?P<version>1.7.1)\]\)', s)
+    if not mobj:
+        warn('unable to detect liberfa version')
+        return []
+
+    version = packaging.version.parse(mobj.group('version'))
+
+    mobj = re.search(
+        r'AC_DEFINE\(\[SOFA_VERSION\], \["(?P<version>\d{8})"\],', s)
+    if not mobj:
+        warn('unable to detect SOFA version')
+        return []
+    sofa_version = mobj.group('version')
+
+    return [
+        ('PACKAGE_VERSION', version.base_version),
+        ('PACKAGE_VERSION_MAJOR', version.major),
+        ('PACKAGE_VERSION_MINOR', version.minor),
+        ('PACKAGE_VERSION_MICRO', version.micro),
+        ('SOFA_VERSION', sofa_version),
+    ]
+
+
 def get_extensions():
     gen_files_exist = all(os.path.isfile(fn) for fn in GEN_FILES)
     gen_files_outdated = False
@@ -53,6 +84,7 @@ def get_extensions():
     sources = [os.path.join('erfa', 'ufunc.c')]
     include_dirs = []
     libraries = []
+    define_macros = []
 
     if int(os.environ.get('PYERFA_USE_SYSTEM_LIBERFA', 0)):
         libraries.append('erfa')
@@ -65,11 +97,35 @@ def get_extensions():
 
         include_dirs.append(ERFA_SRC)
 
+        # liberfa configuration
+        config_h = os.path.join(LIBERFADIR, 'config.h')
+        if not os.path.exists(config_h):
+            configure = os.path.join(LIBERFADIR, 'configure')
+            try:
+                if not os.path.exists(configure):
+                    subprocess.run(
+                        ['./bootstrap.sh'], check=True, cwd=LIBERFADIR)
+                subprocess.run(['./configure'], check=True, cwd=LIBERFADIR)
+            except (subprocess.SubprocessError, OSError) as exc:
+                warn(f'unable to configure liberfa: {exc}')
+
+            if (not os.path.exists(configure) and 'sdist' in sys.argv and
+                    sys.platform != 'win32'):
+                raise RuntimeError(
+                    'missing "configure" script in "liberfa/erfa"')
+
+        if os.path.exists(config_h):
+            include_dirs.append(LIBERFADIR)
+            define_macros.append(('HAVE_CONFIG_H', '1'))
+        else:
+            define_macros.extend(get_liberfa_versions())
+
     erfa_ext = NumpyExtension(
         name="erfa.ufunc",
         sources=sources,
         include_dirs=include_dirs,
         libraries=libraries,
+        define_macros=define_macros,
         language="c")
 
     return [erfa_ext]
@@ -136,6 +192,7 @@ use_scm_version = {
     'write_to': os.path.join('erfa', 'version.py'),
     'write_to_template': VERSION_TEMPLATE,
     'version_scheme': guess_next_dev}
+
 
 setuptools.setup(use_scm_version=use_scm_version,
                  ext_modules=get_extensions())
