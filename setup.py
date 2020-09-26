@@ -35,7 +35,7 @@ def get_extensions():
     gen_files_exist = all(os.path.isfile(fn) for fn in GEN_FILES)
     gen_files_outdated = False
     if os.path.isdir(ERFA_SRC):
-        # assume thet 'erfaversion.c' is updated at each release at least
+        # assume that 'erfaversion.c' is updated at each release at least
         src = os.path.join(ERFA_SRC, 'erfaversion.c')
         gen_files_outdated = any(newer(src, fn) for fn in GEN_FILES)
     elif not gen_files_exist:
