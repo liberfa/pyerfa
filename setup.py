@@ -198,6 +198,7 @@ del ufunc
 # setuptools_scm can't be imported or setuptools_scm can't determine the
 # version, so we catch the generic 'Exception'.
 try:
+    from warnings import warn
     from setuptools_scm import get_version
 
 {escaped_code}
