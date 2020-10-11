@@ -23,10 +23,8 @@ def embedded_liberfa(path=erfa.ufunc.__file__):
     import platform
     import subprocess
 
-    lddcmd = ['ldd']
-    if platform.system() == 'Darwin':
-        lddcmd = ['otool', '-L']
-    elif platform.system() == 'Windows':
+    lddcmd = ['nm', '--defined-only']
+    if platform.system() == 'Windows':
         # lddcmd = ['']  # TODO
         return None
 
@@ -34,11 +32,10 @@ def embedded_liberfa(path=erfa.ufunc.__file__):
     try:
         out = subprocess.run(lddcmd, check=True,
                              encoding='utf-8', stdout=subprocess.PIPE)
-                             # capture_output=True, text=True)  # Python 3.7
     except (subprocess.SubprocessError, OSError):
         return None
     else:
-        return 'erfa' not in out.stdout
+        return 'eraA2af' in out.stdout
 
 
 class TestVersion:
@@ -63,12 +60,8 @@ class TestVersion:
 
     @pytest.mark.skipif(not embedded_liberfa(), reason='system liberfa')
     def test_version_with_embedded_liberfa(self):
-        # Oops, we had the wrong version for quite a while...
         version = erfa.__version__
-        if erfa.version.erfa_version == '1.6.0':
-            assert version == '1.7.0'
-        else:
-            assert version.startswith(erfa.version.erfa_version)
+        assert version.startswith(erfa.version.erfa_version)
 
 
 def test_erfa_wrapper():

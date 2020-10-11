@@ -37,12 +37,10 @@ class NumpyExtension(setuptools.Extension):
 
 
 def get_liberfa_versions(path=os.path.join(LIBERFADIR, 'configure.ac')):
-    assert os.path.exists(LIBERFADIR)
-
     with open(path) as fd:
         s = fd.read()
 
-    mobj = re.search(r'AC_INIT\(\[erfa\],\[(?P<version>1.7.1)\]\)', s)
+    mobj = re.search(r'AC_INIT\(\[erfa\],\[(?P<version>[0-9.]+)\]\)', s)
     if not mobj:
         warn('unable to detect liberfa version')
         return []
