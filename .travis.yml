@@ -59,6 +59,8 @@ jobs:
                       - graphviz
 
         - name: Test with oldest supported versions of our dependencies
+          os: windows
+          language: c
           stage: Comprehensive tests
           python: 3.6
           env: TOXENV=test-oldestdeps
@@ -78,6 +80,13 @@ jobs:
                PYERFA_USE_SYSTEM_LIBERFA=1
 
 install:
+    # language: python is only available for Linux, so for other platforms
+    # we need to use ci-helpers to set up Python.
+    - if [[ $TRAVIS_OS_NAME == osx || $TRAVIS_OS_NAME == windows ]]; then
+        git clone git://github.com/astropy/ci-helpers.git;
+        source ci-helpers/travis/setup_conda.sh;
+      fi
+
     - if [[ $SETUP_METHOD == 'tox' ]]; then
         pip install tox;
       else
