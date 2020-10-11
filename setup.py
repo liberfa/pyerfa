@@ -101,6 +101,7 @@ def get_extensions():
         # liberfa configuration
         config_h = os.path.join(LIBERFADIR, 'config.h')
         if not os.path.exists(config_h):
+            print('Configure liberfa')
             configure = os.path.join(LIBERFADIR, 'configure')
             try:
                 if not os.path.exists(configure):
@@ -115,11 +116,21 @@ def get_extensions():
                 raise RuntimeError(
                     'missing "configure" script in "liberfa/erfa"')
 
+        if not os.path.exists(config_h):
+            liberfa_versions = get_liberfa_versions()
+            if liberfa_versions:
+                print('Configure liberfa ("configure.ac" scan)')
+                lines = []
+                for name, value in get_liberfa_versions():
+                    lines.append(f'#define {name} "{value}"')
+                with open(config_h, 'w') as fd:
+                    fd.write('\n'.join(lines))
+            else:
+                warn('unable to get liberfa version')
+
         if os.path.exists(config_h):
             include_dirs.append(LIBERFADIR)
             define_macros.append(('HAVE_CONFIG_H', '1'))
-        else:
-            define_macros.extend(get_liberfa_versions())
 
     erfa_ext = NumpyExtension(
         name="erfa.ufunc",
