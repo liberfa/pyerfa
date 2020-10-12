@@ -126,10 +126,8 @@ def get_extensions():
         if os.path.exists(config_h):
             include_dirs.append(LIBERFADIR)
             define_macros.append(('HAVE_CONFIG_H', '1'))
-        elif (not os.path.exists(configure) and 'sdist' in sys.argv and
-              sys.platform != 'win32'):
-            raise RuntimeError(
-                'missing "configure" script in "liberfa/erfa"')
+        elif 'sdist' in sys.argv:
+            raise RuntimeError('missing "configure" script in "liberfa/erfa"')
 
     erfa_ext = NumpyExtension(
         name="erfa.ufunc",
