@@ -8,7 +8,7 @@
 # Note that not all possible configuration values are present in this file.
 #
 # All configuration values have a default. Some values are defined in
-# the global Astropy configuration which is loaded here before anything else.
+# the global PyERFA configuration which is loaded here before anything else.
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -26,7 +26,7 @@
 # See sphinx_astropy.conf for which values are set there.
 
 from datetime import datetime
-import os, sys, time
+import sys, time
 
 from pkg_resources import get_distribution
 
@@ -90,7 +90,7 @@ rst_epilog = ''
 
 # A NOTE ON HTML THEMES
 #
-# The global astropy configuration uses a custom theme,
+# The global PyERFA configuration uses a custom theme,
 # 'bootstrap-astropy', which is installed along with astropy. The
 # theme has options for controlling the text of the logo in the upper
 # left corner. This is how you would specify the options in order to

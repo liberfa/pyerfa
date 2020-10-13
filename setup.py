@@ -4,8 +4,6 @@
 import os
 import re
 import sys
-import inspect
-import textwrap
 import functools
 import setuptools
 import subprocess
@@ -140,85 +138,23 @@ def get_extensions():
     return [erfa_ext]
 
 
-def _guess_next_dev(version, liberfadir=None):
-    from setuptools_scm import git
-    from setuptools_scm.version import guess_next_version
-
-    if liberfadir is None:
-        import pathlib
-        liberfadir = pathlib.Path(__file__).parent.parent / 'liberfa' / 'erfa'
-
-    erfa_version = git.parse(liberfadir)
-    if not erfa_version.exact:
-        warn(f'liberfa/erfa not at a tagged release, but at {erfa_version}')
-
-    erfa_tag = erfa_version.format_with("{tag}")
-    version_string = str(version.tag)
-
-    if version.exact:
-        if not version_string.startswith(erfa_tag):
-            warn(f'tag {version_string} does not start with liberfa/erfa tag {erfa_tag}')
-
-        return version_string
-
-    else:
-        if erfa_tag > version_string:
-            guessed = erfa_tag
-        elif 'dev' in version_string or len(version_string.split('.')) > 3:
-            return guess_next_version(version.tag)
-        else:
-            guessed = version_string.partition("+")[0] + '.1'
-        return version.format_with("{guessed}.dev{distance}", guessed=guessed)
-
-
-code = textwrap.indent(inspect.getsource(_guess_next_dev), '    ')
-escaped_code = code.replace('{', '{{').replace('}', '}}')
-
-
-VERSION_TEMPLATE = f"""
-'''Wrapper, ERFA and SOFA version information.'''
-
-# Set the version numbers a bit indirectly, so that Sphinx can pick up
-# up the docstrings and list the values.
-from . import ufunc
-
-
-erfa_version = ufunc.erfa_version
-'''Version of the C ERFA library that is wrapped.'''
-
-sofa_version = ufunc.sofa_version
-'''Version of the SOFA library the ERFA library is based on.'''
-
-del ufunc
-
-
-# Note that we need to fall back to the hard-coded version if either
-# setuptools_scm can't be imported or setuptools_scm can't determine the
-# version, so we catch the generic 'Exception'.
 try:
-    from warnings import warn
-    from setuptools_scm import get_version
-
-{escaped_code}
-
-    version = get_version(root='..', version_scheme=_guess_next_dev,
-                          relative_to=__file__)
-    '''Version of the python wrappers.'''
-except Exception:
-    version = '{{version}}'
+    with open('erfa/_dev/scm_version.py') as fd:
+        source = fd.read()
+except FileNotFoundError:
+    guess_next_dev = None
 else:
-    del get_version, _guess_next_dev
-""".lstrip()
-
-
-guess_next_dev = functools.partial(_guess_next_dev, liberfadir=LIBERFADIR)
-
+    import types
+    scm_version = types.ModuleType('scm_version')
+    scm_version.__file__ = 'erfa/_dev/scm_version.py'
+    code = compile(source, scm_version.__file__, 'exec')
+    exec(code, scm_version.__dict__)
+    guess_next_dev = functools.partial(scm_version._guess_next_dev,
+                                       liberfadir=LIBERFADIR)
 
 use_scm_version = {
-    'write_to': os.path.join('erfa', 'version.py'),
-    'write_to_template': VERSION_TEMPLATE,
-    'version_scheme': guess_next_dev}
+    'write_to': os.path.join('erfa', '_version.py'),
+    'version_scheme': guess_next_dev,
+}
 
-
-setuptools.setup(use_scm_version=use_scm_version,
-                 ext_modules=get_extensions())
+setuptools.setup(use_scm_version=use_scm_version, ext_modules=get_extensions())

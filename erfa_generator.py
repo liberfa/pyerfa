@@ -373,8 +373,7 @@ class Function:
     source_path : str
         Either a directory, which means look for the function in a
         stand-alone file (like for the standard ERFA distribution), or a
-        file, which means look for the function in that file (as for the
-        astropy-packaged single-file erfa.c).
+        file, which means look for the function in that file.
     match_line : str, optional
         If given, searching of the source file will skip until it finds
         a line matching this string, and start from there.

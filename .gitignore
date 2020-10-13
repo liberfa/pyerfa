@@ -14,7 +14,7 @@ __pycache__
 # Other generated files
 MANIFEST
 erfa/core.py
-erfa/version.py
+erfa/_version.py
 
 # Sphinx
 _build
