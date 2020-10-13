@@ -23,14 +23,14 @@ def embedded_liberfa(path=erfa.ufunc.__file__):
     import platform
     import subprocess
 
-    lddcmd = ['nm', '--defined-only']
+    command = ['nm', '--defined-only']
     if platform.system() == 'Windows':
-        # lddcmd = ['']  # TODO
+        # command = ['']  # TODO
         return None
 
-    lddcmd.append(path)
+    command.append(path)
     try:
-        out = subprocess.run(lddcmd, check=True,
+        out = subprocess.run(command, check=True,
                              encoding='utf-8', stdout=subprocess.PIPE)
     except (subprocess.SubprocessError, OSError):
         return None
