@@ -1,4 +1,4 @@
 [build-system]
 requires = ["setuptools>=42", "setuptools_scm[toml]>=3.4", "wheel",
-            "jinja2>=2.10.3", "oldest-supported-numpy"]
+            "packaging", "jinja2>=2.10.3", "oldest-supported-numpy"]
 build-backend = 'setuptools.build_meta'

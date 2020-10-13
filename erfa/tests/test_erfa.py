@@ -19,6 +19,25 @@ except ImportError:
             pass
 
 
+def embedded_liberfa(path=erfa.ufunc.__file__):
+    import platform
+    import subprocess
+
+    command = ['nm', '--defined-only']
+    if platform.system() == 'Windows':
+        # command = ['']  # TODO
+        return None
+
+    command.append(path)
+    try:
+        out = subprocess.run(command, check=True,
+                             encoding='utf-8', stdout=subprocess.PIPE)
+    except (subprocess.SubprocessError, OSError):
+        return None
+    else:
+        return 'eraA2af' in out.stdout
+
+
 class TestVersion:
     def test_erfa_version(self):
         assert hasattr(erfa.version, 'erfa_version')
@@ -38,9 +57,11 @@ class TestVersion:
         assert hasattr(erfa, '__version__')
         version = erfa.__version__
         assert version is erfa.version.version
-        # Oops, we had the wrong version for quite a while...
-        assert (erfa.version.erfa_version == '1.6.0' and version.startswith('1.7.0')
-                or version.startswith(erfa.version.erfa_version))
+
+    @pytest.mark.skipif(not embedded_liberfa(), reason='system liberfa')
+    def test_version_with_embedded_liberfa(self):
+        version = erfa.__version__
+        assert version.startswith(erfa.version.erfa_version)
 
 
 def test_erfa_wrapper():
