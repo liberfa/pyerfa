@@ -1,5 +1,5 @@
 variables:
-  CIBW_BUILD: cp36-* cp37-* cp38-*
+  CIBW_BUILD: cp36-* cp37-* cp38-* cp39-*
 
 resources:
   repositories:

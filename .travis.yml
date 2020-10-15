@@ -65,6 +65,7 @@ jobs:
 
         - name: Test with development versions of our dependencies
           stage: Comprehensive tests
+          python: 3.9-dev
           env: TOXENV=test-devdeps
 
         # We try our apt test on the big-endian s390x architecture,
