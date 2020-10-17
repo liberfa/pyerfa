@@ -148,9 +148,13 @@ else:
     scm_version = types.ModuleType('scm_version')
     scm_version.__file__ = 'erfa/_dev/scm_version.py'
     code = compile(source, scm_version.__file__, 'exec')
-    exec(code, scm_version.__dict__)
-    guess_next_dev = functools.partial(scm_version._guess_next_dev,
-                                       liberfadir=LIBERFADIR)
+    try:
+        exec(code, scm_version.__dict__)
+    except ImportError:
+        guess_next_dev = None
+    else:
+        guess_next_dev = functools.partial(scm_version._guess_next_dev,
+                                           liberfadir=LIBERFADIR)
 
 use_scm_version = {
     'write_to': os.path.join('erfa', '_version.py'),
