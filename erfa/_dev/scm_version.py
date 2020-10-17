@@ -24,9 +24,8 @@ try:
 
         if version.exact:
             if not version_string.startswith(erfa_tag):
-                warn(
-                    f'tag {version_string} does not start with '
-                    f'liberfa/erfa tag {erfa_tag}')
+                warn(f'tag {version_string} does not start with '
+                     f'liberfa/erfa tag {erfa_tag}')
 
             return version_string
 
@@ -44,5 +43,5 @@ try:
                                     root=pth.join('..', '..'),
                                     version_scheme=_guess_next_dev,
                                     relative_to=__file__)
-except Exception:
-    raise ImportError('setuptools_scm broken or not installed')
+except Exception as exc:
+    raise ImportError('setuptools_scm broken or not installed') from exc
