@@ -36,14 +36,6 @@ env:
         - TOXARGS='-v'
         - TOXPOSARGS=''
 
-        # Also allow tests without tox, getting our packages using apt;
-        # We include liberfa-dev so we can test using a system library,
-        # and python3-astropy to run a few tests that rely on Time.
-        # We need venv for a test environment and pip to install pyerfa itself.
-        # Here, we need to include python3-attr, since the version on bionic
-        # is too old.
-        - APT_DEPENDENCIES='python3-numpy python3-venv python3-pip python3-jinja2 python3-pytest-astropy liberfa-dev python3-astropy python3-attr'
-
 jobs:
     include:
         - name: Tests that all the basics are covered.
@@ -75,17 +67,24 @@ jobs:
           stage: Comprehensive tests
           arch: s390x
           language: c
+          dist: focal
           env: SETUP_METHOD='apt'
                PYERFA_USE_SYSTEM_LIBERFA=1
+          addons:
+              apt:
+                  packages:
+                      - python3-venv  # build dependencies
+                      - python3-pip
+                      - python3-jinja2
+                      - liberfa-dev
+                      - python3-astropy
+                      - python3-attr
+                      - python3-numpy
+                      - python3-pytest-astropy
 
 install:
     - if [[ $SETUP_METHOD == 'tox' ]]; then
         pip install tox;
-      else
-        curl https://ftp-master.debian.org/keys/archive-key-10.asc | sudo apt-key add -;
-        echo "deb http://ftp.us.debian.org/debian testing main" | sudo tee -a /etc/apt/sources.list;
-        sudo apt-get -qq update;
-        sudo apt-get install -y --no-install-recommends ${APT_DEPENDENCIES};
       fi
 
 script:
