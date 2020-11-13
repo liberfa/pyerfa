@@ -75,10 +75,7 @@ jobs:
                   packages:
                       - python3-venv  # build dependencies
                       - python3-pip
-                      - python3-jinja2
                       - liberfa-dev
-                      - python3-astropy
-                      - python3-attr
                       - python3-numpy
                       - python3-pytest-astropy
 
