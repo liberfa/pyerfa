@@ -9,6 +9,10 @@ recursive-include erfa *.c *.h *.templ
 recursive-include licenses *
 recursive-include liberfa/erfa *
 
+# This subpckage is only used in development checkouts and should not be
+# included in built tarballs
+prune erfa/_dev
+
 exclude .gitignore
 prune build
 
