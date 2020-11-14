@@ -18,12 +18,6 @@ jobs:
 
         include:
 
-          # - name: Tests that all the basics are covered
-          #   os: ubuntu-latest
-          #   python: 3.8
-          #   toxenv: test
-          #   toxargs: -v
-
           - name: Test with oldest supported versions of our dependencies
             os: ubuntu-16.04
             python: 3.6
