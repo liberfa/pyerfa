@@ -86,6 +86,7 @@ def get_extensions():
     define_macros = []
 
     if int(os.environ.get('PYERFA_USE_SYSTEM_LIBERFA', 0)):
+        print('Using system liberfa')
         libraries.append('erfa')
     else:
         # get all of the .c files in the liberfa/erfa/src directory
