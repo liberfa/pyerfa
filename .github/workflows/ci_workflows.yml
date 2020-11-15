@@ -1,0 +1,100 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  tests:
+    name: ${{ matrix.name }} [ ${{ matrix.os }} ]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python: [3.8]
+        toxenv: [test]
+        toxargs: [-v]
+
+        include:
+
+          - name: Test with oldest supported versions of our dependencies
+            os: ubuntu-16.04
+            python: 3.6
+            toxenv: test-oldestdeps
+            toxargs: -v
+
+          - name: Test with development versions of our dependencies
+            os: ubuntu-20.04  # currently newer than ubuntu-latest
+            python: 3.9
+            toxenv: test-devdeps
+            toxargs: -v
+
+          - name: Code style checks
+            os: ubuntu-latest
+            python: 3.x
+            toxenv: codestyle
+            toxargs: -v
+
+          - name: Documentation build
+            os: ubuntu-latest
+            python: 3.x
+            toxenv: build_docs
+            toxargs: -v
+            apt_packages: graphviz
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+        submodules: true
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python }}
+    - name: Install APT packages
+      if: matrix.apt_packages
+      run: sudo apt-get install ${{ matrix.apt_packages }}
+    - name: Install Python dependencies
+      run: python -m pip install --upgrade tox
+    - name: Run tests
+      run: tox ${{ matrix.toxargs }} -e ${{ matrix.toxenv }} -- ${{ matrix.toxposargs }}
+
+  tests_external_liberfa:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    env:
+      PYERFA_USE_SYSTEM_LIBERFA: 1
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+
+          - name: Tests with external liberfa
+            os: ubuntu-20.04
+            python: 3.8
+            toxenv: test
+            toxargs: -v
+            apt_packages: python3-venv python3-pip liberfa-dev python3-numpy
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+        submodules: true
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python }}
+    - name: Install APT packages
+      if: matrix.apt_packages
+      run: sudo apt-get install ${{ matrix.apt_packages }}
+    - name: Run tests
+      run: |
+        python -m venv --system-site-packages tests
+        source tests/bin/activate
+        python -m pip install --editable .[test]
+        (nm -u erfa/ufunc.cpython-*.so | grep eraA2af) || exit 1
+        python -m pytest

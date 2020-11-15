@@ -38,27 +38,6 @@ env:
 
 jobs:
     include:
-        - name: Tests that all the basics are covered.
-          stage: Initial tests
-          env: TOXENV=test
-
-        - name: Documentation build
-          stage: Comprehensive tests
-          env: TOXENV=build_docs
-          addons:
-              apt:
-                  packages:
-                      - graphviz
-
-        - name: Test with oldest supported versions of our dependencies
-          stage: Comprehensive tests
-          python: 3.6
-          env: TOXENV=test-oldestdeps
-
-        - name: Test with development versions of our dependencies
-          stage: Comprehensive tests
-          python: 3.9-dev
-          env: TOXENV=test-devdeps
 
         # We try our apt test on the big-endian s390x architecture,
         # to check that things work there as well. We also test that
