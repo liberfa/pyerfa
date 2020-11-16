@@ -9,7 +9,7 @@
 - Reworked version management [gh-57].
 - Make pyerfa build reproducible [gh-46] (see issue gh-45 for rationale).
 - Improved docstring titles [gh-47].
-- Most of the CI has been moved to GutHub Actions.
+- Most of the CI has been moved to GitHub Actions.
 
 
 1.7 (2020-05-31)
