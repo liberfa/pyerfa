@@ -1,4 +1,4 @@
-1.7.1 (unreleased)
+1.7.1 (16/11/2020)
 ==================
 
 - Bundled liberfa version update to v1.7.1.
