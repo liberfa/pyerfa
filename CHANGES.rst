@@ -1,4 +1,4 @@
-1.7.1.1 (unreleased)
+1.7.1.1 (18/11/2020)
 ====================
 
 - Fix incorrect ``__version__`` value [gh-60].
