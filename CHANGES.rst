@@ -1,3 +1,10 @@
+1.7.x.y (UNRELEASED)
+====================
+
+- The classproperty decorator is now thread-safe
+  (backport https://github.com/astropy/astropy/pull/11224).
+
+
 1.7.1.1 (18/11/2020)
 ====================
 

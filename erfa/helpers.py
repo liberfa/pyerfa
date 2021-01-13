@@ -3,6 +3,7 @@
 Helpers to interact with the ERFA library, in particular for leap seconds.
 """
 import functools
+import threading
 from datetime import datetime, timedelta
 from warnings import warn
 
@@ -11,6 +12,9 @@ import numpy as np
 from .core import ErfaWarning
 
 from .ufunc import get_leap_seconds, set_leap_seconds, dt_eraLEAPSECOND
+
+
+_NotFound = object()
 
 
 # TODO: This can still be made to work for setters by implementing an
@@ -128,6 +132,7 @@ class classproperty(property):
     def __init__(self, fget, doc=None, lazy=False):
         self._lazy = lazy
         if lazy:
+            self._lock = threading.RLock()   # Protects _cache
             self._cache = {}
         fget = self._wrap_fget(fget)
 
@@ -142,17 +147,20 @@ class classproperty(property):
             self.__doc__ = doc
 
     def __get__(self, obj, objtype):
-        if self._lazy and objtype in self._cache:
-            return self._cache[objtype]
-
-        # The base property.__get__ will just return self here;
-        # instead we pass objtype through to the original wrapped
-        # function (which takes the class as its sole argument)
-        val = self.fget.__wrapped__(objtype)
-
         if self._lazy:
-            self._cache[objtype] = val
-
+            val = self._cache.get(objtype, _NotFound)
+            if val is _NotFound:
+                with self._lock:
+                    # Check if another thread initialised before we locked.
+                    val = self._cache.get(objtype, _NotFound)
+                    if val is _NotFound:
+                        val = self.fget.__wrapped__(objtype)
+                        self._cache[objtype] = val
+        else:
+            # The base property.__get__ will just return self here;
+            # instead we pass objtype through to the original wrapped
+            # function (which takes the class as its sole argument)
+            val = self.fget.__wrapped__(objtype)
         return val
 
     def getter(self, fget):
