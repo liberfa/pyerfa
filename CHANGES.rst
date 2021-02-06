@@ -1,6 +1,7 @@
-1.7.x.y (UNRELEASED)
+1.7.2 (25/01/2021)
 ====================
 
+- Bundled liberfa version update to v1.7.2.
 - The classproperty decorator is now thread-safe
   (backport https://github.com/astropy/astropy/pull/11224).
 
