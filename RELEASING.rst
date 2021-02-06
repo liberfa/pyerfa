@@ -1,8 +1,27 @@
 Release instructions
 ====================
 
-Once the package is ready to release, use ``git tag`` to tag the
-release::
+For a release based on a new version of ``erfa``, first set the
+submodule to the right version, and make sure to clean any leftover
+files from earlier compilation::
+
+    cd liberfa/erfa
+    git fetch origin
+    git checkout v1.7.0
+    git clean -fxd
+    cd ../..
+
+For any release, first do a last check that things are OK in a clean
+environment::
+
+    git clean -fxd
+    tox -e test
+
+Once the package is ready to release, first edit ``CHANGES.rst`` to
+add the release data (and add any information needed, such as an
+update to the bundled ``liberfa``).
+
+Then, use ``git tag`` to tag the release::
 
     git tag -m <version> <version>
 
