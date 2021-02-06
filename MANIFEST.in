@@ -13,6 +13,19 @@ recursive-include liberfa/erfa *
 # included in built tarballs
 prune erfa/_dev
 
+exclude liberfa/erfa/Makefile
+exclude liberfa/erfa/config.h
+exclude liberfa/erfa/config.log
+exclude liberfa/erfa/config.status
+exclude liberfa/erfa/erfa.pc
+exclude liberfa/erfa/libtool
+exclude liberfa/erfa/src/Makefile
+exclude liberfa/erfa/stamp-h1
+
+prune liberfa/erfa/autom4te.cache
+prune liberfa/erfa/m4
+prune liberfa/erfa/src/.deps
+
 exclude .gitignore
 prune build
 
