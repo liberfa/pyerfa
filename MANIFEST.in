@@ -19,11 +19,11 @@ exclude liberfa/erfa/config.log
 exclude liberfa/erfa/config.status
 exclude liberfa/erfa/erfa.pc
 exclude liberfa/erfa/libtool
+exclude liberfa/erfa/m4/l*
 exclude liberfa/erfa/src/Makefile
 exclude liberfa/erfa/stamp-h1
 
 prune liberfa/erfa/autom4te.cache
-prune liberfa/erfa/m4
 prune liberfa/erfa/src/.deps
 
 exclude .gitignore
