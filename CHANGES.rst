@@ -1,5 +1,11 @@
+1.7.3 (unreleased)
+==================
+
+- Fixed a bug that caused the output of ``rx``, ``ry``, and ``rz`` to be
+  boolean rather than float. [gh-72]
+
 1.7.2 (25/01/2021)
-====================
+==================
 
 - Bundled liberfa version update to v1.7.2.
 - The classproperty decorator is now thread-safe
