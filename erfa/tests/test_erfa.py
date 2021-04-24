@@ -3,7 +3,7 @@ from datetime import datetime
 
 import pytest
 import numpy as np
-from numpy.testing import assert_array_equal
+from numpy.testing import assert_array_equal, assert_array_almost_equal
 
 import erfa
 from erfa.tests.helper import catch_warnings
@@ -233,6 +233,15 @@ def test_vector_inouts():
     res3 = erfa.ab(arrin[::5], v, s, bm1)
     assert res3.shape == (4, 3)
     np.testing.assert_allclose(res3, [expected]*4)
+
+
+def test_rz():
+    # This failed on MacOS (gh-68) because the types were not set correctly.
+    r = erfa.rz(np.deg2rad(60.), np.eye(3))
+    assert_array_almost_equal(r, np.array(
+        [[0.5, 0.8660254, 0.],
+         [-0.8660254, 0.5, 0.],
+         [0., 0., 1.]]))
 
 
 def test_pv_in():

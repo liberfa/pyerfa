@@ -734,7 +734,12 @@ PyMODINIT_FUNC PyInit_ufunc(void)
            as these do not get copied */ #}
     {%- for func in funcs %}
     {%- if not func.user_dtype %}
-    static char types_{{ func.pyname }}[{{ func.args_by_inout('in|inout|out|ret|stat')|count }}] = { {{ func.args_by_inout('in|inout|out|ret|stat')|map(attribute='npy_type')|join(', ') }} };
+    static char types_{{ func.pyname }}[{{ func.args_by_inout('in|inout')|count
+                                         + func.args_by_inout('inout|out|ret|stat')|count }}] = {
+    {%- for arg in func.args_by_inout('in|inout') %}{{ arg.npy_type }}, {% endfor %}
+    {%- for arg in func.args_by_inout('inout|out|ret|stat') -%}
+    {%- if loop.index > 1 %}, {% endif %}{{ arg.npy_type }}{%- endfor -%}
+    };
     static PyUFuncGenericFunction funcs_{{ func.pyname }}[1] = { &ufunc_loop_{{ func.pyname }} };
     {%- endif %}
     {%- endfor %}
