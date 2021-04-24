@@ -1,8 +1,9 @@
-1.7.3 (unreleased)
+1.7.3 (25/04/2021)
 ==================
 
+- Bundled liberfa version update to v1.7.3.
 - Fixed a bug that caused the output of ``rx``, ``ry``, and ``rz`` to be
-  boolean rather than float. [gh-72]
+  boolean rather than float for some compilers/OS. [gh-72]
 
 1.7.2 (25/01/2021)
 ==================
