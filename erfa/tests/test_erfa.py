@@ -49,7 +49,8 @@ class TestVersion:
         assert hasattr(erfa.version, 'sofa_version')
         sofa_version = erfa.version.sofa_version
         assert isinstance(sofa_version, str)
-        assert len(sofa_version) == 8
+        assert (len(sofa_version) == 8
+                or len(sofa_version) == 10 and sofa_version[8] == '_')
         # Sorry, future 22nd century person, you may have to adjust!
         assert sofa_version.startswith('20')
 

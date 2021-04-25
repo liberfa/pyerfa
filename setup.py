@@ -46,7 +46,7 @@ def get_liberfa_versions(path=os.path.join(LIBERFADIR, 'configure.ac')):
     version = packaging.version.parse(mobj.group('version'))
 
     mobj = re.search(
-        r'AC_DEFINE\(\[SOFA_VERSION\], \["(?P<version>\d{8})"\],', s)
+        r'AC_DEFINE\(\[SOFA_VERSION\], \["(?P<version>\d{8}(_\w)?)"\],', s)
     if not mobj:
         warn('unable to detect SOFA version')
         return []

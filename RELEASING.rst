@@ -17,6 +17,18 @@ environment::
     git clean -fxd
     tox -e test
 
+It is also wise to check that the new release works with astropy::
+
+    python3 -m venv astropy_test
+    source astropy_test/bin/activate
+    pip install astropy[test]
+    pip install .  # Install our newest erfa version in virtual environment
+    cd astropy_test/lib/python3.9/site-packages/astropy
+    pytest --remote-data=any
+    cd -
+    deactivate
+    git clean -fxd
+
 Once the package is ready to release, first edit ``CHANGES.rst`` to
 add the release data (and add any information needed, such as an
 update to the bundled ``liberfa``).
