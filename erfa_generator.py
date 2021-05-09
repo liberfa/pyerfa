@@ -603,7 +603,11 @@ class TestFunction:
         as eraIr.
         """
         if self.nin + self.ninout == 0:
-            return 'do not yet support no-input ufuncs'
+            if self.name == 'zpv':
+                # Works on newer numpy
+                return "np.__version__ < '1.21', reason='needs numpy >= 1.21'"
+            else:
+                return "reason='do not yet support no-input ufuncs'"
         else:
             return None
 

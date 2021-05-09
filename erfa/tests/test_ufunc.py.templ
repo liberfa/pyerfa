@@ -49,7 +49,7 @@ status = np.zeros((), dtype=int)
 
 
 {% if test.xfail() -%}
-@pytest.mark.xfail(reason='{{ test.xfail() }}')
+@pytest.mark.xfail({{ test.xfail() }})
 {% endif -%}
 def test_{{ test.name }}():
     {%- for line in test.to_python() %}
