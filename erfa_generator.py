@@ -572,30 +572,46 @@ class ExtraFunction(Function):
 
 
 class TestFunction:
+    """Function holding information about a test in t_erfa_c.c"""
     def __init__(self, name, t_erfa_c, nin, ninout, nout):
         self.name = name
+        # Get lines that test the given erfa function: capture everything
+        # between a line starting with '{' after the test function definition
+        # and the first line starting with '}' or ' }'.
         pattern = fr"\nstatic void t_{name}\(" + r".+?(^\{.+?^\s?\})"
         search = re.search(pattern, t_erfa_c, flags=re.DOTALL | re.MULTILINE)
         self.lines = search.group(1).split('\n')
+        # Number of input, inplace, and output arguments.
         self.nin = nin
         self.ninout = ninout
         self.nout = nout
+        # Dict of dtypes for variables, filled by define_arrays().
         self.var_dtypes = {}
 
     @classmethod
     def from_function(cls, func, t_erfa_c):
+        """Initialize from a function definition."""
         return cls(name=func.pyname, t_erfa_c=t_erfa_c,
                    nin=len(func.args_by_inout('in')),
                    ninout=len(func.args_by_inout('inout')),
                    nout=len(func.args_by_inout('out')))
 
     def xfail(self):
+        """Whether the python test produced for this function will fail.
+
+        Right now this will be true for functions without inputs such
+        as eraIr.
+        """
         if self.nin + self.ninout == 0:
             return 'do not yet support no-input ufuncs'
         else:
             return None
 
     def pre_process_lines(self):
+        """Basic pre-processing.
+
+        Combine multi-part lines, strip braces, semi-colons, empty lines.
+        """
         lines = []
         line = ''
         for part in self.lines:
@@ -609,18 +625,30 @@ class TestFunction:
         return lines
 
     def define_arrays(self, line):
+        """Check variable definition line for items also needed in python.
+
+        E.g., creating an empty astrom structured array.
+        """
         defines = []
+        # Split line in type and variables.
+        # E.g., "double x, y, z" will give ctype='double; variables='x, y, z'
         ctype, _, variables = line.partition(' ')
         for var in variables.split(','):
             var = var.strip()
+            # Is variable an array?
             name, _, rest = var.partition('[')
+            # If not, or one of iymdf or ihmsf, ignore (latter are outputs only).
             if not rest or rest[:2] == '4]':
                 continue
             if ctype == 'eraLDBODY':
+                # Special case, since this should be recarray for access similar
+                # to C struct.
                 v_dtype = 'dt_eraLDBODY'
                 v_shape = rest[:rest.index(']')]
                 extra = ".view(np.recarray)"
             else:
+                # Temporarily create an Argument, so we can use its attributes.
+                # This translates, e.g., double pv[2][3] to dtype dt_pv.
                 v = Argument(ctype + ' ' + var.strip(), '')
                 v_dtype = v.dtype
                 v_shape = v.shape if v.signature_shape != '()' else '()'
@@ -635,48 +663,74 @@ class TestFunction:
         return defines
 
     def to_python(self):
+        """Lines defining the body of a python version of the test function."""
+        # TODO: this is quite hacky right now!  Would be good to let function
+        # calls be understood by the Function class.
+
+        # Name of the erfa C function, so that we can recognize it.
         era_name = 'era' + self.name.capitalize()
+        # Collect actual code lines, without ";", braces, etc.
         lines = self.pre_process_lines()
         out = []
         for line in lines:
+            # In ldn ufunc, the number of bodies is inferred from the array size,
+            # so no need to keep the definition.
             if line == 'n = 3' and self.name == 'ldn':
                 continue
+
+            # Are we dealing with a variable definition that also sets it?
+            # (hack: only happens for double).
             if line.startswith('double') and '=' in line:
-                if line.startswith('double xyz[] = {'):  # Complete hack
+                # Complete hack for single occurrence.
+                if line.startswith('double xyz[] = {'):
                     out.append(f"xyz = np.array([{line[16:-1]}])")
                 else:
+                    # Put each definition on a separate line.
                     out.extend([part.strip() for part in line[7:].split(',')])
                 continue
+
+            # Variable definitions: add empty array definition as needed.
             if line.startswith(('double', 'int', 'char', 'eraASTROM', 'eraLDBODY')):
                 out.extend(self.define_arrays(line))
                 continue
+
+            # Actual function. Start with basic replacements.
             line = (line
                     .replace('ERFA_', 'erfa.')
                     .replace('(void)', '')
                     .replace('(int)', '')
-                    .replace("s, '-'", "s[0], b'-'")
-                    .replace("s, '+'", "s[0], b'+'")
+                    .replace("s, '-'", "s[0], b'-'")  # Rather hacky...
+                    .replace("s, '+'", "s[0], b'+'")  # Rather hacky...
                     .strip())
-            if line.startswith('v'):  # test function
+
+            # Call of test function vvi or vvd.
+            if line.startswith('v'):
                 line = line.replace(era_name, self.name)
-                if self.name + '(' in line:  # calls function directly.
+                # Can call simple functions directly.  Those need little modification.
+                if self.name + '(' in line:
                     line = line.replace(self.name + '(', f"erfa_ufunc.{self.name}(")
 
-            elif era_name in line:  # actual call
+            # Call of function that is being tested.
+            elif era_name in line:
                 line = line.replace(era_name, f"erfa_ufunc.{self.name}")
                 # correct for LDBODY (complete hack!)
                 line = line.replace('3, b', 'b').replace('n, b', 'b')
-                # get arguments.
+                # Split into function name and call arguments.
                 start, _, arguments = line.partition('(')
+                # Get arguments, stripping excess spaces and, for numbers, remove
+                # leading zeros since python cannot deal with items like '01', etc.
                 args = []
                 for arg in arguments[:-1].split(','):
                     arg = arg.strip()
                     while arg[0] == '0' and len(arg) > 1 and arg[1] in '0123456789':
                         arg = arg[1:]
                     args.append(arg)
+                # Get input and output arguments.
                 in_args = [arg.replace('&', '') for arg in args[:self.nin+self.ninout]]
                 out_args = ([arg.replace('&', '') for arg in args[-self.nout-self.ninout:]]
                             if len(args) > self.nin else [])
+                # If the call assigned something, that will have been the status.
+                # Prepend any arguments assigned in the call.
                 if '=' in start:
                     line = ', '.join(out_args+[start])
                 else:
@@ -686,7 +740,9 @@ class TestFunction:
                     out.append(line)
                     line = 'astrom = astrom.view(np.recarray)'
 
-            elif line.startswith('eraA'):  # Extra calls - super hacky!
+            # In some test functions, there are calls to other ERFA functions.
+            # Deal with those in a super hacky way for now.
+            elif line.startswith('eraA'):
                 line = line.replace('eraA', 'erfa_ufunc.a')
                 start, _, arguments = line.partition('(')
                 args = [arg.strip() for arg in arguments[:-1].split(',')]
@@ -697,7 +753,9 @@ class TestFunction:
                 if 'atioq' in line or 'atio13' in line or 'apio13' in line:
                     line = line.replace(' =', ', j =')
 
-            elif line.startswith('eraS'):  # Extra calls - super hacky!
+            # And the same for some other functions, which always have a
+            # 2-element time as inputs.
+            elif line.startswith('eraS'):
                 line = line.replace('eraS', 'erfa_ufunc.s')
                 start, _, arguments = line.partition('(')
                 args = [arg.strip() for arg in arguments[:-1].split(',')]
@@ -706,15 +764,18 @@ class TestFunction:
                 line = (', '.join(out_args) + ' = '
                         + start + '(' + ', '.join(in_args) + ')')
 
-            elif '=' in line:  # Input number setting.
+            # Input number setting.
+            elif '=' in line:
+                # Small clean-up.
                 line = line.replace('=  ', '= ')
+                # Hack to make astrom element assignment work.
                 if line.startswith('astrom'):
                     out.append('astrom = np.zeros((), erfa_ufunc.dt_eraASTROM).view(np.recarray)')
+                # Change access to p and v elements for double[2][3] pv arrays.
                 name, _, rest = line.partition('[')
-                if rest:
-                    if name in self.var_dtypes and self.var_dtypes[name] == 'dt_pv':
-                        assert rest[0] in '01'
-                        line = name + "[" + ("'p'" if rest[0] == "0" else "'v'") + rest[1:]
+                if rest and name in self.var_dtypes and self.var_dtypes[name] == 'dt_pv':
+                    assert rest[0] in '01'
+                    line = name + "[" + ("'p'" if rest[0] == "0" else "'v'") + rest[1:]
 
             out.append(line)
 
