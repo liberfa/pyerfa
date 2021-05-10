@@ -3,7 +3,7 @@ from datetime import datetime
 
 import pytest
 import numpy as np
-from numpy.testing import assert_array_equal, assert_array_almost_equal
+from numpy.testing import assert_array_equal, assert_array_almost_equal, assert_allclose
 
 import erfa
 from erfa.tests.helper import catch_warnings
@@ -286,9 +286,39 @@ def test_pv_in():
     np.testing.assert_allclose(astrom3['em'], 1.010428384373318379)
 
 
-def test_structs():
+def test_struct_ldbody():
     """
-    Checks producing and consuming of ERFA c structs
+    Check dt_eraLDBODY is correctly defined (regression test; gh-74)
+    """
+    assert erfa.dt_eraLDBODY.names == ('bm', 'dl', 'pv')
+    assert erfa.dt_eraLDBODY['bm'] == np.dtype('f8')
+    assert erfa.dt_eraLDBODY['dl'] == np.dtype('f8')
+    assert erfa.dt_eraLDBODY['pv'] == erfa.dt_pv
+
+    # Test creating a struct, following test_ldn in t_erfa_c.
+    # Use explicit assignments as otherwise the originally bad dtype
+    # would work.
+    b = np.empty(3, erfa.dt_eraLDBODY).view(np.recarray)
+    b['bm'] = [0.00028574, 0.00095435, 1.0]
+    b['dl'] = [3e-10, 3e-9, 6e-6]
+    b['pv'] = np.array([([-7.81014427, -5.60956681, -1.98079819],
+                         [0.0030723249, -0.00406995477, -0.00181335842]),
+                        ([0.738098796, 4.63658692, 1.9693136],
+                         [-0.00755816922, 0.00126913722, 0.000727999001]),
+                        ([-0.000712174377, -0.00230478303, -0.00105865966],
+                         [6.29235213e-6, -3.30888387e-7, -2.96486623e-7])],
+                       dtype=erfa.dt_pv)
+    ob = np.array([-0.974170437, -0.2115201, -0.0917583114])
+    sc = np.array([-0.763276255, -0.608633767, -0.216735543])
+    sn = erfa.ldn(b, ob, sc)
+    assert_allclose(sn, np.array([-0.7632762579693333866,
+                                  -0.6086337636093002660,
+                                  -0.2167355420646328159]))
+
+
+def test_struct_astrom():
+    """
+    Checks producing and consuming of ERFA c struct astrom
     """
 
     am, eo = erfa.apci13(2456165.5, [0.401182685, 1])

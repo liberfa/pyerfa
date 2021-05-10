@@ -808,15 +808,6 @@ PyMODINIT_FUNC PyInit_ufunc(void)
     dtype_def = Py_BuildValue("[(s, s)]", "type", "S12");
     PyArray_DescrAlignConverter(dtype_def, &dt_type);
     Py_DECREF(dtype_def);
-    /* eraLDBODY */
-    dtype_def = Py_BuildValue(
-        "[(s, s), (s, s), (s, s)]",
-        "bm", "f8",     /* mass of the body (solar masses) */
-        "dl", "f8",     /* deflection limiter (radians^2/2) */
-        "pv", "(2,3)f8" /* barycentric PV of the body (au, au/day) */
-        );
-    PyArray_DescrAlignConverter(dtype_def, &dt_eraLDBODY);
-    Py_DECREF(dtype_def);
     /* eraASTROM */
     dtype_def = Py_BuildValue(
         "[(s, s), (s, s), (s, s), (s, s),"
@@ -853,8 +844,19 @@ PyMODINIT_FUNC PyInit_ufunc(void)
         dt_pv == NULL || dt_pvdpv == NULL ||
         dt_ymdf == NULL || dt_hmsf == NULL || dt_dmsf == NULL ||
         dt_sign == NULL || dt_type == NULL ||
-        dt_eraLDBODY == NULL || dt_eraASTROM == NULL ||
-        dt_eraLEAPSECOND == NULL) {
+        dt_eraASTROM == NULL || dt_eraLEAPSECOND == NULL) {
+        goto fail;
+    }
+    /* eraLDBODY (needs dt_pv, so after check that that is OK) */
+    dtype_def = Py_BuildValue(
+        "[(s, s), (s, s), (s, O)]",
+        "bm", "f8",     /* mass of the body (solar masses) */
+        "dl", "f8",     /* deflection limiter (radians^2/2) */
+        "pv", dt_pv     /* barycentric PV of the body (au, au/day) */
+        );
+    PyArray_DescrAlignConverter(dtype_def, &dt_eraLDBODY);
+    Py_DECREF(dtype_def);
+    if (dt_eraLDBODY == NULL) {
         goto fail;
     }
     /* Make the structured dtypes available in the module */
