@@ -1,11 +1,14 @@
-1.7.4 (unreleased)
-==================
+1.7.3.1 (unreleased)
+====================
 
+- ``erfa.dt_eraLDBODY`` has been corrected to ensure that the 'pv' entry is
+  now of type ``erfa.dt_pv``, so that cross-assignments with that dtype work
+  correctly. [gh-74]
 - ``erfa_generator`` now also generates a ``test_ufunc.py`` file that
   runs all the C code tests on the ufuncs, thus verifying the code
   wrapping worked correctly. As part of that, the ability to give
   specific output file names has been removed, as it was not used.
-  (Note: these changes have no effect on use of PyERFA.)
+  (Note: these changes have no effect on use of PyERFA.) [gh-71]
 
 1.7.3 (25/04/2021)
 ==================

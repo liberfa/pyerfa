@@ -79,7 +79,7 @@ as `numpy.dtype` corresponding to structures used by ERFA_.  Examples::
   >>> erfa.dt_pv
   dtype([('p', '<f8', (3,)), ('v', '<f8', (3,))], align=True)
   >>> erfa.dt_eraLDBODY
-  dtype([('bm', '<f8'), ('dl', '<f8'), ('pv', '<f8', (2, 3))], align=True)
+  dtype([('bm', '<f8'), ('dl', '<f8'), ('pv', [('p', '<f8', (3,)), ('v', '<f8', (3,))])], align=True)
   >>> erfa.DAYSEC
   86400.0
 
