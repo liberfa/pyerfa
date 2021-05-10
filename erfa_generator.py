@@ -703,6 +703,8 @@ class TestFunction:
                     .replace('ERFA_', 'erfa.')
                     .replace('(void)', '')
                     .replace('(int)', '')
+                    .replace("pv[0]", "pv['p']")
+                    .replace("pv[1]", "pv['v']")
                     .replace("s, '-'", "s[0], b'-'")  # Rather hacky...
                     .replace("s, '+'", "s[0], b'+'")  # Rather hacky...
                     .strip())
@@ -775,10 +777,12 @@ class TestFunction:
                 # Hack to make astrom element assignment work.
                 if line.startswith('astrom'):
                     out.append('astrom = np.zeros((), erfa_ufunc.dt_eraASTROM).view(np.recarray)')
-                # Change access to p and v elements for double[2][3] pv arrays.
+                # Change access to p and v elements for double[2][3] pv arrays
+                # that were not caught by the general replacement above (e.g.,
+                # with names not equal to 'pv')
                 name, _, rest = line.partition('[')
-                if rest and name in self.var_dtypes and self.var_dtypes[name] == 'dt_pv':
-                    assert rest[0] in '01'
+                if (rest and rest[0] in '01' and name in self.var_dtypes
+                        and self.var_dtypes[name] == 'dt_pv'):
                     line = name + "[" + ("'p'" if rest[0] == "0" else "'v'") + rest[1:]
 
             out.append(line)
