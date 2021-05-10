@@ -571,9 +571,228 @@ class ExtraFunction(Function):
         return r
 
 
-def main(srcdir=DEFAULT_ERFA_LOC, outfn='core.py', ufuncfn='ufunc.c',
-         templateloc=DEFAULT_TEMPLATE_LOC, verbose=True):
+class TestFunction:
+    """Function holding information about a test in t_erfa_c.c"""
+    def __init__(self, name, t_erfa_c, nin, ninout, nout):
+        self.name = name
+        # Get lines that test the given erfa function: capture everything
+        # between a line starting with '{' after the test function definition
+        # and the first line starting with '}' or ' }'.
+        pattern = fr"\nstatic void t_{name}\(" + r".+?(^\{.+?^\s?\})"
+        search = re.search(pattern, t_erfa_c, flags=re.DOTALL | re.MULTILINE)
+        self.lines = search.group(1).split('\n')
+        # Number of input, inplace, and output arguments.
+        self.nin = nin
+        self.ninout = ninout
+        self.nout = nout
+        # Dict of dtypes for variables, filled by define_arrays().
+        self.var_dtypes = {}
+
+    @classmethod
+    def from_function(cls, func, t_erfa_c):
+        """Initialize from a function definition."""
+        return cls(name=func.pyname, t_erfa_c=t_erfa_c,
+                   nin=len(func.args_by_inout('in')),
+                   ninout=len(func.args_by_inout('inout')),
+                   nout=len(func.args_by_inout('out')))
+
+    def xfail(self):
+        """Whether the python test produced for this function will fail.
+
+        Right now this will be true for functions without inputs such
+        as eraIr.
+        """
+        if self.nin + self.ninout == 0:
+            if self.name == 'zpv':
+                # Works on newer numpy
+                return "np.__version__ < '1.21', reason='needs numpy >= 1.21'"
+            else:
+                return "reason='do not yet support no-input ufuncs'"
+        else:
+            return None
+
+    def pre_process_lines(self):
+        """Basic pre-processing.
+
+        Combine multi-part lines, strip braces, semi-colons, empty lines.
+        """
+        lines = []
+        line = ''
+        for part in self.lines:
+            part = part.strip()
+            if part in ('', '{', '}'):
+                continue
+            line += part + ' '
+            if part.endswith(';'):
+                lines.append(line.strip()[:-1])
+                line = ''
+        return lines
+
+    def define_arrays(self, line):
+        """Check variable definition line for items also needed in python.
+
+        E.g., creating an empty astrom structured array.
+        """
+        defines = []
+        # Split line in type and variables.
+        # E.g., "double x, y, z" will give ctype='double; variables='x, y, z'
+        ctype, _, variables = line.partition(' ')
+        for var in variables.split(','):
+            var = var.strip()
+            # Is variable an array?
+            name, _, rest = var.partition('[')
+            # If not, or one of iymdf or ihmsf, ignore (latter are outputs only).
+            if not rest or rest[:2] == '4]':
+                continue
+            if ctype == 'eraLDBODY':
+                # Special case, since this should be recarray for access similar
+                # to C struct.
+                v_dtype = 'dt_eraLDBODY'
+                v_shape = rest[:rest.index(']')]
+                extra = ".view(np.recarray)"
+            else:
+                # Temporarily create an Argument, so we can use its attributes.
+                # This translates, e.g., double pv[2][3] to dtype dt_pv.
+                v = Argument(ctype + ' ' + var.strip(), '')
+                v_dtype = v.dtype
+                v_shape = v.shape if v.signature_shape != '()' else '()'
+                extra = ""
+            self.var_dtypes[name] = v_dtype
+            if v_dtype == 'dt_double':
+                v_dtype = 'float'
+            else:
+                v_dtype = 'erfa_ufunc.' + v_dtype
+            defines.append(f"{name} = np.empty({v_shape}, {v_dtype}){extra}")
+
+        return defines
+
+    def to_python(self):
+        """Lines defining the body of a python version of the test function."""
+        # TODO: this is quite hacky right now!  Would be good to let function
+        # calls be understood by the Function class.
+
+        # Name of the erfa C function, so that we can recognize it.
+        era_name = 'era' + self.name.capitalize()
+        # Collect actual code lines, without ";", braces, etc.
+        lines = self.pre_process_lines()
+        out = []
+        for line in lines:
+            # In ldn ufunc, the number of bodies is inferred from the array size,
+            # so no need to keep the definition.
+            if line == 'n = 3' and self.name == 'ldn':
+                continue
+
+            # Are we dealing with a variable definition that also sets it?
+            # (hack: only happens for double).
+            if line.startswith('double') and '=' in line:
+                # Complete hack for single occurrence.
+                if line.startswith('double xyz[] = {'):
+                    out.append(f"xyz = np.array([{line[16:-1]}])")
+                else:
+                    # Put each definition on a separate line.
+                    out.extend([part.strip() for part in line[7:].split(',')])
+                continue
+
+            # Variable definitions: add empty array definition as needed.
+            if line.startswith(('double', 'int', 'char', 'eraASTROM', 'eraLDBODY')):
+                out.extend(self.define_arrays(line))
+                continue
+
+            # Actual function. Start with basic replacements.
+            line = (line
+                    .replace('ERFA_', 'erfa.')
+                    .replace('(void)', '')
+                    .replace('(int)', '')
+                    .replace("s, '-'", "s[0], b'-'")  # Rather hacky...
+                    .replace("s, '+'", "s[0], b'+'")  # Rather hacky...
+                    .strip())
+
+            # Call of test function vvi or vvd.
+            if line.startswith('v'):
+                line = line.replace(era_name, self.name)
+                # Can call simple functions directly.  Those need little modification.
+                if self.name + '(' in line:
+                    line = line.replace(self.name + '(', f"erfa_ufunc.{self.name}(")
+
+            # Call of function that is being tested.
+            elif era_name in line:
+                line = line.replace(era_name, f"erfa_ufunc.{self.name}")
+                # correct for LDBODY (complete hack!)
+                line = line.replace('3, b', 'b').replace('n, b', 'b')
+                # Split into function name and call arguments.
+                start, _, arguments = line.partition('(')
+                # Get arguments, stripping excess spaces and, for numbers, remove
+                # leading zeros since python cannot deal with items like '01', etc.
+                args = []
+                for arg in arguments[:-1].split(','):
+                    arg = arg.strip()
+                    while arg[0] == '0' and len(arg) > 1 and arg[1] in '0123456789':
+                        arg = arg[1:]
+                    args.append(arg)
+                # Get input and output arguments.
+                in_args = [arg.replace('&', '') for arg in args[:self.nin+self.ninout]]
+                out_args = ([arg.replace('&', '') for arg in args[-self.nout-self.ninout:]]
+                            if len(args) > self.nin else [])
+                # If the call assigned something, that will have been the status.
+                # Prepend any arguments assigned in the call.
+                if '=' in start:
+                    line = ', '.join(out_args+[start])
+                else:
+                    line = ', '.join(out_args) + ' = ' + start
+                line = line + '(' + ', '.join(in_args) + ')'
+                if 'astrom' in out_args:
+                    out.append(line)
+                    line = 'astrom = astrom.view(np.recarray)'
+
+            # In some test functions, there are calls to other ERFA functions.
+            # Deal with those in a super hacky way for now.
+            elif line.startswith('eraA'):
+                line = line.replace('eraA', 'erfa_ufunc.a')
+                start, _, arguments = line.partition('(')
+                args = [arg.strip() for arg in arguments[:-1].split(',')]
+                in_args = [arg for arg in args if '&' not in arg]
+                out_args = [arg.replace('&', '') for arg in args if '&' in arg]
+                line = (', '.join(out_args) + ' = '
+                        + start + '(' + ', '.join(in_args) + ')')
+                if 'atioq' in line or 'atio13' in line or 'apio13' in line:
+                    line = line.replace(' =', ', j =')
+
+            # And the same for some other functions, which always have a
+            # 2-element time as inputs.
+            elif line.startswith('eraS'):
+                line = line.replace('eraS', 'erfa_ufunc.s')
+                start, _, arguments = line.partition('(')
+                args = [arg.strip() for arg in arguments[:-1].split(',')]
+                in_args = args[:2]
+                out_args = args[2:]
+                line = (', '.join(out_args) + ' = '
+                        + start + '(' + ', '.join(in_args) + ')')
+
+            # Input number setting.
+            elif '=' in line:
+                # Small clean-up.
+                line = line.replace('=  ', '= ')
+                # Hack to make astrom element assignment work.
+                if line.startswith('astrom'):
+                    out.append('astrom = np.zeros((), erfa_ufunc.dt_eraASTROM).view(np.recarray)')
+                # Change access to p and v elements for double[2][3] pv arrays.
+                name, _, rest = line.partition('[')
+                if rest and name in self.var_dtypes and self.var_dtypes[name] == 'dt_pv':
+                    assert rest[0] in '01'
+                    line = name + "[" + ("'p'" if rest[0] == "0" else "'v'") + rest[1:]
+
+            out.append(line)
+
+        return out
+
+
+def main(srcdir=DEFAULT_ERFA_LOC, templateloc=DEFAULT_TEMPLATE_LOC, verbose=True):
     from jinja2 import Environment, FileSystemLoader
+
+    outfn = 'core.py'
+    ufuncfn = 'ufunc.c'
+    testdir = 'tests'
+    testfn = 'test_ufunc.py'
 
     if verbose:
         print_ = print
@@ -599,17 +818,28 @@ def main(srcdir=DEFAULT_ERFA_LOC, outfn='core.py', ufuncfn='ufunc.c',
     erfa_c_in = env.get_template(ufuncfn + '.templ')
     erfa_py_in = env.get_template(outfn + '.templ')
 
+    # Prepare the jinja2 test templating environment
+    env2 = Environment(loader=FileSystemLoader(os.path.join(templateloc, testdir)))
+
+    test_py_in = env2.get_template(testfn + '.templ')
+
     # Extract all the ERFA function names from erfa.h
     if os.path.isdir(srcdir):
         erfahfn = os.path.join(srcdir, 'erfa.h')
+        t_erfa_c_fn = os.path.join(srcdir, 't_erfa_c.c')
         multifilserc = True
     else:
         erfahfn = os.path.join(os.path.split(srcdir)[0], 'erfa.h')
+        t_erfa_c_fn = os.path.join(os.path.split(srcdir)[0], 't_erfa_c.c')
         multifilserc = False
 
     with open(erfahfn, "r") as f:
         erfa_h = f.read()
         print_("read erfa header")
+
+    with open(t_erfa_c_fn, "r") as f:
+        t_erfa_c = f.read()
+        print_("read C tests")
 
     funcs = OrderedDict()
     section_subsection_functions = re.findall(
@@ -650,6 +880,9 @@ def main(srcdir=DEFAULT_ERFA_LOC, outfn='core.py', ufuncfn='ufunc.c',
                                          "spawned it.  This should be "
                                          "impossible!")
 
+    test_funcs = [TestFunction.from_function(funcs[name], t_erfa_c)
+                  for name in sorted(funcs.keys())]
+
     funcs = funcs.values()
 
     # Extract all the ERFA constants from erfam.h
@@ -680,17 +913,20 @@ def main(srcdir=DEFAULT_ERFA_LOC, outfn='core.py', ufuncfn='ufunc.c',
     print_("Rendering template")
     erfa_c = erfa_c_in.render(funcs=funcs)
     erfa_py = erfa_py_in.render(funcs=funcs, constants=constants)
+    test_py = test_py_in.render(test_funcs=test_funcs)
 
     if outfn is not None:
-        print_("Saving to", outfn, 'and', ufuncfn)
+        print_(f"Saving to {outfn}, {ufuncfn} and {testfn}")
         with open(os.path.join(templateloc, outfn), "w") as f:
             f.write(erfa_py)
         with open(os.path.join(templateloc, ufuncfn), "w") as f:
             f.write(erfa_c)
+        with open(os.path.join(templateloc, testdir, testfn), "w") as f:
+            f.write(test_py)
 
     print_("Done!")
 
-    return erfa_c, erfa_py, funcs
+    return erfa_c, erfa_py, funcs, test_py, test_funcs
 
 
 if __name__ == '__main__':
@@ -702,10 +938,6 @@ if __name__ == '__main__':
                          'can be found or to a single erfa.c file '
                          '(which must be in the same directory as '
                          'erfa.h). Default: "{}"'.format(DEFAULT_ERFA_LOC))
-    ap.add_argument('-o', '--output', default='core.py',
-                    help='The output filename for the pure-python output.')
-    ap.add_argument('-u', '--ufunc', default='ufunc.c',
-                    help='The output filename for the ufunc .c output')
     ap.add_argument('-t', '--template-loc',
                     default=DEFAULT_TEMPLATE_LOC,
                     help='the location where the "core.py.templ" and '
@@ -714,4 +946,4 @@ if __name__ == '__main__':
                     help='Suppress output normally printed to stdout.')
 
     args = ap.parse_args()
-    main(args.srcdir, args.output, args.ufunc, args.template_loc, args.verbose)
+    main(args.srcdir, args.template_loc, args.verbose)
