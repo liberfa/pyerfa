@@ -1,6 +1,8 @@
-1.7.3.1 (unreleased)
-====================
+2.0.0 (unreleased)
+==================
 
+- Bundled liberfa version update to v2.0.0. This includes new functionality,
+  and hence pyerfa 2.0.0 cannot run with previous versions of liberfa.
 - ``erfa.dt_eraLDBODY`` has been corrected to ensure that the 'pv' entry is
   now of type ``erfa.dt_pv``, so that cross-assignments with that dtype work
   correctly. [gh-74]
