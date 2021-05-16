@@ -71,5 +71,5 @@ script:
         source tests/bin/activate;
         pip3 install --no-deps --editable .[test];
         (nm -u erfa/ufunc.cpython-*.so | grep eraA2af) || exit 1;
-        pytest-3;
+        (python -c 'import erfa' 2>&1 | grep -n 'too old') > /dev/null && (echo 'liberfa too old, skipping tests'; exit 0) || pytest-3;
       fi

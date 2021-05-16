@@ -100,4 +100,4 @@ jobs:
         source tests/bin/activate
         python -m pip install --editable .[test]
         (nm -u erfa/ufunc.cpython-*.so | grep eraA2af) || exit 1
-        python -m pytest
+        (python -c 'import erfa' 2>&1 | grep -n 'too old') > /dev/null && (echo 'liberfa too old, skipping tests'; exit 0) || python -m pytest
