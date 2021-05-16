@@ -17,15 +17,15 @@ environment::
     git clean -fxd
     tox -e test
 
-It is also wise to check that the new release works with astropy::
+It is also wise to check that the new release works with astropy.
+We can use the ``tox`` environment we just created, but have to be sure
+to leave the package directory::
 
-    python3 -m venv astropy_test
-    source astropy_test/bin/activate
+    source .tox/test/bin/activate
+    cd ~  #
     pip install astropy[test]
-    pip install .  # Install our newest erfa version in virtual environment
-    cd astropy_test/lib/python3.9/site-packages/astropy
-    pytest --remote-data=any
-    cd -
+    pytest --pyargs astropy --remote-data=any
+    cd -  # Back to the package directory.
     deactivate
     git clean -fxd
 
