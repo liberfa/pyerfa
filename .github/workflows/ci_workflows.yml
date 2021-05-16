@@ -20,7 +20,7 @@ jobs:
 
           - name: Test with oldest supported versions of our dependencies
             os: ubuntu-16.04
-            python: 3.6
+            python: 3.7
             toxenv: test-oldestdeps
             toxargs: -v
 
