@@ -62,3 +62,9 @@ issues, tag the release again, and push the tag to GitHub.
 
 See the `OpenAstronomy Azure Pipelines Templates Documentation <https://openastronomy-azure-pipelines.readthedocs.io/en/latest/publish.html>`_
 for more details about the Azure Pipelines set-up.
+
+Finally, for completeness, update the ``Releases`` section on the main
+github page.  Click on the new tag you just made, then ``edit tag``,
+then insert ``vx.y.z`` for the version, and in the description write
+``PyERFA v`` and then paste the relevant section of ``CHANGES.rst`` to
+it.  Preview to ensure this works, and then publish the release.
