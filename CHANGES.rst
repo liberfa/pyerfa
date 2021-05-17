@@ -1,4 +1,4 @@
-2.0.0 (unreleased)
+2.0.0 (17/05/2021)
 ==================
 
 - Bundled liberfa version update to v2.0.0. This includes new functionality,
