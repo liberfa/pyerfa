@@ -1,3 +1,9 @@
+2.0.0.1 (unreleased)
+====================
+
+- The underlying universal functions in ``erfa.ufunc`` now work with an ``out``
+  argument also if the required output is a structured array. [gh-76]
+
 2.0.0 (17/05/2021)
 ==================
 

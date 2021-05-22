@@ -286,6 +286,24 @@ def test_pv_in():
     np.testing.assert_allclose(astrom3['em'], 1.010428384373318379)
 
 
+def test_pv_out():
+    """Test that ufunc can also deal with 'out' argument."""
+    pv = erfa.ufunc.s2pv(np.pi/2.0, np.pi/4.0, 2.0, np.sqrt(2.0)/2.0, 0.0, 0.0)
+    pv2 = np.empty_like(pv)
+    out = erfa.ufunc.s2pv(np.pi/2.0, np.pi/4.0, 2.0, np.sqrt(2.0)/2.0, 0.0, 0.0,
+                          out=pv2)
+    assert out is pv2
+    assert np.all(pv2 == pv)
+
+
+def test_zpv_out():
+    """Test that no-input routines work with 'out' argument."""
+    pv = np.zeros(10, erfa.dt_pv)
+    out = erfa.ufunc.zpv(out=pv)
+    assert out is pv
+    np.testing.assert_array_equal(pv, np.zeros(10, erfa.dt_pv))
+
+
 def test_struct_ldbody():
     """
     Check dt_eraLDBODY is correctly defined (regression test; gh-74)

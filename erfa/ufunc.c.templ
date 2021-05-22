@@ -402,21 +402,32 @@ ufunc_loop_matches(PyUFuncObject *self,
     }
     /*
      * All inputs were ok; now check casting back to the outputs.
-     * MHvK: Since no casting from structured to non-structured is
-     * possible, no changes needed here.
+     * For void, only allow casting to the same void.
      */
     for (i = nin; i < nop; ++i) {
         if (op[i] != NULL) {
-            PyArray_Descr *tmp = PyArray_DescrFromType(types[i]);
-            if (tmp == NULL) {
-                return -1;
+            if (types[i] == NPY_VOID && dtypes != NULL) {
+                PyArray_Descr *op_descr = PyArray_DESCR(op[i]);
+                /*
+                 * MHvK: for VOID, we only allow VOID->same VOID.
+                 */
+                if (op_descr->type_num != NPY_VOID
+                    || !PyArray_EquivTypes(op_descr, dtypes[i])) {
+                    return 0;
+                }
             }
-            if (!PyArray_CanCastTypeTo(tmp, PyArray_DESCR(op[i]),
+            else {
+                PyArray_Descr *tmp = PyArray_DescrFromType(types[i]);
+                if (tmp == NULL) {
+                    return -1;
+                }
+                if (!PyArray_CanCastTypeTo(tmp, PyArray_DESCR(op[i]),
                                        casting)) {
+                    Py_DECREF(tmp);
+                    return 0;
+                }
                 Py_DECREF(tmp);
-                return 0;
             }
-            Py_DECREF(tmp);
         }
     }
     return 1;
