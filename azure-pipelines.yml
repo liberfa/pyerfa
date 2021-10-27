@@ -1,5 +1,6 @@
 variables:
-  CIBW_BUILD: cp36-* cp37-* cp38-* cp39-*
+  CIBW_BUILD: cp37-* cp38-* cp39-* cp310-*
+  CIBW_ARCHS_LINUX: "auto, aarch64"
 
 resources:
   repositories:
@@ -31,6 +32,15 @@ jobs:
     test_command: pytest --pyargs erfa
     targets:
     - sdist
-    - wheels_linux
+    - wheels_cp*-manylinux_i686
+    - wheels_cp*-manylinux_x86_64
+    - wheels_cp37-musllinux_x86_64
+    - wheels_cp38-musllinux_x86_64
+    - wheels_cp39-musllinux_x86_64
+    - wheels_cp310-musllinux_x86_64
+    - wheels_cp37-manylinux_aarch64
+    - wheels_cp38-manylinux_aarch64
+    - wheels_cp39-manylinux_aarch64
+    - wheels_cp310-manylinux_aarch64
     - wheels_macos
     - wheels_windows
