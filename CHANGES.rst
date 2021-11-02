@@ -1,10 +1,10 @@
-2.0.0.1 (unreleased)
+2.0.0.1 (2021-11-02)
 ====================
 
 - The underlying universal functions in ``erfa.ufunc`` now work with an ``out``
   argument also if the required output is a structured array. [gh-76]
 
-2.0.0 (17/05/2021)
+2.0.0 (2021-05-17)
 ==================
 
 - Bundled liberfa version update to v2.0.0. This includes new functionality,
@@ -18,14 +18,14 @@
   specific output file names has been removed, as it was not used.
   (Note: these changes have no effect on use of PyERFA.) [gh-71]
 
-1.7.3 (25/04/2021)
+1.7.3 (2021-04-25)
 ==================
 
 - Bundled liberfa version update to v1.7.3.
 - Fixed a bug that caused the output of ``rx``, ``ry``, and ``rz`` to be
   boolean rather than float for some compilers/OS. [gh-72]
 
-1.7.2 (25/01/2021)
+1.7.2 (2021-01-25)
 ==================
 
 - Bundled liberfa version update to v1.7.2.
@@ -33,13 +33,13 @@
   (backport https://github.com/astropy/astropy/pull/11224).
 
 
-1.7.1.1 (18/11/2020)
+1.7.1.1 (2020-11-18)
 ====================
 
 - Fix incorrect ``__version__`` value [gh-60].
 
 
-1.7.1 (16/11/2020)
+1.7.1 (2020-11-16)
 ==================
 
 - Bundled liberfa version update to v1.7.1.
