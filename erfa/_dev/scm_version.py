@@ -33,7 +33,7 @@ try:
             if erfa_tag > version_string:
                 guessed = erfa_tag
             elif 'dev' in version_string or len(version_string.split('.')) > 3:
-                return guess_next_version(version.tag)
+                return version.format_next_version(guess_next_version)
             else:
                 guessed = version_string.partition("+")[0] + '.1'
             return version.format_with("{guessed}.dev{distance}",
