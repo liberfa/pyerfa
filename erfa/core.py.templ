@@ -145,12 +145,14 @@ dt_bytes12 = numpy.dtype('S12')
 def {{ func.pyname }}({{ func.args_by_inout('in|inout')|map(attribute='name')|join(', ') }}):
     """
     {{ func.doc.title }}
+    {%- if func.args_by_inout('in|inout') %}
 
     Parameters
     ----------
     {%- for arg in func.args_by_inout('in|inout') %}
     {{ arg.name }} : {{ arg.ctype }} array
     {%- endfor %}
+    {%- endif %}
 
     Returns
     -------
