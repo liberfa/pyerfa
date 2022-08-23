@@ -122,6 +122,6 @@ jobs:
         - cp*-macosx_x86_64
         - cp*-macosx_arm64
         # Windows wheels
-        - windows
+        - cp*-win*
     secrets:
       pypi_token: ${{ secrets.pypi_token }}
