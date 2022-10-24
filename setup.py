@@ -147,6 +147,7 @@ def get_extensions():
         include_dirs=include_dirs,
         libraries=libraries,
         define_macros=define_macros,
+        py_limited_api=True,
         language="c")
 
     return [erfa_ext]
