@@ -36,10 +36,6 @@ and similarly a wheel_ can be created with::
   system, you can use that by setting environment variable
   ``PYERFA_USE_SYSTEM_LIBERFA=1``.
 
-.. note:: Users of Homebrew's `python` should either `pip install
-          setuptools_scm` manually, or use a python virtual
-          environment. This is to work around a versioning issue as
-          described in liberfa/pyerfa#86.
 
 .. _wheel: https://github.com/pypa/wheel
 
@@ -48,6 +44,10 @@ The package can be obtained from PyPI_ or directly from the git repository::
   $ git clone --recursive https://github.com/liberfa/pyerfa/
 
 
+.. note:: Users of Homebrew's ``python`` should either ``pip install
+          setuptools_scm`` manually, or use a python virtual
+          environment. This is to work around a versioning issue as
+          described in liberfa/pyerfa#86.
 
 Testing
 -------
