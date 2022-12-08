@@ -47,7 +47,7 @@ The package can be obtained from PyPI_ or directly from the git repository::
 .. note:: Users of Homebrew's ``python`` should either ``pip install
           setuptools_scm`` manually, or use a python virtual
           environment. This is to work around a versioning issue as
-          described in liberfa/pyerfa#86.
+          described in `liberfa/pyerfa#86 <https://github.com/liberfa/pyerfa/issues/86>`_.
 
 Testing
 -------
