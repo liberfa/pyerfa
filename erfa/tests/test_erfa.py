@@ -364,7 +364,7 @@ def test_float32_input():
 
 
 class TestAstromNotInplace:
-    def setup(self):
+    def setup_method(self):
         self.mjd_array = np.array(
             [58827.15925499, 58827.15925499, 58827.15925499,
              58827.15925499, 58827.15925499])
@@ -420,12 +420,12 @@ class TestLeapSecondsBasics:
 
 class TestLeapSeconds:
     """Test basic methods to control the ERFA leap-second table."""
-    def setup(self):
+    def setup_method(self):
         self.erfa_ls = erfa.leap_seconds.get()
         self.expires = erfa.leap_seconds.expires
         self._expires = erfa.leap_seconds._expires
 
-    def teardown(self):
+    def teardown_method(self):
         erfa.leap_seconds.set(self.erfa_ls)
         erfa.leap_seconds._expires = self._expires
 
