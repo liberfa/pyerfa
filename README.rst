@@ -80,7 +80,7 @@ as `numpy.dtype` corresponding to structures used by ERFA_.  Examples::
          ([ 0.11260694, -0.38275202, -0.21613731], [0.02160375, 0.00826891, 0.00217806]),
          ([ 0.13401992, -0.37387798, -0.21361622], [0.0212094 , 0.00947838, 0.00286503]),
          ([ 0.15500031, -0.36379788, -0.21040601], [0.02073822, 0.01068061, 0.0035561 ])],
-        dtype={'names':['p','v'], 'formats':[('<f8', (3,)),('<f8', (3,))], 'offsets':[0,24], 'itemsize':48, 'aligned':True})
+        dtype={'names': ['p', 'v'], 'formats': [('<f8', (3,)), ('<f8', (3,))], 'offsets': [0, 24], 'itemsize': 48, 'aligned': True})
   >>> erfa.dt_pv
   dtype([('p', '<f8', (3,)), ('v', '<f8', (3,))], align=True)
   >>> erfa.dt_eraLDBODY
