@@ -6,7 +6,7 @@ This module provides the tools used to internally run the erfa test suite.
 import sys
 import types
 import warnings
-from distutils.version import LooseVersion
+import packaging.version
 
 
 _deprecations_as_exceptions = False
@@ -80,7 +80,7 @@ def treat_deprecations_as_exceptions():
     except ImportError:
         pass
     else:
-        if LooseVersion(matplotlib.__version__) < '3':
+        if packaging.version.parse(matplotlib.__version__).major < 3:
             warnings.filterwarnings('ignore', category=DeprecationWarning,
                                     module='numpy.lib.type_check')
 
