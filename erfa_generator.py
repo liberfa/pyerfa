@@ -607,7 +607,7 @@ class TestFunction:
                 # Works on newer numpy
                 return "np.__version__ < '1.21', reason='needs numpy >= 1.21'"
             else:
-                return "np.__version__ < '1.24', reason='do not yet support no-input ufuncs'"
+                return "np.__version__ < '1.24', reason='numpy < 1.24 do not support no-input ufuncs'"
         else:
             return None
 
