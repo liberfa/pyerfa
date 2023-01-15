@@ -80,7 +80,7 @@ def treat_deprecations_as_exceptions():
     except ImportError:
         pass
     else:
-        if packaging.version.parse(matplotlib.__version__).major < 3:
+        if matplotlib.__version__[0] < '3':
             warnings.filterwarnings('ignore', category=DeprecationWarning,
                                     module='numpy.lib.type_check')
 
