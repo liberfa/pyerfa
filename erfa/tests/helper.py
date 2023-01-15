@@ -6,7 +6,6 @@ This module provides the tools used to internally run the erfa test suite.
 import sys
 import types
 import warnings
-import packaging.version
 
 
 _deprecations_as_exceptions = False
