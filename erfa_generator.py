@@ -597,10 +597,10 @@ class TestFunction:
                    nout=len(func.args_by_inout('out')))
 
     def xfail(self):
-        """Whether the python test produced for this function will fail.
+        """Whether the python test produced for this function will fail when the xfail condition is verified.
 
         Right now this will be true for functions without inputs such
-        as eraIr.
+        as eraIr with numpy < 1.24.
         """
         if self.nin + self.ninout == 0:
             if self.name == 'zpv':
