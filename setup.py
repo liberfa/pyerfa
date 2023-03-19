@@ -8,7 +8,6 @@ import functools
 import setuptools
 import subprocess
 from warnings import warn
-from distutils.dep_util import newer
 import packaging.version
 
 
@@ -18,6 +17,20 @@ GEN_FILES = [
     os.path.join('erfa', 'core.py'),
     os.path.join('erfa', 'ufunc.c'),
 ]
+
+
+def newer(source, target):
+    import pathlib
+
+    source = pathlib.Path(source)
+    if not source.exists():
+        raise FileNotFoundError(f"file '{source.resolve()}' does not exist")
+    
+    target = pathlib.Path(target)
+    if not target.exists():
+        return 1
+
+    return source.stat().st_mtime > target.stat().st_mtime
 
 
 # https://mail.python.org/pipermail/distutils-sig/2007-September/008253.html
