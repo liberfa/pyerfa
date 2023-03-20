@@ -1,3 +1,13 @@
+2.0.0.2 (2023-03-19)
+====================
+
+- Fix compatibility with numpy v1.24.
+- Ensure documentation is correct also for functions without parameters.
+- CI configuration updated.
+- Switch building of wheels to GitHub Actions.
+- Min ``setuptools_scm`` updated.
+- Min numpy version in ``tox.ini`` updated to fix CI issues.
+
 2.0.0.1 (2021-11-02)
 ====================
 

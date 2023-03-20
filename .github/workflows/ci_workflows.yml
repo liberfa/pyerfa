@@ -25,8 +25,8 @@ jobs:
             toxargs: -v
 
           - name: Test with development versions of our dependencies
-            os: ubuntu-20.04  # currently newer than ubuntu-latest
-            python: 3.9
+            os: ubuntu-latest
+            python: 3.11
             toxenv: test-devdeps
             toxargs: -v
 
@@ -75,7 +75,7 @@ jobs:
         include:
 
           - name: Tests with external liberfa
-            os: ubuntu-20.04
+            os: ubuntu-latest
             python: 3.8
             toxenv: test
             toxargs: -v
