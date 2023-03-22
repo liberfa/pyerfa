@@ -1,3 +1,8 @@
+2.0.0.3 (2023-03-22)
+====================
+
+- Ensure minimum numpy version of 1.17 continues to work (for astropy LTS).
+
 2.0.0.2 (2023-03-19)
 ====================
 

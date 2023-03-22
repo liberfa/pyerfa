@@ -24,6 +24,14 @@ jobs:
             toxenv: test-oldestdeps
             toxargs: -v
 
+          - name: Test with medium old supported versions of our dependencies
+            # Test that we do not have a problem with some specific version (gh-101).
+            # Comment out if not needed.
+            os: ubuntu-20.04
+            python: 3.9
+            toxenv: test-olddeps
+            toxargs: -v
+
           - name: Test with development versions of our dependencies
             os: ubuntu-latest
             python: 3.11
