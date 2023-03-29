@@ -1,3 +1,8 @@
+2.0.0.4 (unreleased)
+====================
+
+- Fix dangling pointer leading to unexpected behavior with ``-O3``.
+
 2.0.0.3 (2023-03-22)
 ====================
 

@@ -556,6 +556,7 @@ static int ErfaUFuncTypeResolver(PyUFuncObject *ufunc,
 {
     int *types;
     PyArray_Descr **dtypes;
+    int types_array[NPY_MAXARGS];
 
     if (ufunc->userloops) {
         Py_ssize_t unused_pos = 0;
@@ -577,7 +578,6 @@ static int ErfaUFuncTypeResolver(PyUFuncObject *ufunc,
     }
     else {
         npy_intp j;
-        int types_array[NPY_MAXARGS];
 
         if (ufunc->ntypes != 1) {
             goto fail;
