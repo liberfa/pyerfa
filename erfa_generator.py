@@ -686,8 +686,10 @@ class TestFunction:
             # (hack: only happens for double).
             if line.startswith('double') and '=' in line:
                 # Complete hack for single occurrence.
-                if line.startswith('double xyz[] = {'):
-                    out.append(f"xyz = np.array([{line[16:-1]}])")
+                if line.startswith('double xyz'):
+                    var_name = line.split(' ')[1].strip('[]')
+                    arr_index = line.rfind('{')+1
+                    out.append(f"{var_name} = np.array([{line[arr_index:-1]}])")
                 else:
                     # Put each definition on a separate line.
                     out.extend([part.strip() for part in line[7:].split(',')])
