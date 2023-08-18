@@ -12,23 +12,23 @@ jobs:
       fail-fast: true
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python: [3.8]
+        python: [3.9]
         toxenv: [test]
         toxargs: [-v]
 
         include:
 
           - name: Test with oldest supported versions of our dependencies
-            os: ubuntu-18.04
-            python: 3.7
+            os: ubuntu-20.04
+            python: 3.9
             toxenv: test-oldestdeps
             toxargs: -v
 
           - name: Test with medium old supported versions of our dependencies
             # Test that we do not have a problem with some specific version (gh-101).
             # Comment out if not needed.
-            os: ubuntu-20.04
-            python: 3.9
+            os: ubuntu-22.04
+            python: 3.10
             toxenv: test-olddeps
             toxargs: -v
 
@@ -53,12 +53,12 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         fetch-depth: 0
         submodules: true
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python }}
     - name: Install APT packages
@@ -84,19 +84,19 @@ jobs:
 
           - name: Tests with external liberfa
             os: ubuntu-latest
-            python: 3.8
+            python: 3.9
             toxenv: test
             toxargs: -v
             apt_packages: python3-venv python3-pip liberfa-dev python3-numpy
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         fetch-depth: 0
         submodules: true
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python }}
     - name: Install APT packages
