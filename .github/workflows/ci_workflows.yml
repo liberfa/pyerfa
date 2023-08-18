@@ -32,7 +32,7 @@ jobs:
             # Test that we do not have a problem with some specific version (gh-101).
             # Comment out if not needed.
             os: ubuntu-22.04
-            python: '3.10'
+            python: 3.9
             toxenv: test-olddeps
             toxargs: -v
 
