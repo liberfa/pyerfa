@@ -4,6 +4,10 @@ on:
   push:
   pull_request:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   tests:
     name: ${{ matrix.name }} [ ${{ matrix.os }} ]
@@ -12,29 +16,29 @@ jobs:
       fail-fast: true
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python: [3.8]
+        python: [3.9]
         toxenv: [test]
         toxargs: [-v]
 
         include:
 
           - name: Test with oldest supported versions of our dependencies
-            os: ubuntu-18.04
-            python: 3.7
+            os: ubuntu-20.04
+            python: 3.9
             toxenv: test-oldestdeps
             toxargs: -v
 
           - name: Test with medium old supported versions of our dependencies
             # Test that we do not have a problem with some specific version (gh-101).
             # Comment out if not needed.
-            os: ubuntu-20.04
+            os: ubuntu-22.04
             python: 3.9
             toxenv: test-olddeps
             toxargs: -v
 
           - name: Test with development versions of our dependencies
             os: ubuntu-latest
-            python: 3.11
+            python: '3.11'
             toxenv: test-devdeps
             toxargs: -v
 
@@ -53,12 +57,12 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         fetch-depth: 0
         submodules: true
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python }}
     - name: Install APT packages
@@ -84,19 +88,19 @@ jobs:
 
           - name: Tests with external liberfa
             os: ubuntu-latest
-            python: 3.8
+            python: 3.9
             toxenv: test
             toxargs: -v
             apt_packages: python3-venv python3-pip liberfa-dev python3-numpy
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         fetch-depth: 0
         submodules: true
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python }}
     - name: Install APT packages
@@ -120,16 +124,30 @@ jobs:
       test_command: pytest --pyargs erfa
       targets: |
         # Linux wheels
-        - cp*-manylinux_i686
-        - cp*-manylinux_x86_64
-        - cp*-musllinux_x86_64
-        - cp*-manylinux_aarch64
+        - cp39-manylinux_x86_64
+        - cp310-manylinux_x86_64
+        - cp311-manylinux_x86_64
+        - cp39-musllinux_x86_64
+        - cp310-musllinux_x86_64
+        - cp311-musllinux_x86_64
+        - cp39-manylinux_aarch64
+        - cp310-manylinux_aarch64
+        - cp311-manylinux_aarch64
         # MacOS X wheels - we deliberately do not build universal2 wheels.
         # Note that the arm64 wheels are not actually tested so we
         # rely on local manual testing of these to make sure they are ok.
-        - cp*-macosx_x86_64
-        - cp*-macosx_arm64
+        - cp39*macosx_x86_64
+        - cp310*macosx_x86_64
+        - cp311*macosx_x86_64
+        - cp39*macosx_arm64
+        - cp310*macosx_arm64
+        - cp311*macosx_arm64
         # Windows wheels
-        - cp*-win*
+        - cp39*win32
+        - cp310*win32
+        - cp311*win32
+        - cp39*win_amd64
+        - cp310*win_amd64
+        - cp311*win_amd64
     secrets:
       pypi_token: ${{ secrets.pypi_token }}
