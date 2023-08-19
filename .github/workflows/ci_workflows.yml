@@ -150,6 +150,11 @@ jobs:
         - cp311*macosx_arm64
         - cp312*macosx_arm64
         # Windows wheels
+        - cp39*win32
+        - cp310*win32
+        - cp311*win32
+        # TODO: Check again after cp312 and upstream are stable.
+        #- cp312*win32
         - cp39*win_amd64
         - cp310*win_amd64
         - cp311*win_amd64
