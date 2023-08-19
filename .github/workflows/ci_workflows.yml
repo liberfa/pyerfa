@@ -158,5 +158,9 @@ jobs:
         - cp310*win_amd64
         - cp311*win_amd64
         - cp312*win_amd64
+      # Required so that cp312 can grab a pre-release numpy.
+      # Can remove when cp312 is released.
+      env: |
+        CIBW_ENVIRONMENT: PIP_PRE=1
     secrets:
       pypi_token: ${{ secrets.pypi_token }}
