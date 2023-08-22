@@ -162,6 +162,6 @@ jobs:
       # Required so that cp312 can grab a pre-release numpy.
       # Can remove when cp312 is released.
       env: |
-        CIBW_ENVIRONMENT: 'PIP_PRE=$( if [ "${CIBW_BUILD:0:5}" = "cp312" ]; then echo 1; else echo 0; fi )'
+        CIBW_ENVIRONMENT: 'PIP_PRE=$( if [ "${CIBW_BUILD:0:5}" == "cp312" ]; then echo 1; else echo 0; fi )'
     secrets:
       pypi_token: ${{ secrets.pypi_token }}
