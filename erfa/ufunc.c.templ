@@ -17,6 +17,13 @@
 #include "erfa.h"
 #include "erfaextra.h"
 
+// On gcc<10 we can run into the following:
+//
+//   error: dereferencing pointer to incomplete type 'PyTypeObject'
+//
+// As mentioned in https://github.com/numpy/numpy/issues/16970,
+// the workaround is to define a fake _typeobject struct.
+
 struct _typeobject {
     int dummy;
 };
