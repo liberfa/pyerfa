@@ -17,7 +17,9 @@
 #include "erfa.h"
 #include "erfaextra.h"
 
-struct _typeobject {};
+struct _typeobject {
+    int dummy;
+};
 
 #define MODULE_DOCSTRING \
     "Ufunc wrappers of the ERFA routines.\n\n" \
