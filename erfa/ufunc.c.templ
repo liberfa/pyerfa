@@ -210,7 +210,7 @@ static void ufunc_loop_{{ func.pyname }}(
    {#- /* if needed, allocate memory for contiguous eraLDBODY copies */ #}
    {%- if func.user_dtype == 'dt_eraLDBODY' %}
     if (copy_b) {
-        _b = PyArray_malloc(nb * sizeof(eraLDBODY));
+        _b = malloc(nb * sizeof(eraLDBODY));
         if (_b == NULL) {
             PyErr_NoMemory();
             return;
