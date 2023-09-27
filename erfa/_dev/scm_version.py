@@ -7,7 +7,7 @@ import os.path as pth
 from warnings import warn
 
 try:
-    from setuptools_scm import git, get_version as _get_version
+    from setuptools_scm import git, Configuration, get_version as _get_version
     from setuptools_scm.version import guess_next_version
 
     def _guess_next_dev(version, liberfadir=None):
@@ -15,7 +15,8 @@ try:
             liberfadir = pathlib.Path(
                 __file__).parent.parent.parent / 'liberfa' / 'erfa'
 
-        erfa_version = git.parse(liberfadir)
+        config = Configuration(root=liberfadir)
+        erfa_version = git.parse(liberfadir, config=config)
         if not erfa_version.exact:
             warn(f'liberfa/erfa not at a tagged release, but at {erfa_version}')
 
