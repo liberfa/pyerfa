@@ -1,7 +1,11 @@
-2.0.0.4 (unreleased)
-====================
+2.0.1 (2023-11-13)
+==================
 
+- Bundled liberfa version update to v2.0.1, which is derived from SOFA
+  version 19 (20231011), which has a few bug fixes.
 - Fix dangling pointer leading to unexpected behavior with ``-O3``.
+- PyERFA now only uses the Python limited API.
+- Ensure things work under python 3.12 and recent setuptools-scm.
 
 2.0.0.3 (2023-03-22)
 ====================
