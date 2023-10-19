@@ -360,7 +360,19 @@ def test_float32_input():
     xyz = np.array([[1, 0, 0], [0.9, 0.1, 0]])
     out64 = erfa.p2s(xyz)
     out32 = erfa.p2s(xyz.astype('f4'))
-    np.testing.assert_allclose(out32, out64, rtol=1.e-5)
+    assert_allclose(out32, out64, rtol=1.e-5)
+
+
+def test_non_contiguous_matrix():
+    # Regression test for gh-123 (astropy gh-15503)
+    matrix = np.array([[1, 0, 0, 5],
+                       [0, 1, 0, 6],
+                       [0, 0, 1, 7]], dtype='float')[:, :3]
+    vector = np.array([1., 2., 3.])
+    assert_array_equal(matrix, np.eye(3))
+    conv = erfa.rxp(matrix, vector)
+    assert_array_equal(matrix @ vector, vector)
+    assert_array_equal(conv, vector)
 
 
 class TestAstromNotInplace:
