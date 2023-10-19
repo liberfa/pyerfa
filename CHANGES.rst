@@ -1,11 +1,18 @@
-2.0.1 (2023-11-13)
+2.0.1.1 (2023-10-19)
+====================
+- Ensured pyerfa works on PyPy too with the Python limited API. [gh-120]
+- Ensure any non-contigous multi-dimensional inputs are recognized
+  properly, so that, e.g., a non-contiguous matrix is copied as
+  needed before input to the erfa functions. [gh-124]
+
+2.0.1 (2023-10-13)
 ==================
 
 - Bundled liberfa version update to v2.0.1, which is derived from SOFA
-  version 19 (20231011), which has a few bug fixes.
-- Fix dangling pointer leading to unexpected behavior with ``-O3``.
-- PyERFA now only uses the Python limited API.
-- Ensure things work under python 3.12 and recent setuptools-scm.
+  version 19 (20231011), which has a few bug fixes. [gh-118]
+- Fix dangling pointer leading to unexpected behavior with ``-O3``. [gh-104]
+- PyERFA now only uses the Python limited API. [gh-94]
+- Ensure things work under python 3.12 and recent setuptools-scm. [gh-113]
 
 2.0.0.3 (2023-03-22)
 ====================
