@@ -24,9 +24,11 @@
 // As mentioned in https://github.com/numpy/numpy/issues/16970,
 // the workaround is to define a fake _typeobject struct.
 
-struct _typeobject {
+#ifndef PYPY_VERSION
+typedef struct _typeobject {
     int dummy;
 };
+#endif
 
 #define MODULE_DOCSTRING \
     "Ufunc wrappers of the ERFA routines.\n\n" \
