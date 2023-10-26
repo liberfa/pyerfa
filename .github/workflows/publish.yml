@@ -1,0 +1,57 @@
+name: Wheel building
+
+on:
+  schedule:
+    # run every day at 4am UTC
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+
+  build_and_publish:
+
+    uses: OpenAstronomy/github-actions-workflows/.github/workflows/publish.yml@v1
+    if: (github.repository == 'liberfa/pyerfa')
+    with:
+
+      upload_to_pypi: ${{ startsWith(github.ref, 'refs/tags/v') && !endsWith(github.ref, '.dev') && github.event_name == 'push' }}
+      upload_to_anaconda: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') }}
+      anaconda_user: liberfa
+      anaconda_package: pyerfa
+      anaconda_keep_n_latest: 10
+
+      # For nightly wheels as well as when building with the 'Build all wheels' label, we disable
+      # the build isolation and explicitly install the latest developer version of numpy as well as
+      # the latest stable versions of all other build-time dependencies.
+      env: |
+        CIBW_BEFORE_BUILD: '${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && 'pip install --extra-index-url https://pypi.anaconda.org/scientific-python-nightly-wheels/simple setuptools setuptools_scm jinja2 numpy>=0.0.dev0') || '' }}'
+        CIBW_BUILD_FRONTEND: '${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && 'pip; args: --no-build-isolation') || 'build' }}'
+
+      test_extras: test
+      test_command: pytest --pyargs erfa
+
+      targets: |
+        # Linux wheels
+        - cp3*-manylinux_x86_64
+        - cp3*-musllinux_x86_64
+        - cp3*-manylinux_aarch64
+        - pp39-manylinux_x86_64
+        # MacOS X wheels - we deliberately do not build universal2 wheels.
+        # Note that the arm64 wheels are not actually tested so we
+        # rely on local manual testing of these to make sure they are ok.
+        - cp3*macosx_x86_64
+        - cp3*macosx_arm64
+        - pp39-macosx_x86_64
+        # Windows wheels
+        - cp3*win32
+        - cp3*win_amd64
+        - pp39-win_amd64
+
+    secrets:
+      pypi_token: ${{ secrets.pypi_token }}
+      anaconda_token: ${{ secrets.anaconda_token }}
