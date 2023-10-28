@@ -6,7 +6,6 @@ import numpy as np
 from numpy.testing import assert_array_equal, assert_array_almost_equal, assert_allclose
 
 import erfa
-from erfa.tests.helper import catch_warnings
 
 try:
     from astropy.time import Time
@@ -172,18 +171,14 @@ def test_errwarn_reporting():
     erfa.dat(1990, 1, 1, 0.5)
 
     # check warning is raised for a scalar
-    with catch_warnings() as w:
+    with pytest.warns(erfa.ErfaWarning, match=r'1 of "dubious year \(Note 1\)"') as w:
         erfa.dat(100, 1, 1, 0.5)
         assert len(w) == 1
-        assert w[0].category == erfa.ErfaWarning
-        assert '1 of "dubious year (Note 1)"' in str(w[0].message)
 
     # and that the count is right for a vector.
-    with catch_warnings() as w:
+    with pytest.warns(erfa.ErfaWarning, match=r'2 of "dubious year \(Note 1\)"') as w:
         erfa.dat([100, 200, 1990], 1, 1, 0.5)
         assert len(w) == 1
-        assert w[0].category == erfa.ErfaWarning
-        assert '2 of "dubious year (Note 1)"' in str(w[0].message)
 
     try:
         erfa.dat(1990, [1, 34, 2], [1, 1, 43], 0.5)
