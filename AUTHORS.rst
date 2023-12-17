@@ -22,7 +22,7 @@ The code also benefited from contributions by (alphabetical)
 * Sergio Pascual
 
 (If you have contributed to PyERFA and your name is missing, please
-`open a pull request for this page <https://github.com/liberfa/pyerfa/blob/master/AUTHORS.rst>`_
+`open a pull request for this page <https://github.com/liberfa/pyerfa/blob/main/AUTHORS.rst>`_
 in the `PyERFA repository <https://github.com/liberfa/pyerfa>`_)
 
 .. _Numpy: https://numpy.org/
