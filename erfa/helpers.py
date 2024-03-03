@@ -269,8 +269,7 @@ class leap_seconds:
         if hasattr(table, '__array__'):
             table = table.__array__()[list(dt_eraLEAPSECOND.names)]
 
-        table = np.array(table, dtype=dt_eraLEAPSECOND, copy=False,
-                         ndmin=1)
+        table = np.atleast_1d(np.asarray(table, dtype=dt_eraLEAPSECOND))
 
         # Simple sanity checks.
         if table.ndim > 1:
