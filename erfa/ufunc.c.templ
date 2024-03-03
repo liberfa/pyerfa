@@ -572,7 +572,9 @@ static int ErfaUFuncTypeResolver(PyUFuncObject *ufunc,
 {
     int *types;
     PyArray_Descr **dtypes;
-    int types_array[NPY_MAXARGS];
+
+    /* This array needs to be at least as long as nint+nout. In practice, 32 suffices */
+    int types_array[32];
 
     if (ufunc->userloops) {
         Py_ssize_t unused_pos = 0;
@@ -752,7 +754,10 @@ PyMODINIT_FUNC PyInit_ufunc(void)
     PyArray_Descr *dt_ymdf = NULL, *dt_hmsf = NULL, *dt_dmsf = NULL;
     PyArray_Descr *dt_sign = NULL, *dt_type = NULL;
     PyArray_Descr *dt_eraASTROM = NULL, *dt_eraLDBODY = NULL;
-    PyArray_Descr *dtypes[NPY_MAXARGS];
+
+    /* This array needs to be at least as long as nint+nout. In practice, 32 suffices */
+    PyArray_Descr *dtypes[32];
+
     /* ufuncs and their definitions */
     int status;
     PyUFuncObject *ufunc;
