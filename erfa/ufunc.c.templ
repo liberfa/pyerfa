@@ -17,6 +17,11 @@
 #include "erfa.h"
 #include "erfaextra.h"
 
+// Backported NumPy 2 API (can be removed if numpy 2 is required)
+#if NPY_ABI_VERSION < 0x02000000
+#define PyDataType_ELSIZE(descr) ((descr)->elsize)
+#endif
+
 // On gcc<10 we can run into the following:
 //
 //   error: dereferencing pointer to incomplete type 'PyTypeObject'
@@ -376,7 +381,7 @@ ufunc_loop_matches(PyUFuncObject *self,
          */
         if (types[i] == NPY_VOID && dtypes != NULL) {
             int op_descr_type_num = op_descr->type_num;
-            int dtype_elsize = dtypes[i]->elsize;
+            npy_intp dtype_elsize = PyDataType_ELSIZE(dtypes[i]);
             /*
              * MHvK: we do our own check on casting, since by default
              * all items can cast to structured dtypes (see gh-11114),
@@ -391,12 +396,12 @@ ufunc_loop_matches(PyUFuncObject *self,
                     return 0;
                 }
             }
-            else if (dtypes[i]->elsize == 1 || dtypes[i]->elsize == 12) {
+            else if (dtype_elsize == 1 || dtype_elsize == 12) {
                 /* string structured array; string argument is OK */
                 if (!((op_descr_type_num == NPY_STRING &&
-                       op_descr->elsize <= dtype_elsize) ||
+                       PyDataType_ELSIZE(op_descr) <= dtype_elsize) ||
                       (op_descr_type_num == NPY_UNICODE &&
-                       op_descr->elsize >> 2 <= dtype_elsize))) {
+                       PyDataType_ELSIZE(op_descr) >> 2 <= dtype_elsize))) {
                     return 0;
                 }
             }
