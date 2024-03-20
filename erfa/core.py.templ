@@ -81,49 +81,27 @@ def check_errwarn(statcodes, func_name):
             statcodes[statcodes == before] = after
             STATUS_CODES[func_name][after] = STATUS_CODES[func_name][before]
 
-    if np.any(statcodes < 0):
+    # Use non-zero to be able to index (need >=1-D for this to work).
+    # Conveniently, this also gets rid of any masked elements.
+    statcodes = np.atleast_1d(statcodes)
+    erridx = (statcodes < 0).nonzero()
+    if erridx[0].size > 0:
         # Errors present - only report the errors.
-        if statcodes.shape:
-            statcodes = statcodes[statcodes < 0]
-
-        errcodes = np.unique(statcodes)
-
-        errcounts = dict([(e, np.sum(statcodes == e)) for e in errcodes])
-
+        errcodes, counts = np.unique(statcodes[erridx], return_counts=True)
         elsemsg = STATUS_CODES[func_name].get('else', None)
-        if elsemsg is None:
-            errmsgs = dict([(e, STATUS_CODES[func_name].get(
-                e, 'Return code ' + str(e))) for e in errcodes])
-        else:
-            errmsgs = dict([(e, STATUS_CODES[func_name].get(
-                e, elsemsg)) for e in errcodes])
+        msgs = [STATUS_CODES[func_name].get(e, elsemsg or f'Return code {e}')
+                for e in errcodes]
+        emsg = ', '.join([f'{c} of "{msg}"' for c, msg in zip(counts, msgs)])
+        raise ErfaError(f'ERFA function "{func_name}" yielded {emsg}')
 
-        emsg = ', '.join(['{0} of "{1}"'.format(errcounts[e], errmsgs[e])
-                          for e in errcodes])
-        raise ErfaError('ERFA function "{}" yielded {}'
-                        .format(func_name, emsg))
-
-    elif np.any(statcodes > 0):
-        # Only warnings present.
-        if statcodes.shape:
-            statcodes = statcodes[statcodes > 0]
-
-        warncodes = np.unique(statcodes)
-
-        warncounts = dict([(w, np.sum(statcodes == w)) for w in warncodes])
-
+    warnidx = (statcodes > 0).nonzero()
+    if warnidx[0].size > 0:
+        warncodes, counts = np.unique(statcodes[warnidx], return_counts=True)
         elsemsg = STATUS_CODES[func_name].get('else', None)
-        if elsemsg is None:
-            warnmsgs = dict([(w, STATUS_CODES[func_name].get(
-                w, 'Return code ' + str(w))) for w in warncodes])
-        else:
-            warnmsgs = dict([(w, STATUS_CODES[func_name].get(
-                w, elsemsg)) for w in warncodes])
-
-        wmsg = ', '.join(['{0} of "{1}"'.format(warncounts[w], warnmsgs[w])
-                          for w in warncodes])
-        warn('ERFA function "{}" yielded {}'.format(func_name, wmsg),
-             ErfaWarning)
+        msgs = [STATUS_CODES[func_name].get(w, elsemsg or f'Return code {w}')
+                for w in warncodes]
+        wmsg = ', '.join([f'{c} of "{msg}"' for c, msg in zip(counts, msgs)])
+        warn(f'ERFA function "{func_name}" yielded {wmsg}', ErfaWarning)
 
 
 # <------------------------structured dtype conversion------------------------>
