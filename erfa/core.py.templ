@@ -24,9 +24,9 @@ Note that the ufunc part of these functions are implemented in a separate
 module (compiled as ``ufunc``), derived from the ``ufunc.c`` file.
 """
 
-import warnings
+from warnings import warn
 
-import numpy
+import numpy as np
 
 from . import ufunc
 
@@ -73,7 +73,7 @@ STATUS_CODES_REMAP = {
 
 
 def check_errwarn(statcodes, func_name):
-    if not numpy.any(statcodes):
+    if not np.any(statcodes):
         return
     # Remap any errors into warnings in the STATUS_CODES_REMAP dict.
     if func_name in STATUS_CODES_REMAP:
@@ -81,14 +81,14 @@ def check_errwarn(statcodes, func_name):
             statcodes[statcodes == before] = after
             STATUS_CODES[func_name][after] = STATUS_CODES[func_name][before]
 
-    if numpy.any(statcodes < 0):
+    if np.any(statcodes < 0):
         # Errors present - only report the errors.
         if statcodes.shape:
             statcodes = statcodes[statcodes < 0]
 
-        errcodes = numpy.unique(statcodes)
+        errcodes = np.unique(statcodes)
 
-        errcounts = dict([(e, numpy.sum(statcodes == e)) for e in errcodes])
+        errcounts = dict([(e, np.sum(statcodes == e)) for e in errcodes])
 
         elsemsg = STATUS_CODES[func_name].get('else', None)
         if elsemsg is None:
@@ -103,14 +103,14 @@ def check_errwarn(statcodes, func_name):
         raise ErfaError('ERFA function "{}" yielded {}'
                         .format(func_name, emsg))
 
-    elif numpy.any(statcodes > 0):
+    elif np.any(statcodes > 0):
         # Only warnings present.
         if statcodes.shape:
             statcodes = statcodes[statcodes > 0]
 
-        warncodes = numpy.unique(statcodes)
+        warncodes = np.unique(statcodes)
 
-        warncounts = dict([(w, numpy.sum(statcodes == w)) for w in warncodes])
+        warncounts = dict([(w, np.sum(statcodes == w)) for w in warncodes])
 
         elsemsg = STATUS_CODES[func_name].get('else', None)
         if elsemsg is None:
@@ -122,14 +122,14 @@ def check_errwarn(statcodes, func_name):
 
         wmsg = ', '.join(['{0} of "{1}"'.format(warncounts[w], warnmsgs[w])
                           for w in warncodes])
-        warnings.warn('ERFA function "{}" yielded {}'.format(func_name, wmsg),
-                      ErfaWarning)
+        warn('ERFA function "{}" yielded {}'.format(func_name, wmsg),
+             ErfaWarning)
 
 
 # <------------------------structured dtype conversion------------------------>
 
-dt_bytes1 = numpy.dtype('S1')
-dt_bytes12 = numpy.dtype('S12')
+dt_bytes1 = np.dtype('S1')
+dt_bytes12 = np.dtype('S12')
 
 # <--------------------------Actual ERFA-wrapping code------------------------>
 
