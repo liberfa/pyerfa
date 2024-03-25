@@ -43,7 +43,9 @@ The package can be obtained from PyPI_ or directly from the git repository::
 
   $ git clone --recursive https://github.com/liberfa/pyerfa/
 
+The package also has nightly wheel that can be obtained as follows::
 
+  $ pip install --upgrade --index-url https://pypi.anaconda.org/liberfa/simple pyerfa --pre
 
 Testing
 -------
