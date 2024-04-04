@@ -1,3 +1,8 @@
+2.0.1.2 (2024-04-04)
+====================
+No new features, but wheels that are compatible with numpy 2.0
+as well as older supported versions of numpy 1.x.
+
 2.0.1.1 (2023-10-19)
 ====================
 - Ensured pyerfa works on PyPy too with the Python limited API. [gh-120]
