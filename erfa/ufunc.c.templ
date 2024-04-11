@@ -17,6 +17,11 @@
 #include "erfa.h"
 #include "erfaextra.h"
 
+// Backported NumPy 2 API (can be removed if numpy 2 is required)
+#if NPY_ABI_VERSION < 0x02000000
+#define PyDataType_ELSIZE(descr) ((descr)->elsize)
+#endif
+
 // On gcc<10 we can run into the following:
 //
 //   error: dereferencing pointer to incomplete type 'PyTypeObject'
