@@ -115,3 +115,35 @@ jobs:
         python -m pip install --editable .[test]
         (nm -u erfa/ufunc.*.so | grep eraA2af) || exit 1
         (python -c 'import erfa' 2>&1 | grep -n 'too old') > /dev/null && (echo 'liberfa too old, skipping tests'; exit 0) || python -m pytest
+
+
+  build_against_numpy_1:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        submodules: true
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        # this is mainly meant to be useful on old or exotic archs
+        # so we use our oldest-supported Python
+        python-version: '3.9'
+    - name: Install build-time dependencies
+      run: |
+        python -m pip install --upgrade wheel setuptools setuptools_scm jinja2 'numpy<2.0'
+    - run: python -m pip list
+    - name: Build
+      # using --no-build-isolation allows us to skip pass build-system metadata
+      # from pyproject.toml
+      # In particular this allows us to use an older version of numpy than we
+      # normally require.
+      # building in --editable mode to avoid PYTHONPATH issues
+      run: |
+        python -m pip install --editable . --no-build-isolation
+
+    - name: Check
+      run: python -c "import erfa"
