@@ -1,3 +1,8 @@
+2.0.1.4 (2024-04-12)
+====================
+Reintroduces a work-around such that pyerfa can also be built
+on older numpy.
+
 2.0.1.3 (2024-04-05)
 ====================
 No new features, but wheels that are compatible with numpy 2.0
