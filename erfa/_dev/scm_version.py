@@ -6,43 +6,55 @@ import functools
 import os.path as pth
 from warnings import warn
 
-try:
-    from setuptools_scm import git, Configuration, get_version as _get_version
-    from setuptools_scm.version import guess_next_version
 
-    def _guess_next_dev(version, liberfadir=None):
-        if liberfadir is None:
-            liberfadir = pathlib.Path(
-                __file__).parent.parent.parent / 'liberfa' / 'erfa'
+def __getattr__(name):
+    if name not in ("_guess_next_dev", "get_version"):
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
-        config = Configuration(root=liberfadir)
-        erfa_version = git.parse(liberfadir, config=config)
-        if not erfa_version.exact:
-            warn(f'liberfa/erfa not at a tagged release, but at {erfa_version}')
+    try:
+        from setuptools_scm import git, Configuration, get_version as _get_version
+        from setuptools_scm.version import guess_next_version
 
-        erfa_tag = erfa_version.format_with("{tag}")
-        version_string = str(version.tag)
+        def _guess_next_dev(version, liberfadir=None):
+            if liberfadir is None:
+                liberfadir = pathlib.Path(
+                    __file__).parent.parent.parent / 'liberfa' / 'erfa'
 
-        if version.exact:
-            if not version_string.startswith(erfa_tag):
-                warn(f'tag {version_string} does not start with '
-                     f'liberfa/erfa tag {erfa_tag}')
+            config = Configuration(root=liberfadir)
+            erfa_version = git.parse(liberfadir, config=config)
+            if not erfa_version.exact:
+                warn(f'liberfa/erfa not at a tagged release, but at {erfa_version}')
 
-            return version_string
+            erfa_tag = erfa_version.format_with("{tag}")
+            version_string = str(version.tag)
 
-        else:
-            if erfa_tag > version_string:
-                guessed = erfa_tag
-            elif 'dev' in version_string or len(version_string.split('.')) > 3:
-                return version.format_next_version(guess_next_version)
+            if version.exact:
+                if not version_string.startswith(erfa_tag):
+                    warn(f'tag {version_string} does not start with '
+                        f'liberfa/erfa tag {erfa_tag}')
+
+                return version_string
+
             else:
-                guessed = version_string.partition("+")[0] + '.1'
-            return version.format_with("{guessed}.dev{distance}",
-                                       guessed=guessed)
+                if erfa_tag > version_string:
+                    guessed = erfa_tag
+                elif 'dev' in version_string or len(version_string.split('.')) > 3:
+                    return version.format_next_version(guess_next_version)
+                else:
+                    guessed = version_string.partition("+")[0] + '.1'
+                return version.format_with("{guessed}.dev{distance}",
+                                        guessed=guessed)
+    except Exception as exc:
+        raise ImportError('setuptools_scm broken or not installed') from exc
 
-    get_version = functools.partial(_get_version,
+    else:
+        if name == "_guess_next_dev":
+            return _guess_next_dev
+        elif name == "get_version":
+            return functools.partial(_get_version,
                                     root=pth.join('..', '..'),
                                     version_scheme=_guess_next_dev,
                                     relative_to=__file__)
-except Exception as exc:
-    raise ImportError('setuptools_scm broken or not installed') from exc
+        else:
+            # supposedly unreachable
+            raise RuntimeError
