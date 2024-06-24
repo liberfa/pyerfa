@@ -28,10 +28,16 @@ jobs:
       # For nightly wheels as well as when building with the 'Build all wheels' label, we disable
       # the build isolation and explicitly install the latest developer version of numpy as well as
       # the latest stable versions of all other build-time dependencies.
+      #
+      # pre-release pythons are included for testing but no wheels will be produced
+      # specifically for these targets since this package uses Py_Limited_API
+      # Do not hesitate to turn this setting off if testing fail for external reasons
+      # (e.g. numpy isn't currently compatible with the latest python pre-release) 
       env: |
-        CIBW_BEFORE_BUILD: '${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && 'pip install --pre setuptools setuptools_scm jinja2 numpy') || '' }}'
+        CIBW_BEFORE_BUILD: '${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && 'pip install setuptools setuptools_scm jinja2 numpy') || '' }}'
         CIBW_BUILD_FRONTEND: '${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && 'pip; args: --no-build-isolation') || 'build' }}'
-
+        CIBW_PRERELEASE_PYTHONS: '${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request')) }}'
+        CIBW_ENVIRONMENT: '${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && 'PIP_PRE=1 PIP_EXTRA_INDEX_URL=https://pypi.anaconda.org/scientific-python-nightly-wheels/simple') || '' }}'
       test_extras: test
       test_command: pytest --pyargs erfa
 
