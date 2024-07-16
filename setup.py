@@ -9,6 +9,7 @@ import setuptools
 import subprocess
 from warnings import warn
 import packaging.version
+from wheel.bdist_wheel import bdist_wheel
 
 
 LIBERFADIR = os.path.join('liberfa', 'erfa')
@@ -18,6 +19,18 @@ GEN_FILES = [
     os.path.join('erfa', 'ufunc.c'),
 ]
 
+# build with Py_LIMITED_API unless explicitly disabled
+USE_PY_LIMITED_API = os.getenv("PYERFA_LIMITED_API", "1") != "0"
+
+class bdist_wheel_abi3(bdist_wheel):
+    def get_tag(self):
+        python, abi, plat = super().get_tag()
+
+        if USE_PY_LIMITED_API and python.startswith("cp"):
+            # on CPython, our wheels are abi3 and compatible back to 3.9
+            return "cp39", "abi3", plat
+
+        return python, abi, plat
 
 def newer(source, target):
     import pathlib
@@ -141,13 +154,16 @@ def get_extensions():
         elif 'sdist' in sys.argv:
             raise RuntimeError('missing "configure" script in "liberfa/erfa"')
 
+    if USE_PY_LIMITED_API:
+        define_macros.append(("Py_LIMITED_API", "0x30900f0"))
+
     erfa_ext = NumpyExtension(
         name="erfa.ufunc",
         sources=sources,
         include_dirs=include_dirs,
         libraries=libraries,
         define_macros=define_macros,
-        py_limited_api=True,
+        py_limited_api=USE_PY_LIMITED_API,
         language="c")
 
     return [erfa_ext]
@@ -176,4 +192,8 @@ use_scm_version = {
     'version_scheme': guess_next_dev,
 }
 
-setuptools.setup(use_scm_version=use_scm_version, ext_modules=get_extensions())
+setuptools.setup(
+    use_scm_version=use_scm_version,
+    ext_modules=get_extensions(),
+    cmdclass={"bdist_wheel": bdist_wheel_abi3},
+)

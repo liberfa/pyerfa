@@ -10,7 +10,6 @@
  */
 
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
-#define Py_LIMITED_API 0x030900f0
 #include "Python.h"
 #include "numpy/arrayobject.h"
 #include "numpy/ufuncobject.h"
@@ -29,7 +28,7 @@
 // As mentioned in https://github.com/numpy/numpy/issues/16970,
 // the workaround is to define a fake _typeobject struct.
 
-#ifndef PYPY_VERSION
+#if (defined Py_LIMITED_API) && !(defined PYPY_VERSION)
 typedef struct _typeobject {
     int dummy;
 };
