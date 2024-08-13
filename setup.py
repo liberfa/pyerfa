@@ -141,8 +141,9 @@ def get_extensions():
             if liberfa_versions:
                 print('Configure liberfa ("configure.ac" scan)')
                 lines = []
-                for name, value in get_liberfa_versions():
-                    lines.append(f'#define {name} "{value}"')
+                for name, value in liberfa_versions:
+                    # making sure strings are correctly quoted
+                    lines.append(f'#define {name} {value!r}'.replace("'", '"'))
                 with open(config_h, 'w') as fd:
                     fd.write('\n'.join(lines))
             else:
