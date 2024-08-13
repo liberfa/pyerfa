@@ -2,8 +2,8 @@ name: Wheel building
 
 on:
   schedule:
-    # run every day at 4am UTC
-    - cron: '0 4 * * *'
+    # run every Sunday at 4am UTC
+    - cron: '0 4 * * SUN'
   workflow_dispatch:
   push:
   pull_request:
