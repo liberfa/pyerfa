@@ -28,9 +28,11 @@ jobs:
       # For nightly wheels as well as when building with the 'Build all wheels' label, we disable
       # the build isolation and explicitly install the latest developer version of numpy as well as
       # the latest stable versions of all other build-time dependencies.
+      # Skip testing on cp313 until numpy has stable wheels for it on PyPI
       env: |
         CIBW_BEFORE_BUILD: '${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && 'pip install --pre setuptools setuptools_scm wheel jinja2 numpy') || '' }}'
         CIBW_BUILD_FRONTEND: '${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && 'pip; args: --no-build-isolation') || 'build' }}'
+        CIBW_TEST_SKIP: 'cp313-*'
 
       test_extras: test
       test_command: pytest --pyargs erfa
