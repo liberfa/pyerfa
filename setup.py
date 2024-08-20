@@ -10,6 +10,7 @@ import subprocess
 from warnings import warn
 import packaging.version
 from wheel.bdist_wheel import bdist_wheel
+import sysconfig
 
 
 LIBERFADIR = os.path.join('liberfa', 'erfa')
@@ -19,8 +20,12 @@ GEN_FILES = [
     os.path.join('erfa', 'ufunc.c'),
 ]
 
+
 # build with Py_LIMITED_API unless explicitly disabled
-USE_PY_LIMITED_API = os.getenv("PYERFA_LIMITED_API", "1") != "0"
+USE_PY_LIMITED_API = (
+    (not sysconfig.get_config_var("Py_GIL_DISABLED")) and
+    os.getenv("PYERFA_LIMITED_API", "1") != "0"
+)
 
 class bdist_wheel_abi3(bdist_wheel):
     def get_tag(self):
@@ -38,7 +43,7 @@ def newer(source, target):
     source = pathlib.Path(source)
     if not source.exists():
         raise FileNotFoundError(f"file '{source.resolve()}' does not exist")
-    
+
     target = pathlib.Path(target)
     if not target.exists():
         return 1
