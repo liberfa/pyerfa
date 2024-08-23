@@ -44,8 +44,6 @@ jobs:
         - cp3*-manylinux_aarch64
         - pp39-manylinux_x86_64
         # MacOS X wheels - we deliberately do not build universal2 wheels.
-        # Note that the arm64 wheels are not actually tested so we
-        # rely on local manual testing of these to make sure they are ok.
         - cp3*macosx_x86_64
         - cp3*macosx_arm64
         - pp39-macosx_x86_64
