@@ -21,11 +21,9 @@ GEN_FILES = [
 ]
 
 
-# build with Py_LIMITED_API unless explicitly disabled
-USE_PY_LIMITED_API = (
-    (not sysconfig.get_config_var("Py_GIL_DISABLED")) and
-    os.getenv("PYERFA_LIMITED_API", "1") != "0"
-)
+# build with Py_LIMITED_API unless in freethreading build (which does not currently
+# support the limited API in py313t)
+USE_PY_LIMITED_API = not sysconfig.get_config_var("Py_GIL_DISABLED")
 
 class bdist_wheel_abi3(bdist_wheel):
     def get_tag(self):
