@@ -9,8 +9,12 @@ import setuptools
 import subprocess
 from warnings import warn
 import packaging.version
-from wheel.bdist_wheel import bdist_wheel
 import sysconfig
+
+try:
+    from setuptools.command.bdist_wheel import bdist_wheel
+except ImportError:
+    from wheel.bdist_wheel import bdist_wheel
 
 
 LIBERFADIR = os.path.join('liberfa', 'erfa')
