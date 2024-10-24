@@ -9,8 +9,14 @@ import setuptools
 import subprocess
 from warnings import warn
 import packaging.version
-from wheel.bdist_wheel import bdist_wheel
 import sysconfig
+
+try:
+    # First available on setuptools 70.1 from January 2024
+    # https://setuptools.pypa.io/en/stable/history.html#v70-1-0
+    from setuptools.command.bdist_wheel import bdist_wheel
+except ImportError:
+    from wheel.bdist_wheel import bdist_wheel
 
 
 LIBERFADIR = os.path.join('liberfa', 'erfa')
