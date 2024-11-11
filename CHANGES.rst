@@ -1,3 +1,8 @@
+2.0.1.5 (2024-11-11)
+====================
+Ensure that pyerfa is only built with the limited API if the environment
+variable ``Py_GIL_DISABLED`` is not set.
+
 2.0.1.4 (2024-04-12)
 ====================
 Reintroduces a work-around such that pyerfa can also be built
