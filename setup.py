@@ -198,7 +198,6 @@ else:
                                            liberfadir=LIBERFADIR)
 
 use_scm_version = {
-    'write_to': os.path.join('erfa', '_version.py'),
     'version_scheme': guess_next_dev,
 }
 
