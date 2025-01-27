@@ -1,3 +1,8 @@
+2.0.1.6 (2025-01-27)
+====================
+Update the way ``setuptools_scm`` is set up, to avoid problems with
+compilation of packages that have ``pyerfa`` as a dependency.
+
 2.0.1.5 (2024-11-11)
 ====================
 Ensure that pyerfa is only built with the limited API if the environment
