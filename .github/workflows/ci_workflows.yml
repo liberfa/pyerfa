@@ -23,7 +23,7 @@ jobs:
         include:
 
           - name: Test with oldest supported versions of our dependencies
-            os: ubuntu-20.04
+            os: ubuntu-22.04
             python: 3.9
             toxenv: test-oldestdeps
             toxargs: -v
