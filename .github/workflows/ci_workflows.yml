@@ -38,7 +38,7 @@ jobs:
 
           - name: Test with development versions of our dependencies
             os: ubuntu-latest
-            python: '3.13-dev'
+            python: '3.14'
             toxenv: test-devdeps
             toxargs: -v
 
@@ -65,6 +65,7 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python }}
+        allow-prereleases: true
     - name: Install APT packages
       if: matrix.apt_packages
       run: sudo apt-get install ${{ matrix.apt_packages }}
