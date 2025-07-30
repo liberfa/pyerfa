@@ -15,7 +15,7 @@ jobs:
 
   build_and_publish:
 
-    uses: OpenAstronomy/github-actions-workflows/.github/workflows/publish.yml@d83bb11581e517f1e786ae76f146781fdd21cd2f  # v2.0.0
+    uses: OpenAstronomy/github-actions-workflows/.github/workflows/publish.yml@28e947497bed4d6ec3fa1d66d198e95a1d17bc63  # v2.2.1
     if: (github.repository == 'liberfa/pyerfa')
     with:
 
@@ -32,6 +32,7 @@ jobs:
         CIBW_BEFORE_BUILD: '${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && 'pip install --pre setuptools setuptools_scm wheel jinja2 numpy') || '' }}'
         CIBW_BUILD_FRONTEND: '${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && 'pip; args: --no-build-isolation') || 'build' }}'
         CIBW_ENABLE: pypy
+        CIBW_SKIP: cp314t-*
 
       test_extras: test
       test_command: pytest --pyargs erfa
