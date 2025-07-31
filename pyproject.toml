@@ -1,6 +1,6 @@
 [build-system]
 requires = [
-    "setuptools>=61.2",
+    "setuptools>=77.0.0",
     "setuptools_scm>=8.0.0",
     "wheel",
     "jinja2>=2.10.3",
@@ -11,13 +11,13 @@ build-backend = 'setuptools.build_meta'
 [project]
 name = "pyerfa"
 authors = [{name = "The PyERFA Developers"}]
-license = {text = "BSD 3-Clause License"}
+license = "BSD-3-Clause"
+license-files = ["LICENSE.rst"]
 description = "Python bindings for ERFA"
 readme = "README.rst"
 keywords = ["astronomy", "astrophysics", "cosmology", "space", "science", "coordinate"]
 classifiers = [
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: BSD License",
     "Operating System :: OS Independent",
     "Programming Language :: C",
     "Programming Language :: Python :: 3",
@@ -40,7 +40,6 @@ docs = ["sphinx-astropy>=1.3"]
 [tool.setuptools]
 # We set packages to find: to automatically find all sub-packages
 zip-safe = false
-license-files = ["LICENSE.rst"]
 include-package-data = false
 
 [tool.setuptools.packages.find]
