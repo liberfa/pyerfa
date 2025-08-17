@@ -405,6 +405,21 @@ class TestAstromNotInplace:
         assert type(astrom) is np.ndarray
 
 
+class TestOutputType:
+    def test_named_attributes_for_multiple(self):
+        out = erfa.cal2jd(2001, 2, 3)
+        assert len(out) == 2
+        assert out[0] is out.djm0
+        assert out[1] is out.djm
+        assert repr(out).startswith("Cal2jdResult(djm0=")
+
+    def test_not_namedtuple_for_single(self):
+        # Pick one for which the ufunc returns a status code.
+        out = erfa.plan94(2400000.5, 51943.0, 1)
+        assert isinstance(out, np.void)
+        assert out.dtype.names == ('p', 'v')
+
+
 class TestLeapSecondsBasics:
     def test_get_leap_seconds(self):
         leap_seconds = erfa.leap_seconds.get()

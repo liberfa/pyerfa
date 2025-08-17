@@ -80,6 +80,8 @@ jobs:
         tox ${{ matrix.toxargs }} -e ${{ matrix.toxenv }} -- ${{ matrix.toxposargs }}
 
   tests_external_liberfa:
+    # Note: this does not use tox, an advantage of which is that it runs doctests
+    # on all files in the repository, including README.rst.
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     env:
