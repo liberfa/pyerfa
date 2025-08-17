@@ -108,6 +108,22 @@ dt_bytes12 = np.dtype('S12')
 
 
 {%- for func in funcs %}
+{#-
+ # Define the status codes that this function returns.
+ #}
+{%- if func.args_by_inout('stat') %}
+{%- for stat in func.args_by_inout('stat') %}
+{%- if stat.doc_info.statuscodes %}
+
+
+STATUS_CODES['{{ func.pyname }}'] = {
+{%- for key, value in stat.doc_info.statuscodes.items() %}
+    {{ '{!r}'.format(key) }}: {{ '{!r}'.format(value) }},
+{%- endfor %}
+}
+{%- endif %}
+{%- endfor %}
+{%- endif %}
 
 
 def {{ func.pyname }}({{ func.args_by_inout('in|inout')|map(attribute='name')|join(', ') }}):
@@ -163,21 +179,5 @@ def {{ func.pyname }}({{ func.args_by_inout('in|inout')|map(attribute='name')|jo
      #}
     return {{ func.args_by_inout('inout|out|ret')|map(attribute='name')|join(', ') }}
 
-{#-
- # Define the status codes that this function returns.
- #}
-{%- if func.args_by_inout('stat') %}
-{%- for stat in func.args_by_inout('stat') %}
-{%- if stat.doc_info.statuscodes %}
-
-
-STATUS_CODES['{{ func.pyname }}'] = {
-{%- for key, value in stat.doc_info.statuscodes.items() %}
-    {{ '{!r}'.format(key) }}: {{ '{!r}'.format(value) }},
-{%- endfor %}
-}
-{%- endif %}
-{%- endfor %}
-{%- endif %}
 {%- endfor %}
 {# done! (note: this comment also ensures final new line!) #}
