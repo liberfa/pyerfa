@@ -1,3 +1,8 @@
+2.0.1.7 (unreleased)
+====================
+- Let multi-output functions now return a ``namedtuple`` so that
+  the various results can be accessed by attribute. [gh-176]
+
 2.0.1.6 (2025-01-27)
 ====================
 Update the way ``setuptools_scm`` is set up, to avoid problems with

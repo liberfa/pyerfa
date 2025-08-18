@@ -24,11 +24,10 @@ Note that the ufunc part of these functions are implemented in a separate
 module (compiled as ``ufunc``), derived from the ``ufunc.c`` file.
 """
 
-from typing import Any, NamedTuple
+from collections import namedtuple
 from warnings import warn
 
 import numpy as np
-from numpy.typing import NDArray
 
 from . import ufunc
 
@@ -127,16 +126,13 @@ STATUS_CODES['{{ func.pyname }}'] = {
 {%- endfor %}
 {%- endif %}
 {#-
- # For ufuncs with more than one output, define a NamedTuple so one
+ # For ufuncs with more than one output, define a namedtuple so one
  # can access the outputs by name.
  #}
 {%- if func.args_by_inout('inout|out|ret')|length > 1 %}
 
 
-class {{ func.pyname|capitalize }}Result(NamedTuple):
-    {%- for arg_name in func.args_by_inout('inout|out|ret')|map(attribute='name') %}
-    {{ arg_name }} : NDArray[Any]
-    {%- endfor %}
+{{ func.pyname|capitalize }}Result = namedtuple('{{ func.pyname|capitalize }}Result', "{{ func.args_by_inout('inout|out|ret')|map(attribute='name')|join(', ') }}")
 {%- endif %}
 
 
