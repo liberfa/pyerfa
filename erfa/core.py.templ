@@ -24,6 +24,7 @@ Note that the ufunc part of these functions are implemented in a separate
 module (compiled as ``ufunc``), derived from the ``ufunc.c`` file.
 """
 
+from collections import namedtuple
 from warnings import warn
 
 import numpy as np
@@ -41,22 +42,12 @@ __all__ = [
 class ErfaError(ValueError):
     """
     A class for errors triggered by ERFA functions (status codes < 0)
-
-    Note: this class should *not* be referenced by fully-qualified name, because
-    it may move to ERFA in a future version.  In a future such move it will
-    still be imported here as an alias, but the true namespace of the class may
-    change.
     """
 
 
 class ErfaWarning(UserWarning):
     """
     A class for warnings triggered by ERFA functions (status codes > 0)
-
-    Note: this class should *not* be referenced by fully-qualified name, because
-    it may move to ERFA in a future version.  In a future such move it will
-    still be imported here as an alias, but the true namespace of the class may
-    change.
     """
 
 
@@ -118,6 +109,31 @@ dt_bytes12 = np.dtype('S12')
 
 
 {%- for func in funcs %}
+{#-
+ # Define the status codes that this function returns.
+ #}
+{%- if func.args_by_inout('stat') %}
+{%- for stat in func.args_by_inout('stat') %}
+{%- if stat.doc_info.statuscodes %}
+
+
+STATUS_CODES['{{ func.pyname }}'] = {
+{%- for key, value in stat.doc_info.statuscodes.items() %}
+    {{ '{!r}'.format(key) }}: {{ '{!r}'.format(value) }},
+{%- endfor %}
+}
+{%- endif %}
+{%- endfor %}
+{%- endif %}
+{#-
+ # For ufuncs with more than one output, define a namedtuple so one
+ # can access the outputs by name.
+ #}
+{%- if func.args_by_inout('inout|out|ret')|length > 1 %}
+
+
+{{ func.pyname|capitalize }}Result = namedtuple('{{ func.pyname|capitalize }}Result', "{{ func.args_by_inout('inout|out|ret')|map(attribute='name')|join(', ') }}")
+{%- endif %}
 
 
 def {{ func.pyname }}({{ func.args_by_inout('in|inout')|map(attribute='name')|join(', ') }}):
@@ -134,6 +150,9 @@ def {{ func.pyname }}({{ func.args_by_inout('in|inout')|map(attribute='name')|jo
 
     Returns
     -------
+    {%- if func.args_by_inout('inout|out|ret')|length > 1 %}
+    A ``{{ func.pyname|capitalize }}Result`` namedtuple with the following attributes:
+    {%- endif %}
     {%- for arg in func.args_by_inout('inout|out|ret') %}
     {{ arg.name }} : {{ arg.ctype }} array
     {%- endfor %}
@@ -171,23 +190,11 @@ def {{ func.pyname }}({{ func.args_by_inout('in|inout')|map(attribute='name')|jo
     {#-
      # Return the output arguments (including the inplace ones)
      #}
-    return {{ func.args_by_inout('inout|out|ret')|map(attribute='name')|join(', ') }}
+    {%- if func.args_by_inout('inout|out|ret')|length == 1 %}
+    return {{ func.args_by_inout('inout|out|ret')[0].name }}
+    {%- else %}
+    return {{ func.pyname|capitalize }}Result({{ func.args_by_inout('inout|out|ret')|map(attribute='name')|join(', ') }})
+    {%- endif %}
 
-{#-
- # Define the status codes that this function returns.
- #}
-{%- if func.args_by_inout('stat') %}
-{%- for stat in func.args_by_inout('stat') %}
-{%- if stat.doc_info.statuscodes %}
-
-
-STATUS_CODES['{{ func.pyname }}'] = {
-{%- for key, value in stat.doc_info.statuscodes.items() %}
-    {{ '{!r}'.format(key) }}: {{ '{!r}'.format(value) }},
-{%- endfor %}
-}
-{%- endif %}
-{%- endfor %}
-{%- endif %}
 {%- endfor %}
 {# done! (note: this comment also ensures final new line!) #}

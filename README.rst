@@ -73,10 +73,10 @@ as `numpy.dtype` corresponding to structures used by ERFA_.  Examples::
 
   >>> import erfa
   >>> erfa.jd2cal(2460000., [0, 1, 2, 3])
-  (array([2023, 2023, 2023, 2023], dtype=int32),
-   array([2, 2, 2, 2], dtype=int32),
-   array([24, 25, 26, 27], dtype=int32),
-   array([0.5, 0.5, 0.5, 0.5]))
+  Jd2calResult(iy=array([2023, 2023, 2023, 2023], dtype=int32),
+   im=array([2, 2, 2, 2], dtype=int32),
+   id=array([24, 25, 26, 27], dtype=int32),
+   fd=array([0.5, 0.5, 0.5, 0.5]))
   >>> erfa.plan94(2460000., [0, 1, 2, 3], 1)
   array([([ 0.09083713, -0.39041392, -0.21797389], [0.02192341, 0.00705449, 0.00149618]),
          ([ 0.11260694, -0.38275202, -0.21613731], [0.02160375, 0.00826891, 0.00217806]),
