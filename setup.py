@@ -11,13 +11,6 @@ from warnings import warn
 import packaging.version
 import sysconfig
 
-try:
-    # First available on setuptools 70.1 from January 2024
-    # https://setuptools.pypa.io/en/stable/history.html#v70-1-0
-    from setuptools.command.bdist_wheel import bdist_wheel
-except ImportError:
-    from wheel.bdist_wheel import bdist_wheel
-
 
 LIBERFADIR = os.path.join('liberfa', 'erfa')
 ERFA_SRC = os.path.join(LIBERFADIR, 'src')
@@ -31,15 +24,11 @@ GEN_FILES = [
 # support the limited API in py313t)
 USE_PY_LIMITED_API = not sysconfig.get_config_var("Py_GIL_DISABLED")
 
-class bdist_wheel_abi3(bdist_wheel):
-    def get_tag(self):
-        python, abi, plat = super().get_tag()
+if USE_PY_LIMITED_API:
+    options = {"bdist_wheel": {"py_limited_api": "cp39"}}
+else:
+    options = {}
 
-        if USE_PY_LIMITED_API and python.startswith("cp"):
-            # on CPython, our wheels are abi3 and compatible back to 3.9
-            return "cp39", "abi3", plat
-
-        return python, abi, plat
 
 def newer(source, target):
     import pathlib
@@ -204,5 +193,5 @@ use_scm_version = {
 setuptools.setup(
     use_scm_version=use_scm_version,
     ext_modules=get_extensions(),
-    cmdclass={"bdist_wheel": bdist_wheel_abi3},
+    options=options,
 )
