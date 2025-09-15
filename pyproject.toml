@@ -2,7 +2,6 @@
 requires = [
     "setuptools>=77.0.0",
     "setuptools_scm>=8.0.0",
-    "wheel",
     "jinja2>=2.10.3",
     "numpy>=2.0.0rc1",
 ]
