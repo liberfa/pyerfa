@@ -62,7 +62,7 @@ jobs:
         fetch-depth: 0
         submodules: true
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: ${{ matrix.python }}
         allow-prereleases: true
@@ -105,7 +105,7 @@ jobs:
         fetch-depth: 0
         submodules: true
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: ${{ matrix.python }}
     - name: Install APT packages
@@ -130,7 +130,7 @@ jobs:
         fetch-depth: 0
         submodules: true
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         # this is mainly meant to be useful on old or exotic archs
         # so we use our oldest-supported Python
