@@ -15,7 +15,7 @@ jobs:
 
   build_and_publish:
 
-    uses: OpenAstronomy/github-actions-workflows/.github/workflows/publish.yml@28e947497bed4d6ec3fa1d66d198e95a1d17bc63  # v2.2.1
+    uses: OpenAstronomy/github-actions-workflows/.github/workflows/publish.yml@d9b81a07e789d1b1921ab5fe33de2ddcbbd02c3f  # v2.3.0
     if: (github.repository == 'liberfa/pyerfa')
     with:
 
@@ -52,6 +52,8 @@ jobs:
         - cp3*win32
         - cp3*win_amd64
         - pp3*-win_amd64
+        # Windows arm64 wheels
+        - cp3{11,12,13,14}-win_arm64
 
     secrets:
       pypi_token: ${{ secrets.pypi_token }}
