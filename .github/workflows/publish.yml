@@ -15,7 +15,7 @@ jobs:
 
   build_and_publish:
 
-    uses: OpenAstronomy/github-actions-workflows/.github/workflows/publish.yml@80387e9fbf2f4aeeacc7c2db79d4d1c17154ae95  # v2.2.2
+    uses: OpenAstronomy/github-actions-workflows/.github/workflows/publish.yml@d9b81a07e789d1b1921ab5fe33de2ddcbbd02c3f  # v2.3.0
     if: (github.repository == 'liberfa/pyerfa')
     with:
 
