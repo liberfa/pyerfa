@@ -52,7 +52,8 @@ jobs:
         - cp3*win32
         - cp3*win_amd64
         - pp3*-win_amd64
-        # Windows arm64 wheels
+        # NumPy doesn't have wheels for this target + Python older than 3.11
+        # so we resort to manual version selection until 3.10 is dropped
         - cp3{11,12,13,14}-win_arm64
 
     secrets:
