@@ -31,8 +31,6 @@ jobs:
       env: |
         CIBW_BEFORE_BUILD: '${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && 'pip install --pre setuptools setuptools_scm wheel jinja2 numpy') || '' }}'
         CIBW_BUILD_FRONTEND: '${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request') && 'pip; args: --no-build-isolation') || 'build' }}'
-        CIBW_ENABLE: pypy
-        CIBW_SKIP: cp314t-*
 
       test_extras: test
       test_command: pytest --pyargs erfa
@@ -49,11 +47,10 @@ jobs:
         - pp3*-macosx_x86_64
         - pp3*-macosx_arm64
         # Windows wheels
-        - cp3*win32
-        - cp3*win_amd64
+        - cp3*-win32
+        - cp3*-win_amd64
+        - cp3*-win_arm64
         - pp3*-win_amd64
-        # Windows arm64 wheels
-        - cp3{11,12,13,14}-win_arm64
 
     secrets:
       pypi_token: ${{ secrets.pypi_token }}
