@@ -24,16 +24,8 @@ jobs:
 
           - name: Test with oldest supported versions of our dependencies
             os: ubuntu-22.04
-            python: 3.9
+            python: '3.10'
             toxenv: test-oldestdeps
-            toxargs: -v
-
-          - name: Test with medium old supported versions of our dependencies
-            # Test that we do not have a problem with some specific version (gh-101).
-            # Comment out if not needed.
-            os: ubuntu-22.04
-            python: 3.9
-            toxenv: test-olddeps
             toxargs: -v
 
           - name: Test with development versions of our dependencies
@@ -93,7 +85,7 @@ jobs:
 
           - name: Tests with external liberfa
             os: ubuntu-latest
-            python: 3.9
+            python: '3.10'
             toxenv: test
             toxargs: -v
             apt_packages: python3-venv python3-pip liberfa-dev python3-numpy
@@ -134,7 +126,7 @@ jobs:
       with:
         # this is mainly meant to be useful on old or exotic archs
         # so we use our oldest-supported Python
-        python-version: '3.9'
+        python-version: '3.10'
     - name: Install build-time dependencies
       run: |
         python -m pip install --upgrade wheel setuptools setuptools_scm jinja2 'numpy<2.0'
