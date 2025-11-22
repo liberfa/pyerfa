@@ -61,3 +61,11 @@ text_file_format = "rst"
 addopts = "--doctest-rst"
 xfail_strict = true
 norecursedirs = ["erfa/_dev"]
+
+[tool.cibuildwheel]
+enable = ["pypy"]
+skip = [
+    "cp314t-*",
+    "cp39-win_arm64",
+    "cp310-win_arm64",
+]
