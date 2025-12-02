@@ -602,12 +602,8 @@ class TestFunction:
         Right now this will be true for functions without inputs such
         as eraIr with numpy < 1.24.
         """
-        if self.nin + self.ninout == 0:
-            if self.name == 'zpv':
-                # Works on newer numpy
-                return "np.__version__ < '1.21', reason='needs numpy >= 1.21'"
-            else:
-                return "np.__version__ < '1.24', reason='numpy < 1.24 do not support no-input ufuncs'"
+        if self.nin + self.ninout == 0 and self.name != "zpv":
+            return "np.__version__ < '1.24', reason='numpy < 1.24 do not support no-input ufuncs'"
         else:
             return None
 

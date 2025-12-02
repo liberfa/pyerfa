@@ -25,8 +25,8 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Physics",
 ]
 urls = {Homepage = "https://github.com/liberfa/pyerfa"}
-requires-python = ">=3.9"
-dependencies = ["numpy>=1.19.3"]
+requires-python = ">=3.10"
+dependencies = ["numpy>=1.21.3"]
 dynamic = ["version"]
 
 [project.optional-dependencies]
