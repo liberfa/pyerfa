@@ -26,9 +26,8 @@
 # See sphinx_astropy.conf for which values are set there.
 
 from datetime import datetime
+import importlib.metadata
 import sys, time
-
-from pkg_resources import get_distribution
 
 try:
     from sphinx_astropy.conf.v1 import *  # noqa
@@ -52,7 +51,7 @@ copyright = '2011–{0}, {1}'.format(build_date.year, author)
 
 # The full version, including alpha/beta/rc tags.
 try:
-    release = get_distribution(project).version
+    release = importlib.metadata.version(project)
 except Exception:
     # assume local build
     sys.path.append('..')
