@@ -27,10 +27,13 @@
 
 from datetime import datetime
 import importlib.metadata
-import sys, time
+import os
+import sys
+import time
 
 try:
     from sphinx_astropy.conf.v1 import *  # noqa
+    from sphinx_astropy.conf.v1 import exclude_patterns
 except ImportError:
     print('ERROR: the documentation requires the sphinx-astropy package to be installed')
     sys.exit(1)
