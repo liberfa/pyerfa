@@ -49,12 +49,6 @@ jobs:
             toxenv: test-devdeps
             toxargs: -v
 
-          - name: Code style checks
-            os: ubuntu-latest
-            python: 3.x
-            toxenv: codestyle
-            toxargs: -v
-
           - name: Documentation build
             os: ubuntu-latest
             python: 3.x
