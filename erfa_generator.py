@@ -417,7 +417,7 @@ class Function:
         if self.ret != 'void':
             self.args.append(Return(self.ret, self.doc))
 
-    def args_by_inout(self, inout_filter, prop=None, join=None):
+    def args_by_inout(self, inout_filter):
         """
         Gives all of the arguments and/or returned values, depending on whether
         they are inputs, outputs, etc.
@@ -434,17 +434,7 @@ class Function:
         It can also be a "|"-separated string giving inout states to OR
         together.
         """
-        result = []
-        for arg in self.args:
-            if arg.inout_state in inout_filter.split('|'):
-                if prop is None:
-                    result.append(arg)
-                else:
-                    result.append(getattr(arg, prop))
-        if join is not None:
-            return join.join(result)
-        else:
-            return result
+        return [arg for arg in self.args if arg.inout_state in inout_filter.split("|")]
 
     @property
     def user_dtype(self):
