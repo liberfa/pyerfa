@@ -69,3 +69,8 @@ skip = [
     "cp39-win_arm64",
     "cp310-win_arm64",
 ]
+
+[tool.ruff.lint]
+extend-select = [
+    "RET",
+]
