@@ -176,8 +176,7 @@ def _expires_property():
         last = get()[-1]
         return (datetime(last["year"], last["month"], 1) +
                 timedelta(_expiration_days))
-    else:
-        return _expires
+    return _expires
 
 
 def update(table):

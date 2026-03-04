@@ -50,10 +50,9 @@ class FunctionDoc:
                     if skip[0] == arg_doc.name:
                         skip.pop(0)
                         continue
-                    else:
-                        raise RuntimeError("We whould be skipping {} "
-                                           "but {} encountered."
-                                           .format(skip[0], arg_doc.name))
+                    raise RuntimeError(
+                        f"We whould be skipping {skip[0]} but {arg_doc.name} encountered."
+                    )
 
                 if arg_doc.type.startswith('eraLDBODY'):
                     # Special-case LDBODY: for those, the previous argument
@@ -192,25 +191,22 @@ class Variable:
         used for the loop definitions.  In core.py, they are also used
         to view-cast regular arrays to these structured dtypes.
         """
-        if self.ctype == 'const char':
-            return 'dt_type'
-        elif self.ctype == 'char':
-            return 'dt_sign'
-        elif self.ctype == 'int' and self.shape == (4,):
-            return 'dt_' + self.name[1:]
-        elif self.ctype == 'double' and self.shape == (3,):
-            return 'dt_double'
-        elif self.ctype == 'double' and self.shape == (2, 3):
-            return 'dt_pv'
-        elif self.ctype == 'double' and self.shape == (2,):
-            return 'dt_pvdpv'
-        elif self.ctype == 'double' and self.shape == (3, 3):
-            return 'dt_double'
-        elif not self.shape:
-            return 'dt_' + self.ctype
-        else:
-            raise ValueError("ctype {} with shape {} not recognized."
-                             .format(self.ctype, self.shape))
+        match self.ctype, self.shape:
+            case "const char", _:
+                return "dt_type"
+            case "char", _:
+                return "dt_sign"
+            case "int", (4,):
+                return "dt_" + self.name[1:]
+            case "double", (3,) | (3, 3):
+                return "dt_double"
+            case "double", (2, 3):
+                return "dt_pv"
+            case "double", (2,):
+                return "dt_pvdpv"
+            case _, ():
+                return "dt_" + self.ctype
+        raise ValueError(f"ctype {self.ctype} with shape {self.shape} not recognized.")
 
     @property
     def view_dtype(self):
@@ -223,10 +219,9 @@ class Variable:
         """
         if self.ctype == 'const char':
             return 'dt_bytes12'
-        elif self.ctype == 'char':
+        if self.ctype == "char":
             return 'dt_bytes1'
-        else:
-            raise ValueError('Only char ctype should need view back!')
+        raise ValueError("Only char ctype should need view back!")
 
     @property
     def ndim(self):
@@ -245,14 +240,14 @@ class Variable:
 
     @property
     def signature_shape(self):
-        if self.ctype == 'eraLDBODY':
-            return '(n)'
-        elif self.ctype == 'double' and self.shape == (3,):
-            return '(3)'
-        elif self.ctype == 'double' and self.shape == (3, 3):
-            return '(3, 3)'
-        else:
-            return '()'
+        match self.ctype, self.shape:
+            case "eraLDBODY", _:
+                return "(n)"
+            case "double", (3,):
+                return "(3)"
+            case "double", (3, 3):
+                return "(3, 3)"
+        return "()"
 
 
 class Argument(Variable):
@@ -305,10 +300,7 @@ class Argument(Variable):
         if self.ctype == 'eraLDBODY':
             assert self.name == 'b'
             return 'nb, _' + self.name
-        elif self.is_ptr:
-            return '_'+self.name
-        else:
-            return '*_'+self.name
+        return ("_" if self.is_ptr else "*_") + self.name
 
     def __repr__(self):
         return (f"Argument('{self.definition}', name='{self.name}', "
@@ -448,8 +440,7 @@ class Function:
         for arg in self.args_by_inout('in|inout|out'):
             if arg.ctype == 'eraLDBODY':
                 return arg.dtype
-            elif user_dtype is None and arg.dtype not in ('dt_double',
-                                                          'dt_int'):
+            if user_dtype is None and arg.dtype not in ("dt_double", "dt_int"):
                 user_dtype = arg.dtype
 
         return user_dtype
@@ -592,10 +583,11 @@ class TestFunction:
         Right now this will be true for functions without inputs such
         as eraIr with numpy < 1.24.
         """
-        if self.nin + self.ninout == 0 and self.name != "zpv":
-            return "np.__version__ < '1.24', reason='numpy < 1.24 do not support no-input ufuncs'"
-        else:
-            return None
+        return (
+            "np.__version__ < '1.24', reason='numpy < 1.24 do not support no-input ufuncs'"
+            if self.nin + self.ninout == 0 and self.name != "zpv"
+            else None
+        )
 
     def pre_process_lines(self):
         """Basic pre-processing.
