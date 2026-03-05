@@ -475,8 +475,10 @@ class Function:
                 + result[split_point:].replace(' =', ') ='))
 
     def __repr__(self):
-        return (f"Function(name='{self.name}', pyname='{self.pyname}', "
-                f"filename='{self.filename}', filepath='{self.filepath}')")
+        return (
+            f"{type(self).__name__}(name='{self.name}', pyname='{self.pyname}', "
+            f"filename='{self.filename}', filepath='{self.filepath}')"
+        )
 
 
 class Constant:
@@ -544,12 +546,6 @@ class ExtraFunction(Function):
                             self.prototype).group(1).strip()
         if self.ret != 'void':
             self.args.append(Return(self.ret, self.doc))
-
-    def __repr__(self):
-        r = super().__repr__()
-        if r.startswith('Function'):
-            r = 'Extra' + r
-        return r
 
 
 class TestFunction:
