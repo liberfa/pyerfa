@@ -25,11 +25,11 @@
 # be accessible, and the documentation will not build correctly.
 # See sphinx_astropy.conf for which values are set there.
 
-from datetime import datetime
 import importlib.metadata
 import os
 import sys
 import time
+from datetime import datetime
 
 try:
     from sphinx_astropy.conf.v1 import *  # noqa

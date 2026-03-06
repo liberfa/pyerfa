@@ -10,8 +10,8 @@ Note that this does *not* currently automate the process of creating structs
 or dtypes for those structs.  They should be added manually in the template file.
 """
 
-import re
 import os.path
+import re
 from collections import OrderedDict
 
 DEFAULT_ERFA_LOC = os.path.join(os.path.split(__file__)[0], 'liberfa/erfa/src')

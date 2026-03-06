@@ -1,13 +1,14 @@
 # Try to use setuptools_scm to get the current version; this is only used
 # in development installations from the git repository.
 
-import pathlib
 import functools
 import os.path as pth
+import pathlib
 from warnings import warn
 
 try:
-    from setuptools_scm import git, Configuration, get_version as _get_version
+    from setuptools_scm import Configuration, git
+    from setuptools_scm import get_version as _get_version
     from setuptools_scm.version import guess_next_version
 
     def _guess_next_dev(version, liberfadir=None):
