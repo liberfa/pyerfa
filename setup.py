@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
+import functools
 import os
 import re
-import sys
-import functools
-import setuptools
 import subprocess
-from warnings import warn
-import packaging.version
+import sys
 import sysconfig
+from warnings import warn
 
+import packaging.version
+import setuptools
 
 LIBERFADIR = os.path.join('liberfa', 'erfa')
 ERFA_SRC = os.path.join(LIBERFADIR, 'src')

@@ -1,9 +1,9 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 from datetime import datetime
 
-import pytest
 import numpy as np
-from numpy.testing import assert_array_equal, assert_array_almost_equal, assert_allclose
+import pytest
+from numpy.testing import assert_allclose, assert_array_almost_equal, assert_array_equal
 
 import erfa
 
