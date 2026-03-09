@@ -10,6 +10,7 @@ Note that this does *not* currently automate the process of creating structs
 or dtypes for those structs.  They should be added manually in the template file.
 """
 
+import functools
 import os.path
 import re
 from collections import OrderedDict
@@ -30,9 +31,6 @@ class FunctionDoc:
         self.doc = self.doc.replace("/*+\n", "")        # accommodate eraLdn
         self.doc = self.doc.replace("*  ", "    " * 2)  # accommodate eraAticqn
         self.doc = self.doc.replace("*\n", "\n")        # accommodate eraAticqn
-        self.__input = None
-        self.__output = None
-        self.__ret_info = None
 
     def _get_arg_doc_list(self, doc_lines):
         """Parse input/output doc section lines, getting arguments from them.
@@ -73,50 +71,38 @@ class FunctionDoc:
 
         return doc_list
 
-    @property
+    @functools.cached_property
     def input(self):
-        if self.__input is None:
-            self.__input = []
-            for regex in ("Given([^\n]*):.*?\n(.+?)  \n",
-                          "Given and returned([^\n]*):\n(.+?)  \n"):
-                result = re.search(regex, self.doc, re.DOTALL)
-                if result is not None:
-                    doc_lines = result.group(2).split("\n")
-                    self.__input += self._get_arg_doc_list(doc_lines)
-
-        return self.__input
-
-    @property
-    def output(self):
-        if self.__output is None:
-            self.__output = []
-            for regex in ("Given and returned([^\n]*):\n(.+?)  \n",
-                          "Returned([^\n]*):.*?\n(.+?)  \n"):
-                result = re.search(regex, self.doc, re.DOTALL)
-                if result is not None:
-                    doc_lines = result.group(2).split("\n")
-                    self.__output += self._get_arg_doc_list(doc_lines)
-
-        return self.__output
-
-    @property
-    def ret_info(self):
-        if self.__ret_info is None:
-            ret_info = []
-            result = re.search("Returned \\(function value\\)([^\n]*):\n(.+?)  \n",
-                               self.doc, re.DOTALL)
+        input_ = []
+        for regex in (
+            "Given([^\n]*):.*?\n(.+?)  \n",
+            "Given and returned([^\n]*):\n(.+?)  \n",
+        ):
+            result = re.search(regex, self.doc, re.DOTALL)
             if result is not None:
-                ret_info.append(ReturnDoc(result.group(2)))
+                doc_lines = result.group(2).split("\n")
+                input_ += self._get_arg_doc_list(doc_lines)
+        return input_
 
-            if len(ret_info) == 0:
-                self.__ret_info = ''
-            elif len(ret_info) == 1:
-                self.__ret_info = ret_info[0]
-            else:
-                raise ValueError("Multiple C return sections found in this doc:\n"
-                                 + self.doc)
+    @functools.cached_property
+    def output(self):
+        output = []
+        for regex in (
+            "Given and returned([^\n]*):\n(.+?)  \n",
+            "Returned([^\n]*):.*?\n(.+?)  \n",
+        ):
+            result = re.search(regex, self.doc, re.DOTALL)
+            if result is not None:
+                doc_lines = result.group(2).split("\n")
+                output += self._get_arg_doc_list(doc_lines)
+        return output
 
-        return self.__ret_info
+    @functools.cached_property
+    def ret_info(self):
+        result = re.search(
+            "Returned \\(function value\\)([^\n]*):\n(.+?)  \n", self.doc, re.DOTALL
+        )
+        return "" if result is None else ReturnDoc(result.group(2))
 
     @property
     def title(self):
@@ -255,7 +241,6 @@ class Argument(Variable):
     def __init__(self, definition, doc):
         self.definition = definition
         self.doc = doc
-        self.__inout_state = None
         self.ctype, ptr_name_arr = definition.strip().rsplit(" ", 1)
         if "*" == ptr_name_arr[0]:
             self.is_ptr = True
@@ -273,20 +258,16 @@ class Argument(Variable):
             self.name = name_arr
             self.shape = ()
 
-    @property
+    @functools.cached_property
     def inout_state(self):
-        if self.__inout_state is None:
-            self.__inout_state = ''
-            for i in self.doc.input:
-                if self.name in i.name.split(','):
-                    self.__inout_state = 'in'
-            for o in self.doc.output:
-                if self.name in o.name.split(','):
-                    if self.__inout_state == 'in':
-                        self.__inout_state = 'inout'
-                    else:
-                        self.__inout_state = 'out'
-        return self.__inout_state
+        inout_state = ""
+        for i in self.doc.input:
+            if self.name in i.name.split(","):
+                inout_state = "in"
+        for o in self.doc.output:
+            if self.name in o.name.split(","):
+                inout_state = "inout" if inout_state == "in" else "out"
+        return inout_state
 
     @property
     def name_for_call(self):
