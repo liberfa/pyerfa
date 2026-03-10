@@ -25,7 +25,7 @@ GEN_FILES = [
 USE_PY_LIMITED_API = not sysconfig.get_config_var("Py_GIL_DISABLED")
 
 if USE_PY_LIMITED_API:
-    options = {"bdist_wheel": {"py_limited_api": "cp39"}}
+    options = {"bdist_wheel": {"py_limited_api": "cp310"}}
 else:
     options = {}
 

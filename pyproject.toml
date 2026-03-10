@@ -66,7 +66,6 @@ norecursedirs = ["erfa/_dev"]
 enable = ["pypy"]
 skip = [
     "cp314t-*",
-    "cp39-win_arm64",
     "cp310-win_arm64",
 ]
 
