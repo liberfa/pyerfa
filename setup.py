@@ -24,10 +24,9 @@ GEN_FILES = [
 # support the limited API in py313t)
 USE_PY_LIMITED_API = not sysconfig.get_config_var("Py_GIL_DISABLED")
 
+options = {}
 if USE_PY_LIMITED_API:
-    options = {"bdist_wheel": {"py_limited_api": "cp310"}}
-else:
-    options = {}
+    options["bdist_wheel"] = {"py_limited_api": "cp310"}
 
 
 def newer(source, target):
