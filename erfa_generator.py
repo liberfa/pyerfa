@@ -242,15 +242,8 @@ class Argument(Variable):
         self.definition = definition
         self.doc = doc
         self.ctype, ptr_name_arr = definition.strip().rsplit(" ", 1)
-        if "*" == ptr_name_arr[0]:
-            self.is_ptr = True
-            name_arr = ptr_name_arr[1:]
-        else:
-            self.is_ptr = False
-            name_arr = ptr_name_arr
-        if "[]" in ptr_name_arr:
-            self.is_ptr = True
-            name_arr = name_arr[:-2]
+        name_arr = ptr_name_arr.removeprefix("*").removesuffix("[]")
+        self.is_ptr = name_arr != ptr_name_arr
         if "[" in name_arr:
             self.name, arr = name_arr.split("[", 1)
             self.shape = tuple([int(size) for size in arr[:-1].split("][")])
@@ -613,10 +606,7 @@ class TestFunction:
                 v_shape = v.shape if v.signature_shape != '()' else '()'
                 extra = ""
             self.var_dtypes[name] = v_dtype
-            if v_dtype == 'dt_double':
-                v_dtype = 'float'
-            else:
-                v_dtype = 'erfa_ufunc.' + v_dtype
+            v_dtype = "float" if v_dtype == "dt_double" else "erfa_ufunc." + v_dtype
             defines.append(f"{name} = np.empty({v_shape}, {v_dtype}){extra}")
 
         return defines

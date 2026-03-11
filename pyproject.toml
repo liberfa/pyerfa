@@ -73,4 +73,5 @@ skip = [
 extend-select = [
     "I",
     "RET",
+    "SIM",
 ]
