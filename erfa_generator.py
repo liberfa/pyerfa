@@ -340,12 +340,9 @@ class Function:
         Either a directory, which means look for the function in a
         stand-alone file (like for the standard ERFA distribution), or a
         file, which means look for the function in that file.
-    match_line : str, optional
-        If given, searching of the source file will skip until it finds
-        a line matching this string, and start from there.
     """
 
-    def __init__(self, name, source_path, match_line=None):
+    def __init__(self, name, source_path):
         self.name = name
         self.pyname = name.split('era')[-1].lower()
         self.filename = self.pyname+".c"
@@ -355,19 +352,7 @@ class Function:
             self.filepath = source_path
 
         with open(self.filepath) as f:
-            if match_line:
-                line = f.readline()
-                while line != '':
-                    if line.startswith(match_line):
-                        filecontents = '\n' + line + f.read()
-                        break
-                    line = f.readline()
-                else:
-                    msg = ('Could not find the match_line "{0}" in '
-                           'the source file "{1}"')
-                    raise ValueError(msg.format(match_line, self.filepath))
-            else:
-                filecontents = f.read()
+            filecontents = f.read()
 
         pattern = fr"\n([^\n]+{name} ?\([^)]+\)).+?(/\*.+?\*/)"
         p = re.compile(pattern, flags=re.DOTALL | re.MULTILINE)
@@ -776,11 +761,9 @@ def main(srcdir=DEFAULT_ERFA_LOC, templateloc=DEFAULT_TEMPLATE_LOC, verbose=True
     if os.path.isdir(srcdir):
         erfahfn = os.path.join(srcdir, 'erfa.h')
         t_erfa_c_fn = os.path.join(srcdir, 't_erfa_c.c')
-        multifilserc = True
     else:
         erfahfn = os.path.join(os.path.split(srcdir)[0], 'erfa.h')
         t_erfa_c_fn = os.path.join(os.path.split(srcdir)[0], 't_erfa_c.c')
-        multifilserc = False
 
     with open(erfahfn, "r") as f:
         erfa_h = f.read()
@@ -796,38 +779,11 @@ def main(srcdir=DEFAULT_ERFA_LOC, templateloc=DEFAULT_TEMPLATE_LOC, verbose=True
         flags=re.DOTALL | re.MULTILINE)
     for section, subsection, functions in section_subsection_functions:
         print_(f"{section}.{subsection}")
-
-        if True:
-
-            func_names = re.findall(r' (\w+)\(.*?\);', functions,
-                                    flags=re.DOTALL)
-            for name in func_names:
-                print_(f"{section}.{subsection}.{name}...")
-                if multifilserc:
-                    # easy because it just looks in the file itself
-                    cdir = (srcdir if section != 'Extra' else
-                            templateloc or '.')
-                    funcs[name] = Function(name, cdir)
-                else:
-                    # Have to tell it to look for a declaration matching
-                    # the start of the header declaration, otherwise it
-                    # might find a *call* of the function instead of the
-                    # definition
-                    for line in functions.split(r'\n'):
-                        if name in line:
-                            # [:-1] is to remove trailing semicolon, and
-                            # splitting on '(' is because the header and
-                            # C files don't necessarily have to match
-                            # argument names and line-breaking or
-                            # whitespace
-                            match_line = line[:-1].split('(')[0]
-                            funcs[name] = Function(name, cdir, match_line)
-                            break
-                    else:
-                        raise ValueError("A name for a C file wasn't "
-                                         "found in the string that "
-                                         "spawned it.  This should be "
-                                         "impossible!")
+        for name in re.findall(r" (\w+)\(.*?\);", functions, flags=re.DOTALL):
+            print_(f"{section}.{subsection}.{name}...")
+            funcs[name] = Function(
+                name, srcdir if section != "Extra" else templateloc or "."
+            )
 
     test_funcs = [TestFunction.from_function(funcs[name], t_erfa_c)
                   for name in sorted(funcs.keys())]
