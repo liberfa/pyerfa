@@ -7,17 +7,15 @@ import re
 import subprocess
 import sys
 import sysconfig
+from pathlib import Path
 from warnings import warn
 
 import packaging.version
 import setuptools
 
-LIBERFADIR = os.path.join('liberfa', 'erfa')
-ERFA_SRC = os.path.join(LIBERFADIR, 'src')
-GEN_FILES = [
-    os.path.join('erfa', 'core.py'),
-    os.path.join('erfa', 'ufunc.c'),
-]
+LIBERFADIR = Path("liberfa", "erfa")
+ERFA_SRC = LIBERFADIR / "src"
+GEN_FILES = [Path("erfa", "core.py"), Path("erfa", "ufunc.c")]
 
 
 # build with Py_LIMITED_API unless in freethreading build (which does not currently
@@ -30,13 +28,9 @@ if USE_PY_LIMITED_API:
 
 
 def newer(source, target):
-    import pathlib
-
-    source = pathlib.Path(source)
     if not source.exists():
         raise FileNotFoundError(f"file '{source.resolve()}' does not exist")
 
-    target = pathlib.Path(target)
     if not target.exists():
         return 1
 
@@ -57,9 +51,8 @@ class NumpyExtension(setuptools.Extension):
         self._include_dirs = include_dirs
 
 
-def get_liberfa_versions(path=os.path.join(LIBERFADIR, 'configure.ac')):
-    with open(path) as fd:
-        s = fd.read()
+def get_liberfa_versions(path=LIBERFADIR / "configure.ac"):
+    s = path.read_text()
 
     mobj = re.search(r'AC_INIT\(\[erfa\],\[(?P<version>[0-9.]+)\]\)', s)
     if not mobj:
@@ -85,11 +78,11 @@ def get_liberfa_versions(path=os.path.join(LIBERFADIR, 'configure.ac')):
 
 
 def get_extensions():
-    gen_files_exist = all(os.path.isfile(fn) for fn in GEN_FILES)
+    gen_files_exist = all(path.is_file() for path in GEN_FILES)
     gen_files_outdated = False
-    if os.path.isdir(ERFA_SRC):
+    if ERFA_SRC.is_dir():
         # assume that 'erfaversion.c' is updated at each release at least
-        src = os.path.join(ERFA_SRC, 'erfaversion.c')
+        src = ERFA_SRC / "erfaversion.c"
         gen_files_outdated = any(newer(src, fn) for fn in GEN_FILES)
     elif not gen_files_exist:
         raise RuntimeError(
@@ -103,7 +96,7 @@ def get_extensions():
         cmd = [sys.executable, 'erfa_generator.py', ERFA_SRC, '--quiet']
         subprocess.run(cmd, check=True)
 
-    sources = [os.path.join('erfa', 'ufunc.c')]
+    sources = [Path("erfa", "ufunc.c")]
     include_dirs = []
     libraries = []
     define_macros = []
@@ -113,27 +106,27 @@ def get_extensions():
         libraries.append('erfa')
     else:
         # get all of the .c files in the liberfa/erfa/src directory
-        erfafns = os.listdir(ERFA_SRC)
-        sources.extend([os.path.join(ERFA_SRC, fn)
-                        for fn in erfafns
-                        if fn.endswith('.c') and not fn.startswith('t_')])
+        sources.extend(
+            file
+            for file in ERFA_SRC.iterdir()
+            if file.suffix == ".c" and not file.name.startswith("t_")
+        )
 
         include_dirs.append(ERFA_SRC)
 
         # liberfa configuration
-        config_h = os.path.join(LIBERFADIR, 'config.h')
-        if not os.path.exists(config_h):
+        config_h = LIBERFADIR / "config.h"
+        if not config_h.exists():
             print('Configure liberfa')
-            configure = os.path.join(LIBERFADIR, 'configure')
             try:
-                if not os.path.exists(configure):
+                if not (LIBERFADIR / "configure").exists():
                     subprocess.run(
                         ['./bootstrap.sh'], check=True, cwd=LIBERFADIR)
                 subprocess.run(['./configure'], check=True, cwd=LIBERFADIR)
             except (subprocess.SubprocessError, OSError) as exc:
                 warn(f'unable to configure liberfa: {exc}')
 
-        if not os.path.exists(config_h):
+        if not config_h.exists():
             liberfa_versions = get_liberfa_versions()
             if liberfa_versions:
                 print('Configure liberfa ("configure.ac" scan)')
@@ -141,12 +134,11 @@ def get_extensions():
                 for name, value in liberfa_versions:
                     # making sure strings are correctly quoted
                     lines.append(f'#define {name} {value!r}'.replace("'", '"'))
-                with open(config_h, 'w') as fd:
-                    fd.write('\n'.join(lines))
+                config_h.write_text("\n".join(lines))
             else:
                 warn('unable to get liberfa version')
 
-        if os.path.exists(config_h):
+        if config_h.exists():
             include_dirs.append(LIBERFADIR)
             define_macros.append(('HAVE_CONFIG_H', '1'))
         elif 'sdist' in sys.argv:
@@ -168,8 +160,7 @@ def get_extensions():
 
 
 try:
-    with open('erfa/_dev/scm_version.py') as fd:
-        source = fd.read()
+    source = Path("erfa/_dev/scm_version.py").read_text()
 except FileNotFoundError:
     guess_next_dev = None
 else:

@@ -2,8 +2,7 @@
 # in development installations from the git repository.
 
 import functools
-import os.path as pth
-import pathlib
+from pathlib import Path
 from warnings import warn
 
 try:
@@ -13,8 +12,7 @@ try:
 
     def _guess_next_dev(version, liberfadir=None):
         if liberfadir is None:
-            liberfadir = pathlib.Path(
-                __file__).parent.parent.parent / 'liberfa' / 'erfa'
+            liberfadir = Path(__file__).parent.parent.parent / "liberfa" / "erfa"
 
         config = Configuration(root=liberfadir)
         erfa_version = git.parse(liberfadir, config=config)
@@ -39,9 +37,11 @@ try:
             guessed = version_string.partition("+")[0] + ".1"
         return version.format_with("{guessed}.dev{distance}", guessed=guessed)
 
-    get_version = functools.partial(_get_version,
-                                    root=pth.join('..', '..'),
-                                    version_scheme=_guess_next_dev,
-                                    relative_to=__file__)
+    get_version = functools.partial(
+        _get_version,
+        root=Path("..", ".."),
+        version_scheme=_guess_next_dev,
+        relative_to=__file__,
+    )
 except Exception as exc:
     raise ImportError('setuptools_scm broken or not installed') from exc

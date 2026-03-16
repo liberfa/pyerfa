@@ -11,12 +11,12 @@ or dtypes for those structs.  They should be added manually in the template file
 """
 
 import functools
-import os.path
 import re
 from collections import OrderedDict
+from pathlib import Path
 
-DEFAULT_ERFA_LOC = os.path.join(os.path.split(__file__)[0], 'liberfa/erfa/src')
-DEFAULT_TEMPLATE_LOC = os.path.join(os.path.split(__file__)[0], 'erfa')
+DEFAULT_ERFA_LOC = Path(__file__).with_name("liberfa") / "erfa" / "src"
+DEFAULT_TEMPLATE_LOC = Path(__file__).with_name("erfa")
 
 NDIMS_REX = re.compile(re.escape("numpy.dtype([('fi0', '.*', <(.*)>)])")
                        .replace(r'\.\*', '.*')
@@ -336,7 +336,7 @@ class Function:
     ----------
     name : str
         The name of the function
-    source_path : str
+    source_path : pathlib.Path
         Either a directory, which means look for the function in a
         stand-alone file (like for the standard ERFA distribution), or a
         file, which means look for the function in that file.
@@ -346,18 +346,14 @@ class Function:
         self.name = name
         self.pyname = name.split('era')[-1].lower()
         self.filename = self.pyname+".c"
-        if os.path.isdir(source_path):
-            self.filepath = os.path.join(os.path.normpath(source_path), self.filename)
-        else:
-            self.filepath = source_path
-
-        with open(self.filepath) as f:
-            filecontents = f.read()
+        self.filepath = (
+            source_path / self.filename if source_path.is_dir() else source_path
+        )
 
         pattern = fr"\n([^\n]+{name} ?\([^)]+\)).+?(/\*.+?\*/)"
         p = re.compile(pattern, flags=re.DOTALL | re.MULTILINE)
 
-        search = p.search(filecontents)
+        search = p.search(self.filepath.read_text())
         self.cfunc = " ".join(search.group(1).split())
         self.doc = FunctionDoc(search.group(2))
 
@@ -458,7 +454,7 @@ class ExtraFunction(Function):
         The name of the function in C
     prototype : str
         The prototype for the function (usually derived from the header)
-    pathfordoc : str
+    pathfordoc : pathlib.Path
         The path to a file that contains the prototype, with the documentation
         as a multiline string *before* it.
     """
@@ -466,7 +462,8 @@ class ExtraFunction(Function):
     def __init__(self, cname, prototype, pathfordoc):
         self.name = cname
         self.pyname = cname.split('era')[-1].lower()
-        self.filepath, self.filename = os.path.split(pathfordoc)
+        self.filepath = pathfordoc.parent
+        self.filename = pathfordoc.name
 
         self.prototype = prototype.strip()
         if prototype.endswith('{') or prototype.endswith(';'):
@@ -474,26 +471,24 @@ class ExtraFunction(Function):
 
         incomment = False
         lastcomment = None
-        with open(pathfordoc, 'r') as f:
-            for ln in f:
-                if incomment:
-                    if ln.lstrip().startswith('*/'):
-                        incomment = False
-                        lastcomment = ''.join(lastcomment)
-                    else:
-                        if ln.startswith('**'):
-                            ln = ln[2:]
-                        lastcomment.append(ln)
+        for ln in pathfordoc.read_text().split("\n"):
+            if incomment:
+                if ln.lstrip().startswith("*/"):
+                    incomment = False
+                    lastcomment = "".join(lastcomment)
                 else:
-                    if ln.lstrip().startswith('/*'):
-                        incomment = True
-                        lastcomment = []
-                    if ln.startswith(self.prototype):
-                        self.doc = lastcomment
-                        break
+                    lastcomment.append(ln.removeprefix("**"))
             else:
-                raise ValueError('Did not find prototype {} in file '
-                                 '{}'.format(self.prototype, pathfordoc))
+                if ln.lstrip().startswith("/*"):
+                    incomment = True
+                    lastcomment = []
+                if ln.startswith(self.prototype):
+                    self.doc = lastcomment
+                    break
+        else:
+            raise ValueError(
+                f"Did not find prototype {self.prototype} in file {pathfordoc}"
+            )
 
         self.args = []
         argset = re.search(fr"{self.name}\(([^)]+)?\)",
@@ -753,25 +748,19 @@ def main(srcdir=DEFAULT_ERFA_LOC, templateloc=DEFAULT_TEMPLATE_LOC, verbose=True
     erfa_py_in = env.get_template(outfn + '.templ')
 
     # Prepare the jinja2 test templating environment
-    env2 = Environment(loader=FileSystemLoader(os.path.join(templateloc, testdir)))
+    env2 = Environment(loader=FileSystemLoader(templateloc / testdir))
 
     test_py_in = env2.get_template(testfn + '.templ')
 
     # Extract all the ERFA function names from erfa.h
-    if os.path.isdir(srcdir):
-        erfahfn = os.path.join(srcdir, 'erfa.h')
-        t_erfa_c_fn = os.path.join(srcdir, 't_erfa_c.c')
-    else:
-        erfahfn = os.path.join(os.path.split(srcdir)[0], 'erfa.h')
-        t_erfa_c_fn = os.path.join(os.path.split(srcdir)[0], 't_erfa_c.c')
+    if not srcdir.is_dir():
+        srcdir = srcdir.parent
 
-    with open(erfahfn, "r") as f:
-        erfa_h = f.read()
-        print_("read erfa header")
+    erfa_h = (srcdir / "erfa.h").read_text()
+    print_("read erfa header")
 
-    with open(t_erfa_c_fn, "r") as f:
-        t_erfa_c = f.read()
-        print_("read C tests")
+    t_erfa_c = (srcdir / "t_erfa_c.c").read_text()
+    print_("read C tests")
 
     funcs = OrderedDict()
     section_subsection_functions = re.findall(
@@ -782,7 +771,7 @@ def main(srcdir=DEFAULT_ERFA_LOC, templateloc=DEFAULT_TEMPLATE_LOC, verbose=True
         for name in re.findall(r" (\w+)\(.*?\);", functions, flags=re.DOTALL):
             print_(f"{section}.{subsection}.{name}...")
             funcs[name] = Function(
-                name, srcdir if section != "Extra" else templateloc or "."
+                name, srcdir if section != "Extra" else templateloc or Path.cwd()
             )
 
     test_funcs = [TestFunction.from_function(funcs[name], t_erfa_c)
@@ -791,11 +780,8 @@ def main(srcdir=DEFAULT_ERFA_LOC, templateloc=DEFAULT_TEMPLATE_LOC, verbose=True
     funcs = funcs.values()
 
     # Extract all the ERFA constants from erfam.h
-    erfamhfn = os.path.join(srcdir, 'erfam.h')
-    with open(erfamhfn, 'r') as f:
-        erfa_m_h = f.read()
     constants = []
-    for chunk in erfa_m_h.split("\n\n"):
+    for chunk in (srcdir / "erfam.h").read_text().split("\n\n"):
         result = re.findall(r"#define (ERFA_\w+?) (.+?)$", chunk,
                             flags=re.DOTALL | re.MULTILINE)
         if result:
@@ -822,12 +808,9 @@ def main(srcdir=DEFAULT_ERFA_LOC, templateloc=DEFAULT_TEMPLATE_LOC, verbose=True
 
     if outfn is not None:
         print_(f"Saving to {outfn}, {ufuncfn} and {testfn}")
-        with open(os.path.join(templateloc, outfn), "w") as f:
-            f.write(erfa_py)
-        with open(os.path.join(templateloc, ufuncfn), "w") as f:
-            f.write(erfa_c)
-        with open(os.path.join(templateloc, testdir, testfn), "w") as f:
-            f.write(test_py)
+        (templateloc / outfn).write_text(erfa_py)
+        (templateloc / ufuncfn).write_text(erfa_c)
+        (templateloc / testdir / testfn).write_text(test_py)
 
     print_("Done!")
 
@@ -851,4 +834,4 @@ if __name__ == '__main__':
                     help='Suppress output normally printed to stdout.')
 
     args = ap.parse_args()
-    main(args.srcdir, args.template_loc, args.verbose)
+    main(Path(args.srcdir), Path(args.template_loc), args.verbose)
