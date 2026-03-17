@@ -72,6 +72,7 @@ skip = [
 [tool.ruff.lint]
 extend-select = [
     "I",
+    "PT",
     "PTH",
     "RET",
     "SIM",

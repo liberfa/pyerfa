@@ -173,25 +173,20 @@ def test_errwarn_reporting():
     # check warning is raised for a scalar
     with pytest.warns(erfa.ErfaWarning, match=r'1 of "dubious year \(Note 1\)"') as w:
         erfa.dat(100, 1, 1, 0.5)
-        assert len(w) == 1
+    assert len(w) == 1
 
     # and that the count is right for a vector.
     with pytest.warns(erfa.ErfaWarning, match=r'2 of "dubious year \(Note 1\)"') as w:
         erfa.dat([100, 200, 1990], 1, 1, 0.5)
-        assert len(w) == 1
+    assert len(w) == 1
 
-    try:
+    with pytest.raises(
+        erfa.ErfaError, match=r'1 of "bad day \(Note 3\)", 1 of "bad month"'
+    ):
         erfa.dat(1990, [1, 34, 2], [1, 1, 43], 0.5)
-    except erfa.ErfaError as e:
-        if '1 of "bad day (Note 3)", 1 of "bad month"' not in e.args[0]:
-            assert False, 'Raised the correct type of error, but wrong message: ' + e.args[0]
 
-    try:
+    with pytest.raises(erfa.ErfaError, match=r"^(?!.*warning)"):
         erfa.dat(200, [1, 34, 2], [1, 1, 43], 0.5)
-    except erfa.ErfaError as e:
-        if 'warning' in e.args[0]:
-            assert False, ('Raised the correct type of error, but there were '
-                           'warnings mixed in: ' + e.args[0])
 
 
 def test_vector_inouts():
@@ -479,12 +474,14 @@ class TestLeapSeconds:
         erfa.leap_seconds.set()
         assert erfa.dat(2018, 1, 1, 0.) == 37.0
 
-    @pytest.mark.parametrize('table,match', [
-        ([(2017, 3, 10.)], 'January'),
-        ([(2017, 1, 1.),
-          (2017, 7, 3.)], 'jump'),
-        ([[(2017, 1, 1.)],
-          [(2017, 7, 2.)]], 'dimension')])
+    @pytest.mark.parametrize(
+        ("table", "match"),
+        [
+            ([(2017, 3, 10.0)], "January"),
+            ([(2017, 1, 1.0), (2017, 7, 3.0)], "jump"),
+            ([[(2017, 1, 1.0)], [(2017, 7, 2.0)]], "dimension"),
+        ],
+    )
     def test_validation(self, table, match):
         with pytest.raises(ValueError, match=match):
             erfa.leap_seconds.set(table)
