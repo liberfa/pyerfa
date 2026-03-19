@@ -29,13 +29,11 @@ try:
 
             return version_string
 
-        if erfa_tag > version_string:
-            guessed = erfa_tag
-        elif "dev" in version_string or len(version_string.split(".")) > 3:
-            return version.format_next_version(guess_next_version)
-        else:
-            guessed = version_string.partition("+")[0] + ".1"
-        return version.format_with("{guessed}.dev{distance}", guessed=guessed)
+        return (
+            version.format_with("{guessed}.0.dev{distance}", guessed=erfa_tag)
+            if erfa_tag > version_string
+            else version.format_next_version(guess_next_version)
+        )
 
     get_version = functools.partial(
         _get_version,
