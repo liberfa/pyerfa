@@ -10,12 +10,11 @@ import erfa
 try:
     from astropy.time import Time
 except ImportError:
-    # astropy not available for testing
-    class Time:
-        _DUMMY = True
-
-        def __init__(self, *args, **kwargs):
-            pass
+    astropy_time = pytest.param(
+        None, id="Time", marks=pytest.mark.skip(reason="astropy not installed")
+    )
+else:
+    astropy_time = Time("2345-01-01", scale="tai")
 
 
 def embedded_liberfa(path=erfa.ufunc.__file__):
@@ -518,12 +517,9 @@ class TestLeapSeconds:
         assert n_update == len(new_leap_seconds)
         assert erfa.dat(2018, 1, 1, 0.) == 37.0
 
-    @pytest.mark.parametrize('expiration', [
-        datetime(2345, 1, 1),
-        '1 January 2345',
-        pytest.param(Time('2345-01-01', scale='tai'),
-                     marks=pytest.mark.skipif(hasattr(Time, '_DUMMY'),
-                                              reason='astropy not available'))])
+    @pytest.mark.parametrize(
+        "expiration", [datetime(2345, 1, 1), "1 January 2345", astropy_time], ids=type
+    )
     def test_with_expiration(self, expiration):
         class ExpiringArray(np.ndarray):
             expires = expiration
