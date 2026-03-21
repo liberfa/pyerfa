@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
-import functools
 import os
 import re
 import subprocess
@@ -159,29 +158,4 @@ def get_extensions():
     return [erfa_ext]
 
 
-try:
-    source = Path("erfa/_dev/scm_version.py").read_text()
-except FileNotFoundError:
-    guess_next_dev = None
-else:
-    import types
-    scm_version = types.ModuleType('scm_version')
-    scm_version.__file__ = 'erfa/_dev/scm_version.py'
-    code = compile(source, scm_version.__file__, 'exec')
-    try:
-        exec(code, scm_version.__dict__)
-    except ImportError:
-        guess_next_dev = None
-    else:
-        guess_next_dev = functools.partial(scm_version._guess_next_dev,
-                                           liberfadir=LIBERFADIR)
-
-use_scm_version = {
-    'version_scheme': guess_next_dev,
-}
-
-setuptools.setup(
-    use_scm_version=use_scm_version,
-    ext_modules=get_extensions(),
-    options=options,
-)
+setuptools.setup(ext_modules=get_extensions(), options=options)
