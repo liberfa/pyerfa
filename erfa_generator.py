@@ -821,11 +821,16 @@ if __name__ == '__main__':
     from argparse import ArgumentParser
 
     ap = ArgumentParser()
-    ap.add_argument('srcdir', default=DEFAULT_ERFA_LOC, nargs='?',
-                    help='Directory where the ERFA c and header files '
-                         'can be found or to a single erfa.c file '
-                         '(which must be in the same directory as '
-                         'erfa.h). Default: "{}"'.format(DEFAULT_ERFA_LOC))
+    ap.add_argument(
+        "srcdir",
+        default=DEFAULT_ERFA_LOC,
+        nargs="?",
+        help=(
+            "Directory where the ERFA c and header files can be found or to a single "
+            "erfa.c file (which must be in the same directory as erfa.h). "
+            f'Default: "{DEFAULT_ERFA_LOC}"'
+        ),
+    )
     ap.add_argument('-t', '--template-loc',
                     default=DEFAULT_TEMPLATE_LOC,
                     help='the location where the "core.py.templ" and '
