@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 #
 # PyERFA documentation build configuration file.
@@ -46,7 +45,7 @@ author = 'The PyERFA Developers'
 build_date = datetime.utcfromtimestamp(
     int(os.environ.get('SOURCE_DATE_EPOCH', time.time()))
 )
-copyright = '2011–{0}, {1}'.format(build_date.year, author)
+copyright = f"2011–{build_date.year}, {author}"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -107,7 +106,7 @@ html_theme_options = {
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
-html_title = '{0} v{1}'.format(project, release)
+html_title = f"{project} v{release}"
 
 # These folders are copied to the documentation's HTML output
 html_static_path = ['_static']
@@ -139,16 +138,16 @@ html_extra_path = ['robots.txt']
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
-latex_documents = [('index', project + '.tex', project + u' Documentation',
-                    author, 'manual')]
+latex_documents = [
+    ("index", project + ".tex", project + " Documentation", author, "manual")
+]
 
 
 # -- Options for manual page output ------------------------------------------
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [('index', project.lower(), project + u' Documentation',
-              [author], 1)]
+man_pages = [("index", project.lower(), project + " Documentation", [author], 1)]
 
 # Setting this URL is requited by sphinx-astropy
 github_issues_url = 'https://github.com/liberfa/pyerfa/issues/'
