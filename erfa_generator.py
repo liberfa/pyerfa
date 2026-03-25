@@ -414,11 +414,11 @@ class Function:
 
     @property
     def python_call(self):
-        out = ', '.join([arg.name for arg in self.args_by_inout('inout|out|stat|ret')])
-        args = ', '.join([arg.name for arg in self.args_by_inout('in|inout')])
-        result = '{out} = {func}({args})'.format(out=out,
-                                                 func='ufunc.' + self.pyname,
-                                                 args=args)
+        result = _assemble_py_func_call(
+            "ufunc." + self.pyname,
+            in_args=[arg.name for arg in self.args_by_inout("in|inout")],
+            out_args=[arg.name for arg in self.args_by_inout("inout|out|stat|ret")],
+        )
         if len(result) < 75:
             return result
 
@@ -643,30 +643,26 @@ class TestFunction:
 
             # Call of function that is being tested.
             elif era_name in line:
-                line = line.replace(era_name, f"erfa_ufunc.{self.name}")
                 # correct for LDBODY (complete hack!)
                 line = line.replace('3, b', 'b').replace('n, b', 'b')
-                # Split into function name and call arguments.
-                start, _, arguments = line.partition('(')
-                # Get arguments, stripping excess spaces and, for numbers, remove
-                # leading zeros since python cannot deal with items like '01', etc.
-                args = []
-                for arg in arguments[:-1].split(','):
-                    arg = arg.strip()
-                    while arg[0] == '0' and len(arg) > 1 and arg[1] in '0123456789':
-                        arg = arg[1:]
-                    args.append(arg)
+                name, arguments = _get_funcname_and_args(
+                    line, era_name, f"erfa_ufunc.{self.name}"
+                )
+                # Remove leading zeros from numbers since python cannot deal with them.
+                args = [
+                    (arg.lstrip("0") or "0") if arg.isdigit() else arg
+                    for arg in arguments
+                ]
                 # Get input and output arguments.
                 in_args = [arg.replace('&', '') for arg in args[:self.nin+self.ninout]]
                 out_args = ([arg.replace('&', '') for arg in args[-self.nout-self.ninout:]]
                             if len(args) > self.nin else [])
                 # If the call assigned something, that will have been the status.
                 # Prepend any arguments assigned in the call.
-                if '=' in start:
-                    line = ', '.join(out_args+[start])
-                else:
-                    line = ', '.join(out_args) + ' = ' + start
-                line = line + '(' + ', '.join(in_args) + ')'
+                if " = " in name:
+                    status, name = name.split(" = ", 1)
+                    out_args.append(status)
+                line = _assemble_py_func_call(name, in_args, out_args)
                 if 'astrom' in out_args:
                     out.append(line)
                     line = 'astrom = astrom.view(np.recarray)'
@@ -674,26 +670,20 @@ class TestFunction:
             # In some test functions, there are calls to other ERFA functions.
             # Deal with those in a super hacky way for now.
             elif line.startswith('eraA'):
-                line = line.replace('eraA', 'erfa_ufunc.a')
-                start, _, arguments = line.partition('(')
-                args = [arg.strip() for arg in arguments[:-1].split(',')]
-                in_args = [arg for arg in args if '&' not in arg]
-                out_args = [arg.replace('&', '') for arg in args if '&' in arg]
-                line = (', '.join(out_args) + ' = '
-                        + start + '(' + ', '.join(in_args) + ')')
+                name, args = _get_funcname_and_args(line, "eraA", "erfa_ufunc.a")
+                line = _assemble_py_func_call(
+                    name,
+                    in_args=[arg for arg in args if "&" not in arg],
+                    out_args=[arg.replace("&", "") for arg in args if "&" in arg],
+                )
                 if 'atioq' in line or 'atio13' in line or 'apio13' in line:
                     line = line.replace(' =', ', j =')
 
             # And the same for some other functions, which always have a
             # 2-element time as inputs.
             elif line.startswith('eraS'):
-                line = line.replace('eraS', 'erfa_ufunc.s')
-                start, _, arguments = line.partition('(')
-                args = [arg.strip() for arg in arguments[:-1].split(',')]
-                in_args = args[:2]
-                out_args = args[2:]
-                line = (', '.join(out_args) + ' = '
-                        + start + '(' + ', '.join(in_args) + ')')
+                name, args = _get_funcname_and_args(line, "eraS", "erfa_ufunc.s")
+                line = _assemble_py_func_call(name, in_args=args[:2], out_args=args[2:])
 
             # Input number setting.
             elif '=' in line:
@@ -713,6 +703,17 @@ class TestFunction:
             out.append(line)
 
         return out
+
+
+def _get_funcname_and_args(
+    line: str, c_prefix: str, py_prefix: str
+) -> tuple[str, list[str]]:
+    funcname, args = line.replace(c_prefix, py_prefix).split("(", 1)
+    return funcname, [arg.strip() for arg in args.removesuffix(")").split(",")]
+
+
+def _assemble_py_func_call(name: str, in_args: list[str], out_args: list[str]) -> str:
+    return f"{', '.join(out_args)} = {name}({', '.join(in_args)})"
 
 
 def main(srcdir=DEFAULT_ERFA_LOC, templateloc=DEFAULT_TEMPLATE_LOC, verbose=True):
