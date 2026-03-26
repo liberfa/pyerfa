@@ -9,6 +9,7 @@ import sysconfig
 from pathlib import Path
 from warnings import warn
 
+import numpy as np
 import packaging.version
 import setuptools
 
@@ -34,20 +35,6 @@ def newer(source, target):
         return 1
 
     return source.stat().st_mtime > target.stat().st_mtime
-
-
-# https://mail.python.org/pipermail/distutils-sig/2007-September/008253.html
-class NumpyExtension(setuptools.Extension):
-    """Extension type that adds the NumPy include directory to include_dirs."""
-
-    @property
-    def include_dirs(self):
-        from numpy import get_include
-        return self._include_dirs + [get_include()]
-
-    @include_dirs.setter
-    def include_dirs(self, include_dirs):
-        self._include_dirs = include_dirs
 
 
 def get_liberfa_versions(path=LIBERFADIR / "configure.ac"):
@@ -96,7 +83,7 @@ def get_extensions():
         subprocess.run(cmd, check=True)
 
     sources = [Path("erfa", "ufunc.c")]
-    include_dirs = []
+    include_dirs = [np.get_include()]
     libraries = []
     define_macros = []
 
@@ -146,7 +133,7 @@ def get_extensions():
     if USE_PY_LIMITED_API:
         define_macros.append(("Py_LIMITED_API", "0x30900f0"))
 
-    erfa_ext = NumpyExtension(
+    erfa_ext = setuptools.Extension(
         name="erfa.ufunc",
         sources=sources,
         include_dirs=include_dirs,
