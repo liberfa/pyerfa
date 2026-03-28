@@ -75,6 +75,9 @@ extend-select = [
     "PT",
     "PTH",
     "RET",
+    "S101",
     "SIM",
     "UP",
 ]
+[tool.ruff.lint.extend-per-file-ignores]
+"test_*.py" = ["S101"]

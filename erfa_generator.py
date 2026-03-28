@@ -272,7 +272,6 @@ class Argument(Variable):
         called 'nb'.
         """
         if self.ctype == 'eraLDBODY':
-            assert self.name == 'b'
             return 'nb, _' + self.name
         return ("_" if self.is_ptr else "*_") + self.name
 
