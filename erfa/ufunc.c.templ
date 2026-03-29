@@ -21,6 +21,7 @@ that do not support it (e.g., 3.13t)
 #include "numpy/ufuncobject.h"
 #include "erfa.h"
 #include "erfaextra.h"
+#include "erfadatextra.h"
 
 // Backported NumPy 2 API (can be removed if numpy 2 is required)
 #if NPY_ABI_VERSION < 0x02000000
@@ -684,7 +685,7 @@ static PyObject *
 set_leap_seconds(PyObject *NPY_UNUSED(module), PyObject *args) {
     PyObject *leap_seconds = NULL;
     PyArrayObject *array;
-    static PyArrayObject *leap_second_array = NULL;
+    static ERFA_THREAD_LOCAL PyArrayObject *leap_second_array = NULL;
 
     if (!PyArg_ParseTuple(args, "|O:set_leap_seconds", &leap_seconds)) {
         return NULL;
@@ -790,6 +791,10 @@ PyMODINIT_FUNC PyInit_ufunc(void)
     if (m == NULL) {
         return NULL;
     }
+#ifdef Py_GIL_DISABLED
+    PyUnstable_Module_SetGIL(m, Py_MOD_GIL_NOT_USED);
+#endif
+
     d = PyModule_GetDict(m); /* borrowed ref. */
     if (d == NULL) {
         goto fail;
