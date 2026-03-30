@@ -18,6 +18,8 @@ except ImportError:
 else:
     astropy_time = Time("2345-01-01", scale="tai")
 
+SQRT2 = np.sqrt(2.0)
+
 
 @pytest.fixture
 def check_embedded_liberfa():
@@ -270,22 +272,22 @@ def test_pv_in():
     np.testing.assert_allclose(astrom3['em'], 1.010428384373318379)
 
 
-def test_pv_out():
-    """Test that ufunc can also deal with 'out' argument."""
-    pv = erfa.ufunc.s2pv(np.pi/2.0, np.pi/4.0, 2.0, np.sqrt(2.0)/2.0, 0.0, 0.0)
-    pv2 = np.empty_like(pv)
-    out = erfa.ufunc.s2pv(np.pi/2.0, np.pi/4.0, 2.0, np.sqrt(2.0)/2.0, 0.0, 0.0,
-                          out=pv2)
-    assert out is pv2
-    assert np.all(pv2 == pv)
-
-
-def test_zpv_out():
-    """Test that no-input routines work with 'out' argument."""
-    pv = np.zeros(10, erfa.dt_pv)
-    out = erfa.ufunc.zpv(out=pv)
-    assert out is pv
-    np.testing.assert_array_equal(pv, np.zeros(10, erfa.dt_pv))
+@pytest.mark.parametrize(
+    ("func", "posargs"),
+    [
+        pytest.param(func, posargs, id=func.__name__)
+        for func, posargs in [
+            (erfa.ufunc.s2pv, (np.pi / 2.0, np.pi / 4.0, 2.0, SQRT2 / 2.0, 0.0, 0.0)),
+            (erfa.ufunc.zpv, ()),
+        ]
+    ],
+)
+def test_ufunc_out_argument(func, posargs):
+    result = func(*posargs)
+    out = np.ones_like(result)
+    result_with_out = func(*posargs, out=out)
+    assert result_with_out is out
+    assert_array_equal(out, result)
 
 
 def test_struct_ldbody():
