@@ -49,6 +49,14 @@ jobs:
             toxenv: test-devdeps
             toxargs: -v
 
+          - name: Test with freethreaded python
+            os: ubuntu-latest
+            python: '3.14t'
+            toxenv: test-devdeps
+            toxargs: -v
+
+          - name: Code style checks
+            os: ubuntu-latest
           - name: Code style checks
             os: ubuntu-latest
             python: 3.x
