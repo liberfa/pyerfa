@@ -685,7 +685,11 @@ static PyObject *
 set_leap_seconds(PyObject *NPY_UNUSED(module), PyObject *args) {
     PyObject *leap_seconds = NULL;
     PyArrayObject *array;
-    static ERFA_THREAD_LOCAL PyArrayObject *leap_second_array = NULL;
+    # ifdef ERFA_THREAD_LOCAL
+      static ERFA_THREAD_LOCAL PyArrayObject *leap_second_array = NULL;
+    # else
+      static PyArrayObject *leap_second_array = NULL;
+    # endif
 
     if (!PyArg_ParseTuple(args, "|O:set_leap_seconds", &leap_seconds)) {
         return NULL;
@@ -791,8 +795,11 @@ PyMODINIT_FUNC PyInit_ufunc(void)
     if (m == NULL) {
         return NULL;
     }
+// FIXME: also require ERFA_HAS_THREAD_LOCAL
 #ifdef Py_GIL_DISABLED
+  # ifdef ERFA_THREAD_LOCAL
     PyUnstable_Module_SetGIL(m, Py_MOD_GIL_NOT_USED);
+  # endif
 #endif
 
     d = PyModule_GetDict(m); /* borrowed ref. */
