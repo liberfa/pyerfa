@@ -66,6 +66,18 @@ norecursedirs = ["erfa/_dev"]
 enable = ["pypy"]
 skip = [
     "cp314t-*",
-    "cp39-win_arm64",
     "cp310-win_arm64",
 ]
+
+[tool.ruff.lint]
+extend-select = [
+    "I",
+    "PT",
+    "PTH",
+    "RET",
+    "S101",
+    "SIM",
+    "UP",
+]
+[tool.ruff.lint.extend-per-file-ignores]
+"test_*.py" = ["S101"]

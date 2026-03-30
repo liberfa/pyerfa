@@ -10,12 +10,13 @@ Note that this does *not* currently automate the process of creating structs
 or dtypes for those structs.  They should be added manually in the template file.
 """
 
+import functools
 import re
-import os.path
 from collections import OrderedDict
+from pathlib import Path
 
-DEFAULT_ERFA_LOC = os.path.join(os.path.split(__file__)[0], 'liberfa/erfa/src')
-DEFAULT_TEMPLATE_LOC = os.path.join(os.path.split(__file__)[0], 'erfa')
+DEFAULT_ERFA_LOC = Path(__file__).with_name("liberfa") / "erfa" / "src"
+DEFAULT_TEMPLATE_LOC = Path(__file__).with_name("erfa")
 
 NDIMS_REX = re.compile(re.escape("numpy.dtype([('fi0', '.*', <(.*)>)])")
                        .replace(r'\.\*', '.*')
@@ -30,9 +31,6 @@ class FunctionDoc:
         self.doc = self.doc.replace("/*+\n", "")        # accommodate eraLdn
         self.doc = self.doc.replace("*  ", "    " * 2)  # accommodate eraAticqn
         self.doc = self.doc.replace("*\n", "\n")        # accommodate eraAticqn
-        self.__input = None
-        self.__output = None
-        self.__ret_info = None
 
     def _get_arg_doc_list(self, doc_lines):
         """Parse input/output doc section lines, getting arguments from them.
@@ -50,10 +48,9 @@ class FunctionDoc:
                     if skip[0] == arg_doc.name:
                         skip.pop(0)
                         continue
-                    else:
-                        raise RuntimeError("We whould be skipping {} "
-                                           "but {} encountered."
-                                           .format(skip[0], arg_doc.name))
+                    raise RuntimeError(
+                        f"We whould be skipping {skip[0]} but {arg_doc.name} encountered."
+                    )
 
                 if arg_doc.type.startswith('eraLDBODY'):
                     # Special-case LDBODY: for those, the previous argument
@@ -74,50 +71,38 @@ class FunctionDoc:
 
         return doc_list
 
-    @property
+    @functools.cached_property
     def input(self):
-        if self.__input is None:
-            self.__input = []
-            for regex in ("Given([^\n]*):.*?\n(.+?)  \n",
-                          "Given and returned([^\n]*):\n(.+?)  \n"):
-                result = re.search(regex, self.doc, re.DOTALL)
-                if result is not None:
-                    doc_lines = result.group(2).split("\n")
-                    self.__input += self._get_arg_doc_list(doc_lines)
-
-        return self.__input
-
-    @property
-    def output(self):
-        if self.__output is None:
-            self.__output = []
-            for regex in ("Given and returned([^\n]*):\n(.+?)  \n",
-                          "Returned([^\n]*):.*?\n(.+?)  \n"):
-                result = re.search(regex, self.doc, re.DOTALL)
-                if result is not None:
-                    doc_lines = result.group(2).split("\n")
-                    self.__output += self._get_arg_doc_list(doc_lines)
-
-        return self.__output
-
-    @property
-    def ret_info(self):
-        if self.__ret_info is None:
-            ret_info = []
-            result = re.search("Returned \\(function value\\)([^\n]*):\n(.+?)  \n",
-                               self.doc, re.DOTALL)
+        input_ = []
+        for regex in (
+            "Given([^\n]*):.*?\n(.+?)  \n",
+            "Given and returned([^\n]*):\n(.+?)  \n",
+        ):
+            result = re.search(regex, self.doc, re.DOTALL)
             if result is not None:
-                ret_info.append(ReturnDoc(result.group(2)))
+                doc_lines = result.group(2).split("\n")
+                input_ += self._get_arg_doc_list(doc_lines)
+        return input_
 
-            if len(ret_info) == 0:
-                self.__ret_info = ''
-            elif len(ret_info) == 1:
-                self.__ret_info = ret_info[0]
-            else:
-                raise ValueError("Multiple C return sections found in this doc:\n"
-                                 + self.doc)
+    @functools.cached_property
+    def output(self):
+        output = []
+        for regex in (
+            "Given and returned([^\n]*):\n(.+?)  \n",
+            "Returned([^\n]*):.*?\n(.+?)  \n",
+        ):
+            result = re.search(regex, self.doc, re.DOTALL)
+            if result is not None:
+                doc_lines = result.group(2).split("\n")
+                output += self._get_arg_doc_list(doc_lines)
+        return output
 
-        return self.__ret_info
+    @functools.cached_property
+    def ret_info(self):
+        result = re.search(
+            "Returned \\(function value\\)([^\n]*):\n(.+?)  \n", self.doc, re.DOTALL
+        )
+        return "" if result is None else ReturnDoc(result.group(2))
 
     @property
     def title(self):
@@ -192,25 +177,22 @@ class Variable:
         used for the loop definitions.  In core.py, they are also used
         to view-cast regular arrays to these structured dtypes.
         """
-        if self.ctype == 'const char':
-            return 'dt_type'
-        elif self.ctype == 'char':
-            return 'dt_sign'
-        elif self.ctype == 'int' and self.shape == (4,):
-            return 'dt_' + self.name[1:]
-        elif self.ctype == 'double' and self.shape == (3,):
-            return 'dt_double'
-        elif self.ctype == 'double' and self.shape == (2, 3):
-            return 'dt_pv'
-        elif self.ctype == 'double' and self.shape == (2,):
-            return 'dt_pvdpv'
-        elif self.ctype == 'double' and self.shape == (3, 3):
-            return 'dt_double'
-        elif not self.shape:
-            return 'dt_' + self.ctype
-        else:
-            raise ValueError("ctype {} with shape {} not recognized."
-                             .format(self.ctype, self.shape))
+        match self.ctype, self.shape:
+            case "const char", _:
+                return "dt_type"
+            case "char", _:
+                return "dt_sign"
+            case "int", (4,):
+                return "dt_" + self.name[1:]
+            case "double", (3,) | (3, 3):
+                return "dt_double"
+            case "double", (2, 3):
+                return "dt_pv"
+            case "double", (2,):
+                return "dt_pvdpv"
+            case _, ():
+                return "dt_" + self.ctype
+        raise ValueError(f"ctype {self.ctype} with shape {self.shape} not recognized.")
 
     @property
     def view_dtype(self):
@@ -223,10 +205,9 @@ class Variable:
         """
         if self.ctype == 'const char':
             return 'dt_bytes12'
-        elif self.ctype == 'char':
+        if self.ctype == "char":
             return 'dt_bytes1'
-        else:
-            raise ValueError('Only char ctype should need view back!')
+        raise ValueError("Only char ctype should need view back!")
 
     @property
     def ndim(self):
@@ -245,14 +226,14 @@ class Variable:
 
     @property
     def signature_shape(self):
-        if self.ctype == 'eraLDBODY':
-            return '(n)'
-        elif self.ctype == 'double' and self.shape == (3,):
-            return '(3)'
-        elif self.ctype == 'double' and self.shape == (3, 3):
-            return '(3, 3)'
-        else:
-            return '()'
+        match self.ctype, self.shape:
+            case "eraLDBODY", _:
+                return "(n)"
+            case "double", (3,):
+                return "(3)"
+            case "double", (3, 3):
+                return "(3, 3)"
+        return "()"
 
 
 class Argument(Variable):
@@ -260,17 +241,9 @@ class Argument(Variable):
     def __init__(self, definition, doc):
         self.definition = definition
         self.doc = doc
-        self.__inout_state = None
         self.ctype, ptr_name_arr = definition.strip().rsplit(" ", 1)
-        if "*" == ptr_name_arr[0]:
-            self.is_ptr = True
-            name_arr = ptr_name_arr[1:]
-        else:
-            self.is_ptr = False
-            name_arr = ptr_name_arr
-        if "[]" in ptr_name_arr:
-            self.is_ptr = True
-            name_arr = name_arr[:-2]
+        name_arr = ptr_name_arr.removeprefix("*").removesuffix("[]")
+        self.is_ptr = name_arr != ptr_name_arr
         if "[" in name_arr:
             self.name, arr = name_arr.split("[", 1)
             self.shape = tuple([int(size) for size in arr[:-1].split("][")])
@@ -278,20 +251,16 @@ class Argument(Variable):
             self.name = name_arr
             self.shape = ()
 
-    @property
+    @functools.cached_property
     def inout_state(self):
-        if self.__inout_state is None:
-            self.__inout_state = ''
-            for i in self.doc.input:
-                if self.name in i.name.split(','):
-                    self.__inout_state = 'in'
-            for o in self.doc.output:
-                if self.name in o.name.split(','):
-                    if self.__inout_state == 'in':
-                        self.__inout_state = 'inout'
-                    else:
-                        self.__inout_state = 'out'
-        return self.__inout_state
+        inout_state = ""
+        for i in self.doc.input:
+            if self.name in i.name.split(","):
+                inout_state = "in"
+        for o in self.doc.output:
+            if self.name in o.name.split(","):
+                inout_state = "inout" if inout_state == "in" else "out"
+        return inout_state
 
     @property
     def name_for_call(self):
@@ -303,12 +272,8 @@ class Argument(Variable):
         called 'nb'.
         """
         if self.ctype == 'eraLDBODY':
-            assert self.name == 'b'
             return 'nb, _' + self.name
-        elif self.is_ptr:
-            return '_'+self.name
-        else:
-            return '*_'+self.name
+        return ("_" if self.is_ptr else "*_") + self.name
 
     def __repr__(self):
         return (f"Argument('{self.definition}', name='{self.name}', "
@@ -370,43 +335,24 @@ class Function:
     ----------
     name : str
         The name of the function
-    source_path : str
+    source_path : pathlib.Path
         Either a directory, which means look for the function in a
         stand-alone file (like for the standard ERFA distribution), or a
         file, which means look for the function in that file.
-    match_line : str, optional
-        If given, searching of the source file will skip until it finds
-        a line matching this string, and start from there.
     """
 
-    def __init__(self, name, source_path, match_line=None):
+    def __init__(self, name, source_path):
         self.name = name
         self.pyname = name.split('era')[-1].lower()
         self.filename = self.pyname+".c"
-        if os.path.isdir(source_path):
-            self.filepath = os.path.join(os.path.normpath(source_path), self.filename)
-        else:
-            self.filepath = source_path
-
-        with open(self.filepath) as f:
-            if match_line:
-                line = f.readline()
-                while line != '':
-                    if line.startswith(match_line):
-                        filecontents = '\n' + line + f.read()
-                        break
-                    line = f.readline()
-                else:
-                    msg = ('Could not find the match_line "{0}" in '
-                           'the source file "{1}"')
-                    raise ValueError(msg.format(match_line, self.filepath))
-            else:
-                filecontents = f.read()
+        self.filepath = (
+            source_path / self.filename if source_path.is_dir() else source_path
+        )
 
         pattern = fr"\n([^\n]+{name} ?\([^)]+\)).+?(/\*.+?\*/)"
         p = re.compile(pattern, flags=re.DOTALL | re.MULTILINE)
 
-        search = p.search(filecontents)
+        search = p.search(self.filepath.read_text())
         self.cfunc = " ".join(search.group(1).split())
         self.doc = FunctionDoc(search.group(2))
 
@@ -417,7 +363,7 @@ class Function:
         if self.ret != 'void':
             self.args.append(Return(self.ret, self.doc))
 
-    def args_by_inout(self, inout_filter, prop=None, join=None):
+    def args_by_inout(self, inout_filter):
         """
         Gives all of the arguments and/or returned values, depending on whether
         they are inputs, outputs, etc.
@@ -434,17 +380,7 @@ class Function:
         It can also be a "|"-separated string giving inout states to OR
         together.
         """
-        result = []
-        for arg in self.args:
-            if arg.inout_state in inout_filter.split('|'):
-                if prop is None:
-                    result.append(arg)
-                else:
-                    result.append(getattr(arg, prop))
-        if join is not None:
-            return join.join(result)
-        else:
-            return result
+        return [arg for arg in self.args if arg.inout_state in inout_filter.split("|")]
 
     @property
     def user_dtype(self):
@@ -458,8 +394,7 @@ class Function:
         for arg in self.args_by_inout('in|inout|out'):
             if arg.ctype == 'eraLDBODY':
                 return arg.dtype
-            elif user_dtype is None and arg.dtype not in ('dt_double',
-                                                          'dt_int'):
+            if user_dtype is None and arg.dtype not in ("dt_double", "dt_int"):
                 user_dtype = arg.dtype
 
         return user_dtype
@@ -478,11 +413,11 @@ class Function:
 
     @property
     def python_call(self):
-        out = ', '.join([arg.name for arg in self.args_by_inout('inout|out|stat|ret')])
-        args = ', '.join([arg.name for arg in self.args_by_inout('in|inout')])
-        result = '{out} = {func}({args})'.format(out=out,
-                                                 func='ufunc.' + self.pyname,
-                                                 args=args)
+        result = _assemble_py_func_call(
+            "ufunc." + self.pyname,
+            in_args=[arg.name for arg in self.args_by_inout("in|inout")],
+            out_args=[arg.name for arg in self.args_by_inout("inout|out|stat|ret")],
+        )
         if len(result) < 75:
             return result
 
@@ -494,8 +429,10 @@ class Function:
                 + result[split_point:].replace(' =', ') ='))
 
     def __repr__(self):
-        return (f"Function(name='{self.name}', pyname='{self.pyname}', "
-                f"filename='{self.filename}', filepath='{self.filepath}')")
+        return (
+            f"{type(self).__name__}(name='{self.name}', pyname='{self.pyname}', "
+            f"filename='{self.filename}', filepath='{self.filepath}')"
+        )
 
 
 class Constant:
@@ -516,7 +453,7 @@ class ExtraFunction(Function):
         The name of the function in C
     prototype : str
         The prototype for the function (usually derived from the header)
-    pathfordoc : str
+    pathfordoc : pathlib.Path
         The path to a file that contains the prototype, with the documentation
         as a multiline string *before* it.
     """
@@ -524,7 +461,8 @@ class ExtraFunction(Function):
     def __init__(self, cname, prototype, pathfordoc):
         self.name = cname
         self.pyname = cname.split('era')[-1].lower()
-        self.filepath, self.filename = os.path.split(pathfordoc)
+        self.filepath = pathfordoc.parent
+        self.filename = pathfordoc.name
 
         self.prototype = prototype.strip()
         if prototype.endswith('{') or prototype.endswith(';'):
@@ -532,26 +470,24 @@ class ExtraFunction(Function):
 
         incomment = False
         lastcomment = None
-        with open(pathfordoc, 'r') as f:
-            for ln in f:
-                if incomment:
-                    if ln.lstrip().startswith('*/'):
-                        incomment = False
-                        lastcomment = ''.join(lastcomment)
-                    else:
-                        if ln.startswith('**'):
-                            ln = ln[2:]
-                        lastcomment.append(ln)
+        for ln in pathfordoc.read_text().split("\n"):
+            if incomment:
+                if ln.lstrip().startswith("*/"):
+                    incomment = False
+                    lastcomment = "".join(lastcomment)
                 else:
-                    if ln.lstrip().startswith('/*'):
-                        incomment = True
-                        lastcomment = []
-                    if ln.startswith(self.prototype):
-                        self.doc = lastcomment
-                        break
+                    lastcomment.append(ln.removeprefix("**"))
             else:
-                raise ValueError('Did not find prototype {} in file '
-                                 '{}'.format(self.prototype, pathfordoc))
+                if ln.lstrip().startswith("/*"):
+                    incomment = True
+                    lastcomment = []
+                if ln.startswith(self.prototype):
+                    self.doc = lastcomment
+                    break
+        else:
+            raise ValueError(
+                f"Did not find prototype {self.prototype} in file {pathfordoc}"
+            )
 
         self.args = []
         argset = re.search(fr"{self.name}\(([^)]+)?\)",
@@ -563,12 +499,6 @@ class ExtraFunction(Function):
                             self.prototype).group(1).strip()
         if self.ret != 'void':
             self.args.append(Return(self.ret, self.doc))
-
-    def __repr__(self):
-        r = super().__repr__()
-        if r.startswith('Function'):
-            r = 'Extra' + r
-        return r
 
 
 class TestFunction:
@@ -602,10 +532,11 @@ class TestFunction:
         Right now this will be true for functions without inputs such
         as eraIr with numpy < 1.24.
         """
-        if self.nin + self.ninout == 0 and self.name != "zpv":
-            return "np.__version__ < '1.24', reason='numpy < 1.24 do not support no-input ufuncs'"
-        else:
-            return None
+        return (
+            "np.__version__ < '1.24', reason='numpy < 1.24 do not support no-input ufuncs'"
+            if self.nin + self.ninout == 0 and self.name != "zpv"
+            else None
+        )
 
     def pre_process_lines(self):
         """Basic pre-processing.
@@ -654,10 +585,7 @@ class TestFunction:
                 v_shape = v.shape if v.signature_shape != '()' else '()'
                 extra = ""
             self.var_dtypes[name] = v_dtype
-            if v_dtype == 'dt_double':
-                v_dtype = 'float'
-            else:
-                v_dtype = 'erfa_ufunc.' + v_dtype
+            v_dtype = "float" if v_dtype == "dt_double" else "erfa_ufunc." + v_dtype
             defines.append(f"{name} = np.empty({v_shape}, {v_dtype}){extra}")
 
         return defines
@@ -714,30 +642,26 @@ class TestFunction:
 
             # Call of function that is being tested.
             elif era_name in line:
-                line = line.replace(era_name, f"erfa_ufunc.{self.name}")
                 # correct for LDBODY (complete hack!)
                 line = line.replace('3, b', 'b').replace('n, b', 'b')
-                # Split into function name and call arguments.
-                start, _, arguments = line.partition('(')
-                # Get arguments, stripping excess spaces and, for numbers, remove
-                # leading zeros since python cannot deal with items like '01', etc.
-                args = []
-                for arg in arguments[:-1].split(','):
-                    arg = arg.strip()
-                    while arg[0] == '0' and len(arg) > 1 and arg[1] in '0123456789':
-                        arg = arg[1:]
-                    args.append(arg)
+                name, arguments = _get_funcname_and_args(
+                    line, era_name, f"erfa_ufunc.{self.name}"
+                )
+                # Remove leading zeros from numbers since python cannot deal with them.
+                args = [
+                    (arg.lstrip("0") or "0") if arg.isdigit() else arg
+                    for arg in arguments
+                ]
                 # Get input and output arguments.
                 in_args = [arg.replace('&', '') for arg in args[:self.nin+self.ninout]]
                 out_args = ([arg.replace('&', '') for arg in args[-self.nout-self.ninout:]]
                             if len(args) > self.nin else [])
                 # If the call assigned something, that will have been the status.
                 # Prepend any arguments assigned in the call.
-                if '=' in start:
-                    line = ', '.join(out_args+[start])
-                else:
-                    line = ', '.join(out_args) + ' = ' + start
-                line = line + '(' + ', '.join(in_args) + ')'
+                if " = " in name:
+                    status, name = name.split(" = ", 1)
+                    out_args.append(status)
+                line = _assemble_py_func_call(name, in_args, out_args)
                 if 'astrom' in out_args:
                     out.append(line)
                     line = 'astrom = astrom.view(np.recarray)'
@@ -745,26 +669,20 @@ class TestFunction:
             # In some test functions, there are calls to other ERFA functions.
             # Deal with those in a super hacky way for now.
             elif line.startswith('eraA'):
-                line = line.replace('eraA', 'erfa_ufunc.a')
-                start, _, arguments = line.partition('(')
-                args = [arg.strip() for arg in arguments[:-1].split(',')]
-                in_args = [arg for arg in args if '&' not in arg]
-                out_args = [arg.replace('&', '') for arg in args if '&' in arg]
-                line = (', '.join(out_args) + ' = '
-                        + start + '(' + ', '.join(in_args) + ')')
+                name, args = _get_funcname_and_args(line, "eraA", "erfa_ufunc.a")
+                line = _assemble_py_func_call(
+                    name,
+                    in_args=[arg for arg in args if "&" not in arg],
+                    out_args=[arg.replace("&", "") for arg in args if "&" in arg],
+                )
                 if 'atioq' in line or 'atio13' in line or 'apio13' in line:
                     line = line.replace(' =', ', j =')
 
             # And the same for some other functions, which always have a
             # 2-element time as inputs.
             elif line.startswith('eraS'):
-                line = line.replace('eraS', 'erfa_ufunc.s')
-                start, _, arguments = line.partition('(')
-                args = [arg.strip() for arg in arguments[:-1].split(',')]
-                in_args = args[:2]
-                out_args = args[2:]
-                line = (', '.join(out_args) + ' = '
-                        + start + '(' + ', '.join(in_args) + ')')
+                name, args = _get_funcname_and_args(line, "eraS", "erfa_ufunc.s")
+                line = _assemble_py_func_call(name, in_args=args[:2], out_args=args[2:])
 
             # Input number setting.
             elif '=' in line:
@@ -784,6 +702,17 @@ class TestFunction:
             out.append(line)
 
         return out
+
+
+def _get_funcname_and_args(
+    line: str, c_prefix: str, py_prefix: str
+) -> tuple[str, list[str]]:
+    funcname, args = line.replace(c_prefix, py_prefix).split("(", 1)
+    return funcname, [arg.strip() for arg in args.removesuffix(")").split(",")]
+
+
+def _assemble_py_func_call(name: str, in_args: list[str], out_args: list[str]) -> str:
+    return f"{', '.join(out_args)} = {name}({', '.join(in_args)})"
 
 
 def main(srcdir=DEFAULT_ERFA_LOC, templateloc=DEFAULT_TEMPLATE_LOC, verbose=True):
@@ -819,27 +748,19 @@ def main(srcdir=DEFAULT_ERFA_LOC, templateloc=DEFAULT_TEMPLATE_LOC, verbose=True
     erfa_py_in = env.get_template(outfn + '.templ')
 
     # Prepare the jinja2 test templating environment
-    env2 = Environment(loader=FileSystemLoader(os.path.join(templateloc, testdir)))
+    env2 = Environment(loader=FileSystemLoader(templateloc / testdir))
 
     test_py_in = env2.get_template(testfn + '.templ')
 
     # Extract all the ERFA function names from erfa.h
-    if os.path.isdir(srcdir):
-        erfahfn = os.path.join(srcdir, 'erfa.h')
-        t_erfa_c_fn = os.path.join(srcdir, 't_erfa_c.c')
-        multifilserc = True
-    else:
-        erfahfn = os.path.join(os.path.split(srcdir)[0], 'erfa.h')
-        t_erfa_c_fn = os.path.join(os.path.split(srcdir)[0], 't_erfa_c.c')
-        multifilserc = False
+    if not srcdir.is_dir():
+        srcdir = srcdir.parent
 
-    with open(erfahfn, "r") as f:
-        erfa_h = f.read()
-        print_("read erfa header")
+    erfa_h = (srcdir / "erfa.h").read_text()
+    print_("read erfa header")
 
-    with open(t_erfa_c_fn, "r") as f:
-        t_erfa_c = f.read()
-        print_("read C tests")
+    t_erfa_c = (srcdir / "t_erfa_c.c").read_text()
+    print_("read C tests")
 
     funcs = OrderedDict()
     section_subsection_functions = re.findall(
@@ -847,38 +768,11 @@ def main(srcdir=DEFAULT_ERFA_LOC, templateloc=DEFAULT_TEMPLATE_LOC, verbose=True
         flags=re.DOTALL | re.MULTILINE)
     for section, subsection, functions in section_subsection_functions:
         print_(f"{section}.{subsection}")
-
-        if True:
-
-            func_names = re.findall(r' (\w+)\(.*?\);', functions,
-                                    flags=re.DOTALL)
-            for name in func_names:
-                print_(f"{section}.{subsection}.{name}...")
-                if multifilserc:
-                    # easy because it just looks in the file itself
-                    cdir = (srcdir if section != 'Extra' else
-                            templateloc or '.')
-                    funcs[name] = Function(name, cdir)
-                else:
-                    # Have to tell it to look for a declaration matching
-                    # the start of the header declaration, otherwise it
-                    # might find a *call* of the function instead of the
-                    # definition
-                    for line in functions.split(r'\n'):
-                        if name in line:
-                            # [:-1] is to remove trailing semicolon, and
-                            # splitting on '(' is because the header and
-                            # C files don't necessarily have to match
-                            # argument names and line-breaking or
-                            # whitespace
-                            match_line = line[:-1].split('(')[0]
-                            funcs[name] = Function(name, cdir, match_line)
-                            break
-                    else:
-                        raise ValueError("A name for a C file wasn't "
-                                         "found in the string that "
-                                         "spawned it.  This should be "
-                                         "impossible!")
+        for name in re.findall(r" (\w+)\(.*?\);", functions, flags=re.DOTALL):
+            print_(f"{section}.{subsection}.{name}...")
+            funcs[name] = Function(
+                name, srcdir if section != "Extra" else templateloc or Path.cwd()
+            )
 
     test_funcs = [TestFunction.from_function(funcs[name], t_erfa_c)
                   for name in sorted(funcs.keys())]
@@ -886,11 +780,8 @@ def main(srcdir=DEFAULT_ERFA_LOC, templateloc=DEFAULT_TEMPLATE_LOC, verbose=True
     funcs = funcs.values()
 
     # Extract all the ERFA constants from erfam.h
-    erfamhfn = os.path.join(srcdir, 'erfam.h')
-    with open(erfamhfn, 'r') as f:
-        erfa_m_h = f.read()
     constants = []
-    for chunk in erfa_m_h.split("\n\n"):
+    for chunk in (srcdir / "erfam.h").read_text().split("\n\n"):
         result = re.findall(r"#define (ERFA_\w+?) (.+?)$", chunk,
                             flags=re.DOTALL | re.MULTILINE)
         if result:
@@ -917,12 +808,9 @@ def main(srcdir=DEFAULT_ERFA_LOC, templateloc=DEFAULT_TEMPLATE_LOC, verbose=True
 
     if outfn is not None:
         print_(f"Saving to {outfn}, {ufuncfn} and {testfn}")
-        with open(os.path.join(templateloc, outfn), "w") as f:
-            f.write(erfa_py)
-        with open(os.path.join(templateloc, ufuncfn), "w") as f:
-            f.write(erfa_c)
-        with open(os.path.join(templateloc, testdir, testfn), "w") as f:
-            f.write(test_py)
+        (templateloc / outfn).write_text(erfa_py)
+        (templateloc / ufuncfn).write_text(erfa_c)
+        (templateloc / testdir / testfn).write_text(test_py)
 
     print_("Done!")
 
@@ -933,11 +821,16 @@ if __name__ == '__main__':
     from argparse import ArgumentParser
 
     ap = ArgumentParser()
-    ap.add_argument('srcdir', default=DEFAULT_ERFA_LOC, nargs='?',
-                    help='Directory where the ERFA c and header files '
-                         'can be found or to a single erfa.c file '
-                         '(which must be in the same directory as '
-                         'erfa.h). Default: "{}"'.format(DEFAULT_ERFA_LOC))
+    ap.add_argument(
+        "srcdir",
+        default=DEFAULT_ERFA_LOC,
+        nargs="?",
+        help=(
+            "Directory where the ERFA c and header files can be found or to a single "
+            "erfa.c file (which must be in the same directory as erfa.h). "
+            f'Default: "{DEFAULT_ERFA_LOC}"'
+        ),
+    )
     ap.add_argument('-t', '--template-loc',
                     default=DEFAULT_TEMPLATE_LOC,
                     help='the location where the "core.py.templ" and '
@@ -946,4 +839,4 @@ if __name__ == '__main__':
                     help='Suppress output normally printed to stdout.')
 
     args = ap.parse_args()
-    main(args.srcdir, args.template_loc, args.verbose)
+    main(Path(args.srcdir), Path(args.template_loc), args.verbose)

@@ -57,8 +57,6 @@ jobs:
 
           - name: Code style checks
             os: ubuntu-latest
-          - name: Code style checks
-            os: ubuntu-latest
             python: 3.x
             toxenv: codestyle
             toxargs: -v

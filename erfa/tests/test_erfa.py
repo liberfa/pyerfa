@@ -1,40 +1,35 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
+import platform
+import subprocess
 from datetime import datetime
 
-import pytest
 import numpy as np
-from numpy.testing import assert_array_equal, assert_array_almost_equal, assert_allclose
+import pytest
+from numpy.testing import assert_allclose, assert_array_equal
 
 import erfa
 
 try:
     from astropy.time import Time
 except ImportError:
-    # astropy not available for testing
-    class Time:
-        _DUMMY = True
+    astropy_time = pytest.param(
+        None, id="Time", marks=pytest.mark.skip(reason="astropy not installed")
+    )
+else:
+    astropy_time = Time("2345-01-01", scale="tai")
 
-        def __init__(self, *args, **kwargs):
-            pass
 
-
-def embedded_liberfa(path=erfa.ufunc.__file__):
-    import platform
-    import subprocess
-
-    command = ['nm', '--defined-only']
-    if platform.system() == 'Windows':
-        # command = ['']  # TODO
-        return None
-
-    command.append(path)
+@pytest.fixture
+def check_embedded_liberfa():
+    if platform.system() == "Windows":  # TODO
+        return pytest.skip(reason="don't know how to test on Windows")
     try:
-        out = subprocess.run(command, check=True,
-                             encoding='utf-8', stdout=subprocess.PIPE)
-    except (subprocess.SubprocessError, OSError):
-        return None
-    else:
-        return 'eraA2af' in out.stdout
+        out = subprocess.check_output(
+            ["/usr/bin/nm", "--defined-only", erfa.ufunc.__file__]
+        )
+    except subprocess.CalledProcessError as err:
+        return pytest.skip(reason=str(err))
+    return None if b"eraA2af" in out else pytest.skip(reason="system liberfa")
 
 
 class TestVersion:
@@ -58,7 +53,7 @@ class TestVersion:
         version = erfa.__version__
         assert version is erfa.version.version
 
-    @pytest.mark.skipif(not embedded_liberfa(), reason='system liberfa')
+    @pytest.mark.usefixtures("check_embedded_liberfa")
     def test_version_with_embedded_liberfa(self):
         version = erfa.__version__
         assert version.startswith(erfa.version.erfa_version)
@@ -173,25 +168,20 @@ def test_errwarn_reporting():
     # check warning is raised for a scalar
     with pytest.warns(erfa.ErfaWarning, match=r'1 of "dubious year \(Note 1\)"') as w:
         erfa.dat(100, 1, 1, 0.5)
-        assert len(w) == 1
+    assert len(w) == 1
 
     # and that the count is right for a vector.
     with pytest.warns(erfa.ErfaWarning, match=r'2 of "dubious year \(Note 1\)"') as w:
         erfa.dat([100, 200, 1990], 1, 1, 0.5)
-        assert len(w) == 1
+    assert len(w) == 1
 
-    try:
+    with pytest.raises(
+        erfa.ErfaError, match=r'1 of "bad day \(Note 3\)", 1 of "bad month"'
+    ):
         erfa.dat(1990, [1, 34, 2], [1, 1, 43], 0.5)
-    except erfa.ErfaError as e:
-        if '1 of "bad day (Note 3)", 1 of "bad month"' not in e.args[0]:
-            assert False, 'Raised the correct type of error, but wrong message: ' + e.args[0]
 
-    try:
+    with pytest.raises(erfa.ErfaError, match=r"^(?!.*warning)"):
         erfa.dat(200, [1, 34, 2], [1, 1, 43], 0.5)
-    except erfa.ErfaError as e:
-        if 'warning' in e.args[0]:
-            assert False, ('Raised the correct type of error, but there were '
-                           'warnings mixed in: ' + e.args[0])
 
 
 def test_vector_inouts():
@@ -233,11 +223,10 @@ def test_vector_inouts():
 
 def test_rz():
     # This failed on MacOS (gh-68) because the types were not set correctly.
-    r = erfa.rz(np.deg2rad(60.), np.eye(3))
-    assert_array_almost_equal(r, np.array(
-        [[0.5, 0.8660254, 0.],
-         [-0.8660254, 0.5, 0.],
-         [0., 0., 1.]]))
+    assert_allclose(
+        erfa.rz(np.deg2rad(60.0), np.eye(3)),
+        [[0.5, 0.8660254, 0.0], [-0.8660254, 0.5, 0.0], [0.0, 0.0, 1.0]],
+    )
 
 
 def test_pv_in():
@@ -480,12 +469,14 @@ class TestLeapSeconds:
         erfa.leap_seconds.set()
         assert erfa.dat(2018, 1, 1, 0.) == 37.0
 
-    @pytest.mark.parametrize('table,match', [
-        ([(2017, 3, 10.)], 'January'),
-        ([(2017, 1, 1.),
-          (2017, 7, 3.)], 'jump'),
-        ([[(2017, 1, 1.)],
-          [(2017, 7, 2.)]], 'dimension')])
+    @pytest.mark.parametrize(
+        ("table", "match"),
+        [
+            ([(2017, 3, 10.0)], "January"),
+            ([(2017, 1, 1.0), (2017, 7, 3.0)], "jump"),
+            ([[(2017, 1, 1.0)], [(2017, 7, 2.0)]], "dimension"),
+        ],
+    )
     def test_validation(self, table, match):
         with pytest.raises(ValueError, match=match):
             erfa.leap_seconds.set(table)
@@ -522,12 +513,9 @@ class TestLeapSeconds:
         assert n_update == len(new_leap_seconds)
         assert erfa.dat(2018, 1, 1, 0.) == 37.0
 
-    @pytest.mark.parametrize('expiration', [
-        datetime(2345, 1, 1),
-        '1 January 2345',
-        pytest.param(Time('2345-01-01', scale='tai'),
-                     marks=pytest.mark.skipif(hasattr(Time, '_DUMMY'),
-                                              reason='astropy not available'))])
+    @pytest.mark.parametrize(
+        "expiration", [datetime(2345, 1, 1), "1 January 2345", astropy_time], ids=type
+    )
     def test_with_expiration(self, expiration):
         class ExpiringArray(np.ndarray):
             expires = expiration

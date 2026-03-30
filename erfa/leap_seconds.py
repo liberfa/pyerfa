@@ -32,9 +32,7 @@ from warnings import warn
 import numpy as np
 
 from .core import ErfaWarning
-
-from .ufunc import get_leap_seconds, set_leap_seconds, dt_eraLEAPSECOND
-
+from .ufunc import dt_eraLEAPSECOND, get_leap_seconds, set_leap_seconds
 
 NUMPY_LT_2_0 = np.__version__.startswith("1.")
 
@@ -185,8 +183,7 @@ def _expires_property():
         last = get()[-1]
         return (datetime(last["year"], last["month"], 1) +
                 timedelta(_expiration_data.days))
-    else:
-        return _expiration_data.expires
+    return _expiration_data.expires
 
 
 def update(table):

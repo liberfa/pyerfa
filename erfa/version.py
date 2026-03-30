@@ -29,7 +29,7 @@ except ImportError as exc:
     # bail since nothing will work, but let's try to give a more informative
     # error message.
     try:
-        from ctypes import CDLL, util, c_char_p
+        from ctypes import CDLL, c_char_p, util
         liberfa = CDLL(util.find_library('erfa'))
         liberfa.eraVersion.restype = c_char_p
         erfa_version = liberfa.eraVersion().decode('ascii')
