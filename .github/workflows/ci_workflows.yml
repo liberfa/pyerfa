@@ -52,7 +52,7 @@ jobs:
           - name: Test with freethreaded python
             os: ubuntu-latest
             python: '3.14t'
-            toxenv: test-devdeps
+            toxenv: test-freethreaded
             toxargs: -v
 
           - name: Documentation build
