@@ -443,64 +443,6 @@ class Constant:
         self.doc = doc
 
 
-class ExtraFunction(Function):
-    """
-    An "extra" function - e.g. one not following the SOFA/ERFA standard format.
-
-    Parameters
-    ----------
-    cname : str
-        The name of the function in C
-    prototype : str
-        The prototype for the function (usually derived from the header)
-    pathfordoc : pathlib.Path
-        The path to a file that contains the prototype, with the documentation
-        as a multiline string *before* it.
-    """
-
-    def __init__(self, cname, prototype, pathfordoc):
-        self.name = cname
-        self.pyname = cname.split('era')[-1].lower()
-        self.filepath = pathfordoc.parent
-        self.filename = pathfordoc.name
-
-        self.prototype = prototype.strip()
-        if prototype.endswith('{') or prototype.endswith(';'):
-            self.prototype = prototype[:-1].strip()
-
-        incomment = False
-        lastcomment = None
-        for ln in pathfordoc.read_text().split("\n"):
-            if incomment:
-                if ln.lstrip().startswith("*/"):
-                    incomment = False
-                    lastcomment = "".join(lastcomment)
-                else:
-                    lastcomment.append(ln.removeprefix("**"))
-            else:
-                if ln.lstrip().startswith("/*"):
-                    incomment = True
-                    lastcomment = []
-                if ln.startswith(self.prototype):
-                    self.doc = lastcomment
-                    break
-        else:
-            raise ValueError(
-                f"Did not find prototype {self.prototype} in file {pathfordoc}"
-            )
-
-        self.args = []
-        argset = re.search(fr"{self.name}\(([^)]+)?\)",
-                           self.prototype).group(1)
-        if argset is not None:
-            for arg in argset.split(', '):
-                self.args.append(Argument(arg, self.doc))
-        self.ret = re.match(f"^(.*){self.name}",
-                            self.prototype).group(1).strip()
-        if self.ret != 'void':
-            self.args.append(Return(self.ret, self.doc))
-
-
 class TestFunction:
     """Function holding information about a test in t_erfa_c.c"""
     def __init__(self, name, t_erfa_c, nin, ninout, nout):
@@ -788,18 +730,6 @@ def main(srcdir=DEFAULT_ERFA_LOC, templateloc=DEFAULT_TEMPLATE_LOC, verbose=True
             doc = re.findall(r"/\* (.+?) \*/\n", chunk, flags=re.DOTALL)
             for (name, value) in result:
                 constants.append(Constant(name, value, doc))
-
-    # TODO: re-enable this when const char* return values and
-    #       non-status code integer rets are possible
-    # #Add in any "extra" functions from erfaextra.h
-    # erfaextrahfn = os.path.join(srcdir, 'erfaextra.h')
-    # with open(erfaextrahfn, 'r') as f:
-    #     for l in f:
-    #         ls = l.strip()
-    #         match = re.match('.* (era.*)\(', ls)
-    #         if match:
-    #             print_("Extra:  {0} ...".format(match.group(1)))
-    #             funcs.append(ExtraFunction(match.group(1), ls, erfaextrahfn))
 
     print_("Rendering template")
     erfa_c = erfa_c_in.render(funcs=funcs)
