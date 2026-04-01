@@ -27,16 +27,6 @@ if USE_PY_LIMITED_API:
     options["bdist_wheel"] = {"py_limited_api": "cp310"}
 
 
-def newer(source, target):
-    if not source.exists():
-        raise FileNotFoundError(f"file '{source.resolve()}' does not exist")
-
-    if not target.exists():
-        return 1
-
-    return source.stat().st_mtime > target.stat().st_mtime
-
-
 def get_liberfa_versions(path=LIBERFADIR / "configure.ac"):
     s = path.read_text()
 
@@ -65,11 +55,9 @@ def get_liberfa_versions(path=LIBERFADIR / "configure.ac"):
 
 def get_extensions():
     gen_files_exist = all(path.is_file() for path in GEN_FILES)
-    gen_files_outdated = False
     if ERFA_SRC.is_dir():
         # assume that 'erfaversion.c' is updated at each release at least
-        src = ERFA_SRC / "erfaversion.c"
-        gen_files_outdated = any(newer(src, fn) for fn in GEN_FILES)
+        src_mtime = (ERFA_SRC / "erfaversion.c").stat().st_mtime
     elif not gen_files_exist:
         raise RuntimeError(
             'Missing "liberfa" source files, unable to generate '
@@ -77,7 +65,7 @@ def get_extensions():
             'Please check your source tree. '
             'Maybe "git submodule update" could help.')
 
-    if not gen_files_exist or gen_files_outdated:
+    if not gen_files_exist or any(fn.stat().st_mtime < src_mtime for fn in GEN_FILES):
         print('Run "erfa_generator.py"')
         cmd = [sys.executable, 'erfa_generator.py', ERFA_SRC, '--quiet']
         subprocess.run(cmd, check=True)
