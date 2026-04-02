@@ -657,19 +657,13 @@ def _assemble_py_func_call(name: str, in_args: list[str], out_args: list[str]) -
     return f"{', '.join(out_args)} = {name}({', '.join(in_args)})"
 
 
-def main(srcdir=DEFAULT_ERFA_LOC, templateloc=DEFAULT_TEMPLATE_LOC, verbose=True):
+def main(srcdir=DEFAULT_ERFA_LOC, templateloc=DEFAULT_TEMPLATE_LOC):
     from jinja2 import Environment, FileSystemLoader
 
     outfn = 'core.py'
     ufuncfn = 'ufunc.c'
     testdir = 'tests'
     testfn = 'test_ufunc.py'
-
-    if verbose:
-        print_ = print
-    else:
-        def print_(*args, **kwargs):
-            return None
 
     # Prepare the jinja2 templating environment
     env = Environment(loader=FileSystemLoader(templateloc))
@@ -699,19 +693,14 @@ def main(srcdir=DEFAULT_ERFA_LOC, templateloc=DEFAULT_TEMPLATE_LOC, verbose=True
         srcdir = srcdir.parent
 
     erfa_h = (srcdir / "erfa.h").read_text()
-    print_("read erfa header")
-
     t_erfa_c = (srcdir / "t_erfa_c.c").read_text()
-    print_("read C tests")
 
     funcs = OrderedDict()
     section_subsection_functions = re.findall(
         r'/\* (\w*)/(\w*) \*/\n(.*?)\n\n', erfa_h,
         flags=re.DOTALL | re.MULTILINE)
     for section, subsection, functions in section_subsection_functions:
-        print_(f"{section}.{subsection}")
         for name in re.findall(r" (\w+)\(.*?\);", functions, flags=re.DOTALL):
-            print_(f"{section}.{subsection}.{name}...")
             funcs[name] = Function(
                 name, srcdir if section != "Extra" else templateloc or Path.cwd()
             )
@@ -731,18 +720,14 @@ def main(srcdir=DEFAULT_ERFA_LOC, templateloc=DEFAULT_TEMPLATE_LOC, verbose=True
             for (name, value) in result:
                 constants.append(Constant(name, value, doc))
 
-    print_("Rendering template")
     erfa_c = erfa_c_in.render(funcs=funcs)
     erfa_py = erfa_py_in.render(funcs=funcs, constants=constants)
     test_py = test_py_in.render(test_funcs=test_funcs)
 
     if outfn is not None:
-        print_(f"Saving to {outfn}, {ufuncfn} and {testfn}")
         (templateloc / outfn).write_text(erfa_py)
         (templateloc / ufuncfn).write_text(erfa_c)
         (templateloc / testdir / testfn).write_text(test_py)
-
-    print_("Done!")
 
     return erfa_c, erfa_py, funcs, test_py, test_funcs
 
@@ -765,8 +750,5 @@ if __name__ == '__main__':
                     default=DEFAULT_TEMPLATE_LOC,
                     help='the location where the "core.py.templ" and '
                          '"ufunc.c.templ templates can be found.')
-    ap.add_argument('-q', '--quiet', action='store_false', dest='verbose',
-                    help='Suppress output normally printed to stdout.')
-
     args = ap.parse_args()
-    main(Path(args.srcdir), Path(args.template_loc), args.verbose)
+    main(Path(args.srcdir), Path(args.template_loc))
