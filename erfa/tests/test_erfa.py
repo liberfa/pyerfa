@@ -34,31 +34,29 @@ def check_embedded_liberfa():
     return None if b"eraA2af" in out else pytest.skip(reason="system liberfa")
 
 
-class TestVersion:
-    def test_erfa_version(self):
-        assert hasattr(erfa.version, 'erfa_version')
-        erfa_version = erfa.version.erfa_version
-        assert isinstance(erfa_version, str)
-        assert len(erfa_version.split('.')) == 3
+def test_erfa_version():
+    erfa_version = erfa.version.erfa_version
+    assert type(erfa_version) is str
+    assert len(erfa_version.split(".")) == 3
 
-    def test_sofa_version(self):
-        assert hasattr(erfa.version, 'sofa_version')
-        sofa_version = erfa.version.sofa_version
-        assert isinstance(sofa_version, str)
-        assert (len(sofa_version) == 8
-                or len(sofa_version) == 10 and sofa_version[8] == '_')
-        # Sorry, future 22nd century person, you may have to adjust!
-        assert sofa_version.startswith('20')
 
-    def test_version(self):
-        assert hasattr(erfa, '__version__')
-        version = erfa.__version__
-        assert version is erfa.version.version
+def test_sofa_version():
+    sofa_version = erfa.version.sofa_version
+    assert type(sofa_version) is str
+    assert len(sofa_version) == 8 or (
+        len(sofa_version) == 10 and sofa_version[8] == "_"
+    )
+    # Sorry, future 22nd century person, you may have to adjust!
+    assert sofa_version.startswith("20")
 
-    @pytest.mark.usefixtures("check_embedded_liberfa")
-    def test_version_with_embedded_liberfa(self):
-        version = erfa.__version__
-        assert version.startswith(erfa.version.erfa_version)
+
+def test_version():
+    assert erfa.__version__ is erfa.version.version
+
+
+@pytest.mark.usefixtures("check_embedded_liberfa")
+def test_version_with_embedded_liberfa():
+    assert erfa.__version__.startswith(erfa.version.erfa_version)
 
 
 def test_erfa_wrapper():
