@@ -49,6 +49,13 @@ jobs:
             toxenv: test-devdeps
             toxargs: -v
 
+          - name: Test with freethreaded python
+            os: ubuntu-latest
+            python: '3.14t'
+            toxenv: test-freethreaded
+            toxargs: -v
+            toxposargs: --parallel-threads=100
+
           - name: Documentation build
             os: ubuntu-latest
             python: 3.x
