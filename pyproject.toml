@@ -42,7 +42,6 @@ zip-safe = false
 include-package-data = false
 
 [tool.setuptools.packages.find]
-exclude = ["erfa._dev"]
 namespaces = false
 
 [tool.setuptools_scm]
@@ -60,7 +59,6 @@ IGNORE_EXCEPTION_DETAIL"""
 text_file_format = "rst"
 addopts = "--doctest-rst"
 xfail_strict = true
-norecursedirs = ["erfa/_dev"]
 
 [tool.cibuildwheel]
 enable = ["pypy"]
