@@ -114,8 +114,6 @@ def get_extensions():
         if config_h.exists():
             include_dirs.append(LIBERFADIR)
             define_macros.append(('HAVE_CONFIG_H', '1'))
-        elif 'sdist' in sys.argv:
-            raise RuntimeError('missing "configure" script in "liberfa/erfa"')
 
     if USE_PY_LIMITED_API:
         define_macros.append(("Py_LIMITED_API", "0x30900f0"))
