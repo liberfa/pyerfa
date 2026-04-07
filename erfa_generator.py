@@ -15,7 +15,7 @@ import re
 from collections import OrderedDict
 from pathlib import Path
 
-DEFAULT_ERFA_LOC = Path(__file__).with_name("liberfa") / "erfa" / "src"
+ERFA_SRC = Path(__file__).with_name("liberfa") / "erfa" / "src"
 DEFAULT_TEMPLATE_LOC = Path(__file__).with_name("erfa")
 
 NDIMS_REX = re.compile(re.escape("numpy.dtype([('fi0', '.*', <(.*)>)])")
@@ -657,7 +657,7 @@ def _assemble_py_func_call(name: str, in_args: list[str], out_args: list[str]) -
     return f"{', '.join(out_args)} = {name}({', '.join(in_args)})"
 
 
-def main(srcdir=DEFAULT_ERFA_LOC, templateloc=DEFAULT_TEMPLATE_LOC):
+def main(templateloc=DEFAULT_TEMPLATE_LOC):
     from jinja2 import Environment, FileSystemLoader
 
     outfn = 'core.py'
@@ -689,11 +689,8 @@ def main(srcdir=DEFAULT_ERFA_LOC, templateloc=DEFAULT_TEMPLATE_LOC):
     test_py_in = env2.get_template(testfn + '.templ')
 
     # Extract all the ERFA function names from erfa.h
-    if not srcdir.is_dir():
-        srcdir = srcdir.parent
-
-    erfa_h = (srcdir / "erfa.h").read_text()
-    t_erfa_c = (srcdir / "t_erfa_c.c").read_text()
+    erfa_h = (ERFA_SRC / "erfa.h").read_text()
+    t_erfa_c = (ERFA_SRC / "t_erfa_c.c").read_text()
 
     funcs = OrderedDict()
     section_subsection_functions = re.findall(
@@ -702,7 +699,7 @@ def main(srcdir=DEFAULT_ERFA_LOC, templateloc=DEFAULT_TEMPLATE_LOC):
     for section, subsection, functions in section_subsection_functions:
         for name in re.findall(r" (\w+)\(.*?\);", functions, flags=re.DOTALL):
             funcs[name] = Function(
-                name, srcdir if section != "Extra" else templateloc or Path.cwd()
+                name, ERFA_SRC if section != "Extra" else templateloc or Path.cwd()
             )
 
     test_funcs = [TestFunction.from_function(funcs[name], t_erfa_c)
@@ -712,7 +709,7 @@ def main(srcdir=DEFAULT_ERFA_LOC, templateloc=DEFAULT_TEMPLATE_LOC):
 
     # Extract all the ERFA constants from erfam.h
     constants = []
-    for chunk in (srcdir / "erfam.h").read_text().split("\n\n"):
+    for chunk in (ERFA_SRC / "erfam.h").read_text().split("\n\n"):
         result = re.findall(r"#define (ERFA_\w+?) (.+?)$", chunk,
                             flags=re.DOTALL | re.MULTILINE)
         if result:
@@ -736,19 +733,9 @@ if __name__ == '__main__':
     from argparse import ArgumentParser
 
     ap = ArgumentParser()
-    ap.add_argument(
-        "srcdir",
-        default=DEFAULT_ERFA_LOC,
-        nargs="?",
-        help=(
-            "Directory where the ERFA c and header files can be found or to a single "
-            "erfa.c file (which must be in the same directory as erfa.h). "
-            f'Default: "{DEFAULT_ERFA_LOC}"'
-        ),
-    )
     ap.add_argument('-t', '--template-loc',
                     default=DEFAULT_TEMPLATE_LOC,
                     help='the location where the "core.py.templ" and '
                          '"ufunc.c.templ templates can be found.')
     args = ap.parse_args()
-    main(Path(args.srcdir), Path(args.template_loc))
+    main(Path(args.template_loc))

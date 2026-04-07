@@ -67,7 +67,7 @@ def get_extensions():
 
     if not gen_files_exist or any(fn.stat().st_mtime < src_mtime for fn in GEN_FILES):
         print('Run "erfa_generator.py"')
-        subprocess.run([sys.executable, "erfa_generator.py", ERFA_SRC], check=True)
+        subprocess.run([sys.executable, "erfa_generator.py"], check=True)
 
     sources = [Path("erfa", "ufunc.c")]
     include_dirs = [np.get_include()]
