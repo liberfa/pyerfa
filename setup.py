@@ -22,8 +22,10 @@ GEN_FILES = [Path("erfa", "core.py"), Path("erfa", "ufunc.c")]
 # support the limited API in py313t)
 USE_PY_LIMITED_API = not sysconfig.get_config_var("Py_GIL_DISABLED")
 
+define_macros = []
 options = {}
 if USE_PY_LIMITED_API:
+    define_macros.append(("Py_LIMITED_API", "0x30a00f0"))
     options["bdist_wheel"] = {"py_limited_api": "cp310"}
 
 
@@ -72,7 +74,6 @@ def get_extensions():
     sources = [Path("erfa", "ufunc.c")]
     include_dirs = [np.get_include()]
     libraries = []
-    define_macros = []
 
     if int(os.environ.get('PYERFA_USE_SYSTEM_LIBERFA', 0)):
         print('Using system liberfa')
@@ -114,9 +115,6 @@ def get_extensions():
         if config_h.exists():
             include_dirs.append(LIBERFADIR)
             define_macros.append(('HAVE_CONFIG_H', '1'))
-
-    if USE_PY_LIMITED_API:
-        define_macros.append(("Py_LIMITED_API", "0x30900f0"))
 
     erfa_ext = setuptools.Extension(
         name="erfa.ufunc",
