@@ -25,6 +25,7 @@ but it cannot be used as a context manager.
 
 __all__ = ["get", "set", "update", "validate"]
 
+import threading
 from datetime import datetime, timedelta
 from warnings import warn
 
@@ -41,6 +42,10 @@ def __getattr__(name):
         return _expires_property()
     if name == "expired":
         return _expires_property() < datetime.now()
+    if name == "_expires":
+        return _expiration_data.expires
+    if name == "_expiration_days":
+        return _expiration_data.days
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
@@ -48,10 +53,15 @@ def __dir__():
     return ["expired", "expires", "get", "set", "update", "validate"]
 
 
-_expires = None
-"""Explicit expiration date inferred from leap-second table."""
-_expiration_days = 180
-"""Number of days beyond last leap second at which table expires."""
+class _ExpirationData(threading.local):
+    def __init__(self):
+        # Explicit expiration date inferred from leap-second table.
+        self.expires = None
+        # Number of days beyond last leap second at which table expires.
+        self.days = 180
+
+
+_expiration_data = _ExpirationData()
 
 
 def get():
@@ -153,14 +163,13 @@ def set(table=None):
         If the leap seconds in the table are not on the 1st of January or
         July, or if the sorted TAI-UTC do not increase in increments of 1.
     """
-    global _expires
     if table is None:
         expires = None
     else:
         table, expires = validate(table)
 
     set_leap_seconds(table)
-    _expires = expires
+    _expiration_data.expires = expires
 
 
 def _expires_property():
@@ -170,11 +179,11 @@ def _expires_property():
     set the leap-second array, or a number of days beyond the last leap
     second.
     """
-    if _expires is None:
+    if _expiration_data.expires is None:
         last = get()[-1]
         return (datetime(last["year"], last["month"], 1) +
-                timedelta(_expiration_days))
-    return _expires
+                timedelta(_expiration_data.days))
+    return _expiration_data.expires
 
 
 def update(table):
@@ -204,7 +213,6 @@ def update(table):
         If the leap seconds in the table are not on the 1st of January or
         July, or if the sorted TAI-UTC do not increase in increments of 1.
     """
-    global _expires
     table, expires = validate(table)
 
     # Get erfa table and check it is OK; if not, reset it.
@@ -223,7 +231,7 @@ def update(table):
     # array is set, do not allow exceptions due to misformed expires).
     try:
         if expires is not None and expires > _expires_property():
-            _expires = expires
+            _expiration_data.expires = expires
 
     except Exception as exc:
         warn("table 'expires' attribute ignored as comparing it "
