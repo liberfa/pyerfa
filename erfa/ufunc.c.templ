@@ -757,7 +757,7 @@ PyMODINIT_FUNC PyInit_ufunc(void)
     /* module and its dict */
     PyObject *m, *d;
     /* version information */
-    PyObject *erfa_version, *sofa_version;
+    PyObject *erfa_version = NULL, *sofa_version = NULL;
     /* structured dtypes and their definition */
     PyObject *dtype_def = NULL;
     PyArray_Descr *dt_double = NULL, *dt_int = NULL;
@@ -771,7 +771,7 @@ PyMODINIT_FUNC PyInit_ufunc(void)
 
     /* ufuncs and their definitions */
     int status;
-    PyUFuncObject *ufunc;
+    PyUFuncObject *ufunc = NULL;
     static void *data[1] = {NULL};
     {#- /* for non-structured functions, define there types and functions
            as these do not get copied */ #}
@@ -804,11 +804,12 @@ PyMODINIT_FUNC PyInit_ufunc(void)
      */
     erfa_version = PyUnicode_FromString(eraVersion());
     sofa_version = PyUnicode_FromString(eraSofaVersion());
-    if (erfa_version == NULL || sofa_version == NULL) {
+    if (erfa_version == NULL ||
+        PyDict_SetItemString(d, "erfa_version", erfa_version) < 0 ||
+        sofa_version == NULL ||
+        PyDict_SetItemString(d, "sofa_version", sofa_version) < 0) {
         goto fail;
     }
-    PyDict_SetItemString(d, "erfa_version", erfa_version);
-    PyDict_SetItemString(d, "sofa_version", sofa_version);
     Py_DECREF(erfa_version);
     Py_DECREF(sofa_version);
     /*
@@ -973,12 +974,13 @@ PyMODINIT_FUNC PyInit_ufunc(void)
         ufunc, {{ func.user_dtype }},
         ufunc_loop_{{ func.pyname }}, dtypes, NULL);
     if(status != 0){
-        Py_DECREF(ufunc);
         goto fail;
     }
     {%- endif %}
     ufunc->type_resolver = &ErfaUFuncTypeResolver;
-    PyDict_SetItemString(d, "{{ func.pyname }}", (PyObject *)ufunc);
+    if (PyDict_SetItemString(d, "{{ func.pyname }}", (PyObject *)ufunc) < 0) {
+        goto fail;
+    }
     Py_DECREF(ufunc);
     {%- endfor %}
 
@@ -988,6 +990,9 @@ fail:
     Py_XDECREF(m);
     m = NULL;
     Py_XDECREF(dtype_def);
+    Py_XDECREF(erfa_version);
+    Py_XDECREF(sofa_version);
+    Py_XDECREF(ufunc);
 
 decref:
     Py_XDECREF(dt_double);
