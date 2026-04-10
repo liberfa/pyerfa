@@ -703,6 +703,8 @@ set_leap_seconds(PyObject *NPY_UNUSED(module), PyObject *args) {
         if (PyArray_SIZE(array) == 0) {
             PyErr_SetString(PyExc_ValueError,
                             "Leap second array must have at least one entry.");
+            Py_DECREF(array);
+            return NULL;
         }
         /*
          * Use the array for the new leap seconds.

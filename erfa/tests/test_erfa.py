@@ -485,6 +485,7 @@ class TestLeapSeconds:
             ([(2017, 3, 10.0)], "January"),
             ([(2017, 1, 1.0), (2017, 7, 3.0)], "jump"),
             ([[(2017, 1, 1.0)], [(2017, 7, 2.0)]], "dimension"),
+            (np.zeros((0,), erfa.dt_eraLEAPSECOND), 'at least one entry'),
         ],
     )
     def test_validation(self, table, match):
