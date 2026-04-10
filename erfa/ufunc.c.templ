@@ -486,7 +486,8 @@ npy_casting_to_string(NPY_CASTING casting)
 static PyArray_Descr *
 ensure_dtype_nbo(PyArray_Descr *type)
 {
-    if (PyArray_ISNBO(type->byteorder)) {
+    /* MHvK: changed from PyArray_ISNBO(type->byteorder) */
+    if (PyDataType_ISNOTSWAPPED(type)) {
         Py_INCREF(type);
         return type;
     }
