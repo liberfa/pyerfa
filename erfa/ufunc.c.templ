@@ -347,9 +347,9 @@ static void ufunc_loop_{{ func.pyname }}(
        {%- endfor %}
       {%- endif %}
     }
-    {%- if func.user_dtype == 'dt_eraLBODY' %}
+    {%- if func.user_dtype == 'dt_eraLDBODY' %}
     if (copy_b) {
-        PyArray_free(_b);
+        free(_b);
     }
     {%- endif %}
 }
