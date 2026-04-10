@@ -359,6 +359,16 @@ def test_non_contiguous_matrix():
     assert_array_equal(conv, vector)
 
 
+def test_non_contiguous_output_matrix():
+    # Fix for copy_from_double33 problem found by @devdanzin
+    # Create non-contiguous output array (only reachable via ufunc interface).
+    result = np.zeros((3, 4))[:, :3]
+    out = erfa.ufunc.ltecm(2005.0, out=result)
+    assert out is result
+    expected = erfa.ltecm(2005.0)
+    assert_array_equal(expected, result)
+
+
 class TestAstromNotInplace:
     def setup_method(self):
         self.mjd_array = np.array(

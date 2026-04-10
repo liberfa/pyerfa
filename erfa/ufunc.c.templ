@@ -100,13 +100,12 @@ static inline void copy_to_double33(char *ptr, npy_intp s0, npy_intp s1,
 
 static inline void copy_from_double33(char *ptr, npy_intp s0, npy_intp s1,
                                       double d[3][3]) {
-    char *p = ptr;
     char *p0 = ptr;
     int j0, j1;
     for (j0 = 0; j0 < 3; j0++, p0 += s0) {
         char *p1 = p0;
         for (j1 = 0; j1 < 3; j1++, p1 += s1) {
-            *(double *)p = d[j0][j1];
+            *(double *)p1 = d[j0][j1];
         }
     }
 }
