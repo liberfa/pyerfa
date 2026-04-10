@@ -757,7 +757,7 @@ PyMODINIT_FUNC PyInit_ufunc(void)
     /* version information */
     PyObject *erfa_version, *sofa_version;
     /* structured dtypes and their definition */
-    PyObject *dtype_def;
+    PyObject *dtype_def = NULL;
     PyArray_Descr *dt_double = NULL, *dt_int = NULL;
     PyArray_Descr *dt_pv = NULL, *dt_pvdpv = NULL;
     PyArray_Descr *dt_ymdf = NULL, *dt_hmsf = NULL, *dt_dmsf = NULL;
@@ -807,6 +807,8 @@ PyMODINIT_FUNC PyInit_ufunc(void)
     }
     PyDict_SetItemString(d, "erfa_version", erfa_version);
     PyDict_SetItemString(d, "sofa_version", sofa_version);
+    Py_DECREF(erfa_version);
+    Py_DECREF(sofa_version);
     /*
      * Get ready for arrays and ufuncs
      */
@@ -821,33 +823,47 @@ PyMODINIT_FUNC PyInit_ufunc(void)
     /* double[2][3] = pv */
     dtype_def = Py_BuildValue("[(s, s), (s, s)]",
                               "p", "(3,)f8", "v", "(3,)f8");
-    PyArray_DescrAlignConverter(dtype_def, &dt_pv);
+    if (!(dtype_def && PyArray_DescrAlignConverter(dtype_def, &dt_pv))) {
+        goto fail;
+    }
     Py_DECREF(dtype_def);
     /* double[2] = pvdpv */
     dtype_def = Py_BuildValue("[(s, s), (s, s)]",
                               "pdp", "f8", "pdv", "f8");
-    PyArray_DescrAlignConverter(dtype_def, &dt_pvdpv);
+    if (!(dtype_def && PyArray_DescrAlignConverter(dtype_def, &dt_pvdpv))) {
+        goto fail;
+    }
     Py_DECREF(dtype_def);
     /* int[4] = ymdf, hmsf, dmsf */
     dtype_def = Py_BuildValue("[(s, s), (s, s), (s, s), (s, s)]",
                               "y", "i4", "m", "i4", "d", "i4", "f", "i4");
-    PyArray_DescrAlignConverter(dtype_def, &dt_ymdf);
+    if (!(dtype_def && PyArray_DescrAlignConverter(dtype_def, &dt_ymdf))) {
+        goto fail;
+    }
     Py_DECREF(dtype_def);
     dtype_def = Py_BuildValue("[(s, s), (s, s), (s, s), (s, s)]",
                               "h", "i4", "m", "i4", "s", "i4", "f", "i4");
-    PyArray_DescrAlignConverter(dtype_def, &dt_hmsf);
+    if (!(dtype_def && PyArray_DescrAlignConverter(dtype_def, &dt_hmsf))) {
+        goto fail;
+    }
     Py_DECREF(dtype_def);
     dtype_def = Py_BuildValue("[(s, s), (s, s), (s, s), (s, s)]",
                               "h", "i4", "m", "i4", "s", "i4", "f", "i4");
-    PyArray_DescrAlignConverter(dtype_def, &dt_dmsf);
+    if (!(dtype_def && PyArray_DescrAlignConverter(dtype_def, &dt_dmsf))) {
+        goto fail;
+    }
     Py_DECREF(dtype_def);
     /* char1 (have to use structured, otherwise it cannot be a user type) */
     dtype_def = Py_BuildValue("[(s, s)]", "sign", "S1");
-    PyArray_DescrAlignConverter(dtype_def, &dt_sign);
+    if (!(dtype_def && PyArray_DescrAlignConverter(dtype_def, &dt_sign))) {
+        goto fail;
+    }
     Py_DECREF(dtype_def);
     /* char12 */
     dtype_def = Py_BuildValue("[(s, s)]", "type", "S12");
-    PyArray_DescrAlignConverter(dtype_def, &dt_type);
+    if (!(dtype_def && PyArray_DescrAlignConverter(dtype_def, &dt_type))) {
+        goto fail;
+    }
     Py_DECREF(dtype_def);
     /* eraASTROM */
     dtype_def = Py_BuildValue(
@@ -873,44 +889,45 @@ PyMODINIT_FUNC PyInit_ufunc(void)
         "refa", "f8",      /* refraction constant A (radians) */
         "refb", "f8"       /* refraction constant B (radians) */
         );
-    PyArray_DescrAlignConverter(dtype_def, &dt_eraASTROM);
+    if (!(dtype_def &&
+          PyArray_DescrAlignConverter(dtype_def, &dt_eraASTROM))) {
+        goto fail;
+    }
     Py_DECREF(dtype_def);
     /* eraLEAPSECOND */
     dtype_def = Py_BuildValue("[(s, s), (s, s), (s, s)]",
                               "year", "i4", "month", "i4", "tai_utc", "f8");
-    PyArray_DescrAlignConverter(dtype_def, &dt_eraLEAPSECOND);
-    Py_DECREF(dtype_def);
-
-    if (dt_double == NULL || dt_int == NULL ||
-        dt_pv == NULL || dt_pvdpv == NULL ||
-        dt_ymdf == NULL || dt_hmsf == NULL || dt_dmsf == NULL ||
-        dt_sign == NULL || dt_type == NULL ||
-        dt_eraASTROM == NULL || dt_eraLEAPSECOND == NULL) {
+    if (!(dtype_def &&
+          PyArray_DescrAlignConverter(dtype_def, &dt_eraLEAPSECOND))) {
         goto fail;
     }
-    /* eraLDBODY (needs dt_pv, so after check that that is OK) */
+    Py_DECREF(dtype_def);
+    /* eraLDBODY */
     dtype_def = Py_BuildValue(
         "[(s, s), (s, s), (s, O)]",
         "bm", "f8",     /* mass of the body (solar masses) */
         "dl", "f8",     /* deflection limiter (radians^2/2) */
         "pv", dt_pv     /* barycentric PV of the body (au, au/day) */
         );
-    PyArray_DescrAlignConverter(dtype_def, &dt_eraLDBODY);
-    Py_DECREF(dtype_def);
-    if (dt_eraLDBODY == NULL) {
+    if (!(dtype_def &&
+          PyArray_DescrAlignConverter(dtype_def, &dt_eraLDBODY))) {
         goto fail;
     }
+    Py_DECREF(dtype_def);
+    dtype_def = NULL;
     /* Make the structured dtypes available in the module */
-    PyDict_SetItemString(d, "dt_pv", (PyObject *)dt_pv);
-    PyDict_SetItemString(d, "dt_pvdpv", (PyObject *)dt_pvdpv);
-    PyDict_SetItemString(d, "dt_ymdf", (PyObject *)dt_ymdf);
-    PyDict_SetItemString(d, "dt_hmsf", (PyObject *)dt_hmsf);
-    PyDict_SetItemString(d, "dt_dmsf", (PyObject *)dt_dmsf);
-    PyDict_SetItemString(d, "dt_sign", (PyObject *)dt_sign);
-    PyDict_SetItemString(d, "dt_type", (PyObject *)dt_type);
-    PyDict_SetItemString(d, "dt_eraLDBODY", (PyObject *)dt_eraLDBODY);
-    PyDict_SetItemString(d, "dt_eraASTROM", (PyObject *)dt_eraASTROM);
-    PyDict_SetItemString(d, "dt_eraLEAPSECOND", (PyObject *)dt_eraLEAPSECOND);
+    if (PyDict_SetItemString(d, "dt_pv", (PyObject *)dt_pv) < 0 ||
+        PyDict_SetItemString(d, "dt_pvdpv", (PyObject *)dt_pvdpv) < 0 ||
+        PyDict_SetItemString(d, "dt_ymdf", (PyObject *)dt_ymdf) < 0 ||
+        PyDict_SetItemString(d, "dt_hmsf", (PyObject *)dt_hmsf) < 0 ||
+        PyDict_SetItemString(d, "dt_dmsf", (PyObject *)dt_dmsf) < 0 ||
+        PyDict_SetItemString(d, "dt_sign", (PyObject *)dt_sign) < 0 ||
+        PyDict_SetItemString(d, "dt_type", (PyObject *)dt_type) < 0 ||
+        PyDict_SetItemString(d, "dt_eraLDBODY", (PyObject *)dt_eraLDBODY) < 0 ||
+        PyDict_SetItemString(d, "dt_eraASTROM", (PyObject *)dt_eraASTROM) < 0 ||
+        PyDict_SetItemString(d, "dt_eraLEAPSECOND", (PyObject *)dt_eraLEAPSECOND) << 0) {
+        goto fail;
+    }
     /*
      * Define the ufuncs.  For those without structured dtypes,
      * the ufunc creation uses the static variables defined above;
@@ -968,6 +985,7 @@ PyMODINIT_FUNC PyInit_ufunc(void)
 fail:
     Py_XDECREF(m);
     m = NULL;
+    Py_XDECREF(dtype_def);
 
 decref:
     Py_XDECREF(dt_double);
