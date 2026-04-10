@@ -211,7 +211,7 @@ static void ufunc_loop_{{ func.pyname }}(
    {%- for arg in func.args_by_inout('in') %}
     {#- /* only LDBODY has non-fixed dimension; it is always first */ #}
     {%- if arg.ctype == 'eraLDBODY' %}
-    npy_intp nb = dimensions[0];
+    int nb = (int)dimensions[0];  /* Refuse to worry about INT_MAX */
     {%- endif %}
     {%- if arg.signature_shape != '()' -%}
     {{ inner_loop_steps_and_copy(arg, arg.name) }}
@@ -384,7 +384,7 @@ ufunc_loop_matches(PyUFuncObject *self,
          * Check for NPY_VOID with an associated struct dtype.
          */
         if (types[i] == NPY_VOID && dtypes != NULL) {
-            int op_descr_type_num = op_descr->type_num;
+            int op_type = PyArray_TYPE(op[i]);
             npy_intp dtype_elsize = PyDataType_ELSIZE(dtypes[i]);
             /*
              * MHvK: we do our own check on casting, since by default
@@ -394,7 +394,7 @@ ufunc_loop_matches(PyUFuncObject *self,
              * recognize VOID-of-STRING by the dtype element size;
              * it would be rather costly to go look at dtype->fields).
              */
-            if (op_descr_type_num == NPY_VOID) {
+            if (op_type == NPY_VOID) {
                 /* allow only the same structured to structured */
                 if (!PyArray_EquivTypes(op_descr, dtypes[i])) {
                     return 0;
@@ -402,9 +402,9 @@ ufunc_loop_matches(PyUFuncObject *self,
             }
             else if (dtype_elsize == 1 || dtype_elsize == 12) {
                 /* string structured array; string argument is OK */
-                if (!((op_descr_type_num == NPY_STRING &&
+                if (!((op_type == NPY_STRING &&
                        PyDataType_ELSIZE(op_descr) <= dtype_elsize) ||
-                      (op_descr_type_num == NPY_UNICODE &&
+                      (op_type == NPY_UNICODE &&
                        PyDataType_ELSIZE(op_descr) >> 2 <= dtype_elsize))) {
                     return 0;
                 }
@@ -431,12 +431,12 @@ ufunc_loop_matches(PyUFuncObject *self,
      */
     for (i = nin; i < nop; ++i) {
         if (op[i] != NULL) {
+            PyArray_Descr *op_descr = PyArray_DESCR(op[i]);
             if (types[i] == NPY_VOID && dtypes != NULL) {
-                PyArray_Descr *op_descr = PyArray_DESCR(op[i]);
                 /*
                  * MHvK: for VOID, we only allow VOID->same VOID.
                  */
-                if (op_descr->type_num != NPY_VOID
+                if (PyArray_TYPE(op[i]) != NPY_VOID
                     || !PyArray_EquivTypes(op_descr, dtypes[i])) {
                     return 0;
                 }
@@ -446,8 +446,7 @@ ufunc_loop_matches(PyUFuncObject *self,
                 if (tmp == NULL) {
                     return -1;
                 }
-                if (!PyArray_CanCastTypeTo(tmp, PyArray_DESCR(op[i]),
-                                       casting)) {
+                if (!PyArray_CanCastTypeTo(tmp, op_descr, casting)) {
                     Py_DECREF(tmp);
                     return 0;
                 }
@@ -523,7 +522,7 @@ set_ufunc_loop_data_types(PyUFuncObject *self, PyArrayObject **op,
          */
         }
         else if (op[i] != NULL &&
-                 PyArray_DESCR(op[i])->type_num == type_nums[i]) {
+                 PyArray_TYPE(op[i]) == type_nums[i]) {
             out_dtypes[i] = ensure_dtype_nbo(PyArray_DESCR(op[i]));
         }
         /*
@@ -531,7 +530,7 @@ set_ufunc_loop_data_types(PyUFuncObject *self, PyArrayObject **op,
          * matches, similarly to preserve metdata.
          */
         else if (i >= nin && op[0] != NULL &&
-                            PyArray_DESCR(op[0])->type_num == type_nums[i]) {
+                            PyArray_TYPE(op[0]) == type_nums[i]) {
             out_dtypes[i] = ensure_dtype_nbo(PyArray_DESCR(op[0]));
         }
         /* Otherwise create a plain descr from the type number */
