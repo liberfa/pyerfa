@@ -1,6 +1,5 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
-import functools
 import os
 import re
 import subprocess
@@ -12,6 +11,8 @@ from warnings import warn
 import numpy as np
 import packaging.version
 import setuptools
+from setuptools_scm import Configuration, git
+from setuptools_scm.version import guess_next_version
 
 LIBERFADIR = Path("liberfa", "erfa")
 ERFA_SRC = LIBERFADIR / "src"
@@ -128,22 +129,26 @@ def get_extensions():
     return [erfa_ext]
 
 
-try:
-    source = Path("erfa/_dev/scm_version.py").read_text()
-except FileNotFoundError:
-    guess_next_dev = None
-else:
-    import types
-    scm_version = types.ModuleType('scm_version')
-    scm_version.__file__ = 'erfa/_dev/scm_version.py'
-    code = compile(source, scm_version.__file__, 'exec')
-    try:
-        exec(code, scm_version.__dict__)
-    except ImportError:
-        guess_next_dev = None
-    else:
-        guess_next_dev = functools.partial(scm_version._guess_next_dev,
-                                           liberfadir=LIBERFADIR)
+def guess_next_dev(version):
+    erfa_version = git.parse(LIBERFADIR, config=Configuration(root=LIBERFADIR))
+    if not erfa_version.exact:
+        warn(f"liberfa/erfa not at a tagged release, but at {erfa_version}")
+
+    erfa_tag = erfa_version.format_with("{tag}")
+    version_string = str(version.tag)
+
+    if version.exact:
+        if not version_string.startswith(erfa_tag):
+            warn(
+                f"tag {version_string} does not start with liberfa/erfa tag {erfa_tag}"
+            )
+        return version_string
+
+    return (
+        version.format_with("{guessed}.0.dev{distance}", guessed=erfa_tag)
+        if erfa_tag > version_string
+        else version.format_next_version(guess_next_version)
+    )
 
 use_scm_version = {
     'version_scheme': guess_next_dev,
