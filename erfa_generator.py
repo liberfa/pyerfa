@@ -668,38 +668,23 @@ def main(srcdir=DEFAULT_ERFA_LOC, templateloc=DEFAULT_TEMPLATE_LOC):
     # Prepare the jinja2 templating environment
     env = Environment(loader=FileSystemLoader(templateloc))
 
-    def prefix(a_list, pre):
-        return [pre+f'{an_element}' for an_element in a_list]
-
-    def postfix(a_list, post):
-        return [f'{an_element}'+post for an_element in a_list]
-
-    def surround(a_list, pre, post):
-        return [pre+f'{an_element}'+post for an_element in a_list]
-    env.filters['prefix'] = prefix
-    env.filters['postfix'] = postfix
-    env.filters['surround'] = surround
-
-    erfa_c_in = env.get_template(ufuncfn + '.templ')
-    erfa_py_in = env.get_template(outfn + '.templ')
-
-    # Prepare the jinja2 test templating environment
-    env2 = Environment(loader=FileSystemLoader(templateloc / testdir))
-
-    test_py_in = env2.get_template(testfn + '.templ')
+    env.filters |= {
+        "prefix": lambda a_list, pre: [pre + elem for elem in a_list],
+        "postfix": lambda a_list, post: [elem + post for elem in a_list],
+        "surround": lambda a_list, pre, post: [pre + elem + post for elem in a_list],
+    }
 
     # Extract all the ERFA function names from erfa.h
     if not srcdir.is_dir():
         srcdir = srcdir.parent
 
-    erfa_h = (srcdir / "erfa.h").read_text()
     t_erfa_c = (srcdir / "t_erfa_c.c").read_text()
-
     funcs = OrderedDict()
-    section_subsection_functions = re.findall(
-        r'/\* (\w*)/(\w*) \*/\n(.*?)\n\n', erfa_h,
-        flags=re.DOTALL | re.MULTILINE)
-    for section, subsection, functions in section_subsection_functions:
+    for section, functions in re.findall(
+        r"/\* (\w*)/\w* \*/\n(.*?)\n\n",
+        (srcdir / "erfa.h").read_text(),
+        flags=re.DOTALL | re.MULTILINE,
+    ):
         for name in re.findall(r" (\w+)\(.*?\);", functions, flags=re.DOTALL):
             funcs[name] = Function(
                 name, srcdir if section != "Extra" else templateloc or Path.cwd()
@@ -713,21 +698,27 @@ def main(srcdir=DEFAULT_ERFA_LOC, templateloc=DEFAULT_TEMPLATE_LOC):
     # Extract all the ERFA constants from erfam.h
     constants = []
     for chunk in (srcdir / "erfam.h").read_text().split("\n\n"):
-        result = re.findall(r"#define (ERFA_\w+?) (.+?)$", chunk,
-                            flags=re.DOTALL | re.MULTILINE)
-        if result:
-            doc = re.findall(r"/\* (.+?) \*/\n", chunk, flags=re.DOTALL)
-            for (name, value) in result:
-                constants.append(Constant(name, value, doc))
+        doc = re.findall(r"/\* (.+?) \*/\n", chunk, flags=re.DOTALL)
+        constants.extend(
+            Constant(name, value, doc)
+            for name, value in re.findall(
+                r"#define (ERFA_\w+?) (.+?)$", chunk, flags=re.DOTALL | re.MULTILINE
+            )
+        )
 
-    erfa_c = erfa_c_in.render(funcs=funcs)
-    erfa_py = erfa_py_in.render(funcs=funcs, constants=constants)
-    test_py = test_py_in.render(test_funcs=test_funcs)
+    erfa_c = env.get_template(ufuncfn + ".templ").render(funcs=funcs)
+    erfa_py = env.get_template(outfn + ".templ").render(
+        funcs=funcs, constants=constants
+    )
+    test_py = (
+        Environment(loader=FileSystemLoader(templateloc / testdir))
+        .get_template(testfn + ".templ")
+        .render(test_funcs=test_funcs)
+    )
 
-    if outfn is not None:
-        (templateloc / outfn).write_text(erfa_py)
-        (templateloc / ufuncfn).write_text(erfa_c)
-        (templateloc / testdir / testfn).write_text(test_py)
+    (templateloc / outfn).write_text(erfa_py)
+    (templateloc / ufuncfn).write_text(erfa_c)
+    (templateloc / testdir / testfn).write_text(test_py)
 
     return erfa_c, erfa_py, funcs, test_py, test_funcs
 
