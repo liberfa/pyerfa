@@ -1,15 +1,6 @@
 """Wrapper, ERFA and SOFA version information."""
 
-try:
-    from ._version import version as _version
-except Exception:
-    import warnings
-    warnings.warn(
-        f'could not determine {__name__.split(".")[0]} package version; '
-        f'this indicates a broken installation')
-    del warnings
-
-    _version = '0.0.0'
+from ._version import version as _version
 
 # Set the version numbers a bit indirectly, so that Sphinx can pick up
 # up the docstrings and list the values.
