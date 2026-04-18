@@ -30,7 +30,9 @@ if USE_PY_LIMITED_API:
     options["bdist_wheel"] = {"py_limited_api": "cp310"}
 
 
-def get_liberfa_versions(path=LIBERFADIR / "configure.ac"):
+def get_liberfa_versions(
+    path: Path = LIBERFADIR / "configure.ac",
+) -> list[tuple[str, int | str]]:
     s = path.read_text()
 
     mobj = re.search(r'AC_INIT\(\[erfa\],\[(?P<version>[0-9.]+)\]\)', s)
@@ -102,14 +104,12 @@ def get_extensions():
                 warn(f'unable to configure liberfa: {exc}')
 
         if not config_h.exists():
-            liberfa_versions = get_liberfa_versions()
-            if liberfa_versions:
+            if version_definitions := "\n".join(
+                f"#define {name} {value!r}".replace("'", '"')
+                for name, value in get_liberfa_versions()
+            ):
                 print('Configure liberfa ("configure.ac" scan)')
-                lines = []
-                for name, value in liberfa_versions:
-                    # making sure strings are correctly quoted
-                    lines.append(f'#define {name} {value!r}'.replace("'", '"'))
-                config_h.write_text("\n".join(lines))
+                config_h.write_text(version_definitions)
             else:
                 warn('unable to get liberfa version')
 
