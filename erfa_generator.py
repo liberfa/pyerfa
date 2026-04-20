@@ -657,7 +657,7 @@ def _assemble_py_func_call(name: str, in_args: list[str], out_args: list[str]) -
     return f"{', '.join(out_args)} = {name}({', '.join(in_args)})"
 
 
-def main(srcdir=DEFAULT_ERFA_LOC, templateloc=DEFAULT_TEMPLATE_LOC):
+def main(srcdir: Path, templateloc: Path) -> None:
     from jinja2 import Environment, FileSystemLoader
 
     outfn = 'core.py'
@@ -706,21 +706,17 @@ def main(srcdir=DEFAULT_ERFA_LOC, templateloc=DEFAULT_TEMPLATE_LOC):
             )
         )
 
-    erfa_c = env.get_template(ufuncfn + ".templ").render(funcs=funcs)
-    erfa_py = env.get_template(outfn + ".templ").render(
-        funcs=funcs, constants=constants
+    (templateloc / outfn).write_text(
+        env.get_template(outfn + ".templ").render(funcs=funcs, constants=constants)
     )
-    test_py = (
+    (templateloc / ufuncfn).write_text(
+        env.get_template(ufuncfn + ".templ").render(funcs=funcs)
+    )
+    (templateloc / testdir / testfn).write_text(
         Environment(loader=FileSystemLoader(templateloc / testdir))
         .get_template(testfn + ".templ")
         .render(test_funcs=test_funcs)
     )
-
-    (templateloc / outfn).write_text(erfa_py)
-    (templateloc / ufuncfn).write_text(erfa_c)
-    (templateloc / testdir / testfn).write_text(test_py)
-
-    return erfa_c, erfa_py, funcs, test_py, test_funcs
 
 
 if __name__ == '__main__':
