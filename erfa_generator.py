@@ -18,11 +18,6 @@ from pathlib import Path
 DEFAULT_ERFA_LOC = Path(__file__).with_name("liberfa") / "erfa" / "src"
 DEFAULT_TEMPLATE_LOC = Path(__file__).with_name("erfa")
 
-NDIMS_REX = re.compile(re.escape("numpy.dtype([('fi0', '.*', <(.*)>)])")
-                       .replace(r'\.\*', '.*')
-                       .replace(r'\<', '(')
-                       .replace(r'\>', ')'))
-
 
 class FunctionDoc:
 
