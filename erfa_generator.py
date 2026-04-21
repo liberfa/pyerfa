@@ -125,20 +125,14 @@ class FunctionDoc:
 class ArgumentDoc:
 
     def __init__(self, doc):
-        match = re.search("^ +([^ ]+)[ ]+([^ ]+)[ ]+(.+)", doc)
-        if match is not None:
+        if (match := re.search("^ +([^ ]+)[ ]+([^ ]+)[ ]+.+", doc)) is not None:
             self.name = match.group(1)
             if self.name.startswith('*'):  # Easier than getting the regex to behave...
                 self.name = self.name.replace('*', '')
             self.type = match.group(2)
-            self.doc = match.group(3)
         else:
             self.name = None
             self.type = None
-            self.doc = None
-
-    def __repr__(self):
-        return f"    {self.name:15} {self.type:15} {self.doc}"
 
 
 class Variable:
@@ -234,7 +228,6 @@ class Variable:
 class Argument(Variable):
 
     def __init__(self, definition, doc):
-        self.definition = definition
         self.doc = doc
         self.ctype, ptr_name_arr = definition.strip().rsplit(" ", 1)
         name_arr = ptr_name_arr.removeprefix("*").removesuffix("[]")
@@ -270,21 +263,11 @@ class Argument(Variable):
             return 'nb, _' + self.name
         return ("_" if self.is_ptr else "*_") + self.name
 
-    def __repr__(self):
-        return (f"Argument('{self.definition}', name='{self.name}', "
-                f"ctype='{self.ctype}', inout_state='{self.inout_state}')")
-
 
 class ReturnDoc:
 
     def __init__(self, doc):
-        self.doc = doc
-
-        self.infoline = doc.split('\n')[0].strip()
-        self.type = self.infoline.split()[0]
-        self.descr = self.infoline.split()[1]
-
-        if self.descr.startswith('status'):
+        if doc.splitlines()[0].split()[1].startswith("status"):
             self.statuscodes = statuscodes = {}
 
             code = None
@@ -301,9 +284,6 @@ class ReturnDoc:
         else:
             self.statuscodes = None
 
-    def __repr__(self):
-        return f"Return value, type={self.type:15}, {self.descr}, {self.doc}"
-
 
 class Return(Variable):
 
@@ -313,9 +293,6 @@ class Return(Variable):
         self.ctype = ctype
         self.shape = ()
         self.doc = doc
-
-    def __repr__(self):
-        return f"Return(name='{self.name}', ctype='{self.ctype}', inout_state='{self.inout_state}')"
 
     @property
     def doc_info(self):
@@ -340,14 +317,15 @@ class Function:
         self.name = name
         self.pyname = name.split('era')[-1].lower()
         self.filename = self.pyname+".c"
-        self.filepath = (
-            source_path / self.filename if source_path.is_dir() else source_path
-        )
 
         pattern = fr"\n([^\n]+{name} ?\([^)]+\)).+?(/\*.+?\*/)"
         p = re.compile(pattern, flags=re.DOTALL | re.MULTILINE)
 
-        search = p.search(self.filepath.read_text())
+        search = p.search(
+            (
+                source_path / self.filename if source_path.is_dir() else source_path
+            ).read_text()
+        )
         self.cfunc = " ".join(search.group(1).split())
         self.doc = FunctionDoc(search.group(2))
 
@@ -422,12 +400,6 @@ class Function:
         split_point = result[:75].rfind(',') + 1
         return ('(' + result[:split_point] + '\n    '
                 + result[split_point:].replace(' =', ') ='))
-
-    def __repr__(self):
-        return (
-            f"{type(self).__name__}(name='{self.name}', pyname='{self.pyname}', "
-            f"filename='{self.filename}', filepath='{self.filepath}')"
-        )
 
 
 class Constant:
