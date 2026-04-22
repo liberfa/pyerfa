@@ -308,24 +308,16 @@ class Function:
     name : str
         The name of the function
     source_path : pathlib.Path
-        Either a directory, which means look for the function in a
-        stand-alone file (like for the standard ERFA distribution), or a
-        file, which means look for the function in that file.
+        Directory with the file containing the function implementation.
     """
 
     def __init__(self, name, source_path):
         self.name = name
         self.pyname = name.split('era')[-1].lower()
-        self.filename = self.pyname+".c"
 
         pattern = fr"\n([^\n]+{name} ?\([^)]+\)).+?(/\*.+?\*/)"
         p = re.compile(pattern, flags=re.DOTALL | re.MULTILINE)
-
-        search = p.search(
-            (
-                source_path / self.filename if source_path.is_dir() else source_path
-            ).read_text()
-        )
+        search = p.search((source_path / (self.pyname + ".c")).read_text())
         self.cfunc = " ".join(search.group(1).split())
         self.doc = FunctionDoc(search.group(2))
 
@@ -642,9 +634,6 @@ def main(srcdir: Path, templateloc: Path) -> None:
     }
 
     # Extract all the ERFA function names from erfa.h
-    if not srcdir.is_dir():
-        srcdir = srcdir.parent
-
     t_erfa_c = (srcdir / "t_erfa_c.c").read_text()
     funcs = OrderedDict()
     for section, functions in re.findall(
@@ -695,8 +684,7 @@ if __name__ == '__main__':
         default=DEFAULT_ERFA_LOC,
         nargs="?",
         help=(
-            "Directory where the ERFA c and header files can be found or to a single "
-            "erfa.c file (which must be in the same directory as erfa.h). "
+            "Directory where the ERFA c and header files can be found. "
             f'Default: "{DEFAULT_ERFA_LOC}"'
         ),
     )
