@@ -12,7 +12,6 @@ or dtypes for those structs.  They should be added manually in the template file
 
 import functools
 import re
-from collections import OrderedDict
 from pathlib import Path
 
 DEFAULT_ERFA_LOC = Path(__file__).with_name("liberfa") / "erfa" / "src"
@@ -619,39 +618,16 @@ def _assemble_py_func_call(name: str, in_args: list[str], out_args: list[str]) -
 def main(srcdir: Path, templateloc: Path) -> None:
     from jinja2 import Environment, FileSystemLoader
 
-    outfn = 'core.py'
-    ufuncfn = 'ufunc.c'
-    testdir = 'tests'
-    testfn = 'test_ufunc.py'
-
-    # Prepare the jinja2 templating environment
     env = Environment(loader=FileSystemLoader(templateloc))
+    env.filters["surround"] = lambda elems, pre, post: [pre + e + post for e in elems]
 
-    env.filters |= {
-        "prefix": lambda a_list, pre: [pre + elem for elem in a_list],
-        "postfix": lambda a_list, post: [elem + post for elem in a_list],
-        "surround": lambda a_list, pre, post: [pre + elem + post for elem in a_list],
-    }
+    funcs = [
+        Function(name, srcdir)
+        for name in re.findall(
+            r"\w+ (\w+)\(.*?\);", (srcdir / "erfa.h").read_text(), flags=re.DOTALL
+        )
+    ]
 
-    # Extract all the ERFA function names from erfa.h
-    t_erfa_c = (srcdir / "t_erfa_c.c").read_text()
-    funcs = OrderedDict()
-    for section, functions in re.findall(
-        r"/\* (\w*)/\w* \*/\n(.*?)\n\n",
-        (srcdir / "erfa.h").read_text(),
-        flags=re.DOTALL | re.MULTILINE,
-    ):
-        for name in re.findall(r" (\w+)\(.*?\);", functions, flags=re.DOTALL):
-            funcs[name] = Function(
-                name, srcdir if section != "Extra" else templateloc or Path.cwd()
-            )
-
-    test_funcs = [TestFunction.from_function(funcs[name], t_erfa_c)
-                  for name in sorted(funcs.keys())]
-
-    funcs = funcs.values()
-
-    # Extract all the ERFA constants from erfam.h
     constants = []
     for chunk in (srcdir / "erfam.h").read_text().split("\n\n"):
         doc = re.findall(r"/\* (.+?) \*/\n", chunk, flags=re.DOTALL)
@@ -662,16 +638,25 @@ def main(srcdir: Path, templateloc: Path) -> None:
             )
         )
 
+    outfn = "core.py"
     (templateloc / outfn).write_text(
         env.get_template(outfn + ".templ").render(funcs=funcs, constants=constants)
     )
+
+    ufuncfn = "ufunc.c"
     (templateloc / ufuncfn).write_text(
         env.get_template(ufuncfn + ".templ").render(funcs=funcs)
     )
-    (templateloc / testdir / testfn).write_text(
-        Environment(loader=FileSystemLoader(templateloc / testdir))
+
+    testloc = templateloc / "tests"
+    testfn = "test_ufunc.py"
+    create_test_funcs = functools.partial(
+        TestFunction.from_function, t_erfa_c=(srcdir / "t_erfa_c.c").read_text()
+    )
+    (testloc / testfn).write_text(
+        Environment(loader=FileSystemLoader(testloc))
         .get_template(testfn + ".templ")
-        .render(test_funcs=test_funcs)
+        .render(test_funcs=sorted(map(create_test_funcs, funcs), key=lambda f: f.name))
     )
 
 
