@@ -112,19 +112,13 @@ dt_bytes12 = np.dtype('S12')
 {#-
  # Define the status codes that this function returns.
  #}
-{%- if func.args_by_inout('stat') %}
 {%- for stat in func.args_by_inout('stat') %}
-{%- if stat.doc_info.statuscodes %}
+{%- if stat.statuscodes %}
 
 
-STATUS_CODES['{{ func.pyname }}'] = {
-{%- for key, value in stat.doc_info.statuscodes.items() %}
-    {{ '{!r}'.format(key) }}: {{ '{!r}'.format(value) }},
-{%- endfor %}
-}
+STATUS_CODES['{{ func.pyname }}'] = {{ stat.statuscodes.to_python() }}
 {%- endif %}
 {%- endfor %}
-{%- endif %}
 {#-
  # For ufuncs with more than one output, define a namedtuple so one
  # can access the outputs by name.

@@ -13,6 +13,7 @@ or dtypes for those structs.  They should be added manually in the template file
 import functools
 import re
 from pathlib import Path
+from typing import Final
 
 DEFAULT_ERFA_LOC = Path(__file__).with_name("liberfa") / "erfa" / "src"
 DEFAULT_TEMPLATE_LOC = Path(__file__).with_name("erfa")
@@ -90,13 +91,6 @@ class FunctionDoc:
                 doc_lines = result.group(2).split("\n")
                 output += self._get_arg_doc_list(doc_lines)
         return output
-
-    @functools.cached_property
-    def ret_info(self):
-        result = re.search(
-            "Returned \\(function value\\)([^\n]*):\n(.+?)  \n", self.doc, re.DOTALL
-        )
-        return "" if result is None else ReturnDoc(result.group(2))
 
     @property
     def title(self):
@@ -263,25 +257,21 @@ class Argument(Variable):
         return ("_" if self.is_ptr else "*_") + self.name
 
 
-class ReturnDoc:
+class StatusCodes:
+    def __init__(self, source: str) -> None:
+        self._statuscodes: Final = {
+            "else" if code == "else" else int(code): " ".join(
+                line.strip() for line in description.splitlines()
+            )
+            for code, description in re.findall(
+                r"(-?\w+) = ((?:[^=]+$)+)", source, re.MULTILINE
+            )
+        }
 
-    def __init__(self, doc):
-        if doc.splitlines()[0].split()[1].startswith("status"):
-            self.statuscodes = statuscodes = {}
-
-            code = None
-            for line in doc[doc.index(':')+1:].split('\n'):
-                ls = line.strip()
-                if ls != '':
-                    if ' = ' in ls:
-                        code, msg = ls.split(' = ')
-                        if code != 'else':
-                            code = int(code)
-                        statuscodes[code] = msg
-                    elif code is not None:
-                        statuscodes[code] += ls
-        else:
-            self.statuscodes = None
+    def to_python(self) -> str:
+        return "\n".join(
+            ["{", *[f"    {k!r}: {v!r}," for k, v in self._statuscodes.items()], "}"]
+        )
 
 
 class Return(Variable):
@@ -291,11 +281,13 @@ class Return(Variable):
         self.inout_state = 'stat' if ctype == 'int' else 'ret'
         self.ctype = ctype
         self.shape = ()
-        self.doc = doc
 
-    @property
-    def doc_info(self):
-        return self.doc.ret_info
+        status = re.search(
+            r"Returned \(function value\):\n\s+\w+\s+status.*?:(.+?)\s+Notes?:",
+            doc.doc,
+            re.DOTALL,
+        )
+        self.statuscodes = None if status is None else StatusCodes(status.group(1))
 
 
 class Function:
