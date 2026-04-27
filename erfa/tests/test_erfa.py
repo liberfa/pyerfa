@@ -369,7 +369,6 @@ def test_non_contiguous_output_matrix():
     assert_array_equal(expected, result)
 
 
-@pytest.mark.xfail(raises=KeyError, reason="regression test to demonstrate a bug")
 @pytest.mark.parametrize(
     ("func", "kwargs"),
     [

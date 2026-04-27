@@ -2,6 +2,8 @@
 ====================
 - Let multi-output functions now return a ``namedtuple`` so that
   the various results can be accessed by attribute. [gh-176]
+- The ``erfa.tpors()`` and ``erfa.tporv()`` functions no longer raise an
+  unavoidable ``KeyError``. [gh-234]
 
 2.0.1.6 (2025-01-27)
 ====================
