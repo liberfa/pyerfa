@@ -129,7 +129,7 @@ class ArgumentDoc:
 
 
 class Variable:
-    """Properties shared by Argument and Return."""
+    """Properties shared by Argument, Return and StatusCode."""
     @property
     def npy_type(self):
         """Predefined type used by numpy ufuncs to indicate a given ctype.
@@ -257,14 +257,28 @@ class Argument(Variable):
         return ("_" if self.is_ptr else "*_") + self.name
 
 
-class StatusCodes:
-    def __init__(self, source: str) -> None:
+class StatusCode(Variable):
+    def __init__(self, ctype: str, doc: FunctionDoc, funcname: str) -> None:
+        self.name = "c_retval"
+        self.inout_state = "stat"
+        self.ctype = "int"
+        self.shape = ()
+
+        status = re.search(
+            r"Returned \(function value\):\n\s+\w+\s+status.*?:(.+?)\s+Notes?:",
+            doc.doc,
+            re.DOTALL,
+        )
+        if status is None:
+            raise RuntimeError(
+                f"cannot find status code description in {funcname} doc comment"
+            )
         self._statuscodes: Final = {
             "else" if code == "else" else int(code): " ".join(
                 line.strip() for line in description.splitlines()
             )
             for code, description in re.findall(
-                r"(-?\w+) = ((?:[^=]+$)+)", source, re.MULTILINE
+                r"(-?\w+) = ((?:[^=]+$)+)", status.group(1), re.MULTILINE
             )
         }
 
@@ -278,16 +292,9 @@ class Return(Variable):
 
     def __init__(self, ctype, doc):
         self.name = 'c_retval'
-        self.inout_state = 'stat' if ctype == 'int' else 'ret'
+        self.inout_state = "ret"
         self.ctype = ctype
         self.shape = ()
-
-        status = re.search(
-            r"Returned \(function value\):\n\s+\w+\s+status.*?:(.+?)\s+Notes?:",
-            doc.doc,
-            re.DOTALL,
-        )
-        self.statuscodes = None if status is None else StatusCodes(status.group(1))
 
 
 class Function:
@@ -316,7 +323,9 @@ class Function:
         for arg in re.search(r"\(([^)]+)\)", self.cfunc).group(1).split(', '):
             self.args.append(Argument(arg, self.doc))
         self.ret = re.search(f"^(.*){name}", self.cfunc).group(1).strip()
-        if self.ret != 'void':
+        if self.ret == "int" and self.name not in ("eraTpors", "eraTporv"):
+            self.args.append(StatusCode(self.ret, self.doc, name))
+        elif self.ret != "void":
             self.args.append(Return(self.ret, self.doc))
 
     def args_by_inout(self, inout_filter):
