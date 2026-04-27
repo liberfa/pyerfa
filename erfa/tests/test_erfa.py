@@ -369,6 +369,22 @@ def test_non_contiguous_output_matrix():
     assert_array_equal(expected, result)
 
 
+@pytest.mark.xfail(raises=KeyError, reason="regression test to demonstrate a bug")
+@pytest.mark.parametrize(
+    ("func", "kwargs"),
+    [
+        pytest.param(erfa.tpors, {"a": 1.3, "b": 1.5}, id="tpors"),
+        pytest.param(
+            erfa.tporv, {"v": [0.01892212, 0.06815941, 0.99749499]}, id="tporv"
+        ),
+    ],
+)
+def test_int_return_values(func, kwargs):
+    # Regression test for #234 - tpors() and tporv() return an integer, but that integer
+    # is not a status code and it should not be passed to check_errwarn().
+    assert func(-0.03, 0.07, **kwargs).c_retval == 2
+
+
 class TestAstromNotInplace:
     def setup_method(self):
         self.mjd_array = np.array(
