@@ -8,6 +8,7 @@ import pytest
 from numpy.testing import assert_allclose, assert_array_equal
 
 import erfa
+from erfa import ErfaError, ErfaWarning
 
 try:
     from astropy.time import Time
@@ -382,6 +383,22 @@ def test_int_return_values(func, kwargs):
     # Regression test for #234 - tpors() and tporv() return an integer, but that integer
     # is not a status code and it should not be passed to check_errwarn().
     assert func(-0.03, 0.07, **kwargs).c_retval == 2
+
+
+@pytest.mark.xfail(raises=TypeError, reason="regression test to reveal a bug")
+def test_scalar_cal2jd_error():
+    # Regression test for #235 - scalar non-zero status codes in cal2jd caused a
+    # TypeError instead of ErfaError or ErfaWarning. This only affected cal2jd because
+    # it is the only function with a corresponding entry in erfa.core.STATUS_CODES_REMAP
+    with pytest.raises(ErfaError, match="bad month"):
+        erfa.cal2jd(2026, 26, 26)
+
+
+@pytest.mark.xfail(reason="regression test to reveal a bug")
+def test_scalar_cal2jd_warning():
+    # See test_scalar_cal2jd_error
+    with pytest.warns(ErfaWarning, match="bad day"):
+        erfa.cal2jd(2026, 11, 2026)
 
 
 class TestAstromNotInplace:
