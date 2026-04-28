@@ -66,15 +66,15 @@ STATUS_CODES_REMAP = {
 def check_errwarn(statcodes, func_name):
     if not np.any(statcodes):
         return
+    statcodes = np.atleast_1d(statcodes)
     # Remap any errors into warnings in the STATUS_CODES_REMAP dict.
     if func_name in STATUS_CODES_REMAP:
         for before, after in STATUS_CODES_REMAP[func_name].items():
             statcodes[statcodes == before] = after
             STATUS_CODES[func_name][after] = STATUS_CODES[func_name][before]
 
-    # Use non-zero to be able to index (need >=1-D for this to work).
+    # Use non-zero to be able to index.
     # Conveniently, this also gets rid of any masked elements.
-    statcodes = np.atleast_1d(statcodes)
     erridx = (statcodes < 0).nonzero()
     if erridx[0].size > 0:
         # Errors present - only report the errors.

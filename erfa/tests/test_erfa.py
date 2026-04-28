@@ -385,7 +385,6 @@ def test_int_return_values(func, kwargs):
     assert func(-0.03, 0.07, **kwargs).c_retval == 2
 
 
-@pytest.mark.xfail(raises=TypeError, reason="regression test to reveal a bug")
 def test_scalar_cal2jd_error():
     # Regression test for #235 - scalar non-zero status codes in cal2jd caused a
     # TypeError instead of ErfaError or ErfaWarning. This only affected cal2jd because
@@ -394,7 +393,6 @@ def test_scalar_cal2jd_error():
         erfa.cal2jd(2026, 26, 26)
 
 
-@pytest.mark.xfail(reason="regression test to reveal a bug")
 def test_scalar_cal2jd_warning():
     # See test_scalar_cal2jd_error
     with pytest.warns(ErfaWarning, match="bad day"):

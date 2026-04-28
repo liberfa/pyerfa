@@ -4,6 +4,8 @@
   the various results can be accessed by attribute. [gh-176]
 - The ``erfa.tpors()`` and ``erfa.tporv()`` functions no longer raise an
   unavoidable ``KeyError``. [gh-234]
+- ``erfa.cal2jd()`` no longer raises an unexpected ``TypeError`` instead of an
+  ``ErfaError`` or ``ErfaWarning`` if all its inputs are scalars.
 
 2.0.1.6 (2025-01-27)
 ====================
