@@ -301,7 +301,7 @@ class StatusCode(Variable):
 
 class Return(Variable):
 
-    def __init__(self, ctype, doc):
+    def __init__(self, ctype: str) -> None:
         self.inout_state = "ret"
         super().__init__(ctype)
 
@@ -335,7 +335,7 @@ class Function:
         if self.ret == "int" and self.name not in ("eraTpors", "eraTporv"):
             self.args.append(StatusCode(self.ret, self.doc, name))
         elif self.ret != "void":
-            self.args.append(Return(self.ret, self.doc))
+            self.args.append(Return(self.ret))
 
     def args_by_inout(self, inout_filter):
         """
