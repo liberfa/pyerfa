@@ -20,12 +20,12 @@ DEFAULT_TEMPLATE_LOC = Path(__file__).with_name("erfa")
 
 
 class FunctionDoc:
-
-    def __init__(self, doc):
-        self.doc = doc.replace("**", "      ").replace("/*\n", "").replace("*/", "")
-        self.doc = self.doc.replace("/*+\n", "")        # accommodate eraLdn
-        self.doc = self.doc.replace("*  ", "    " * 2)  # accommodate eraAticqn
-        self.doc = self.doc.replace("*\n", "\n")        # accommodate eraAticqn
+    def __init__(self, doc: str, pyname: str) -> None:
+        if pyname == "ldn":
+            doc = doc.removeprefix("+")
+        elif pyname == "aticqn":
+            doc = doc.replace("\n* ", "\n** ", 2).replace("\n*\n", "\n**\n", 1)
+        self.doc: Final = doc.replace("\n**", "\n      ").removeprefix("\n")
 
     def _get_arg_doc_list(self, doc_lines):
         """Parse input/output doc section lines, getting arguments from them.
@@ -322,11 +322,11 @@ class Function:
         self.name = name
         self.pyname = name.split('era')[-1].lower()
 
-        pattern = fr"\n([^\n]+{name} ?\([^)]+\)).+?(/\*.+?\*/)"
+        pattern = fr"\n([^\n]+{name} ?\([^)]+\)).+?/\*(.+?)\*/"
         p = re.compile(pattern, flags=re.DOTALL | re.MULTILINE)
         search = p.search((source_path / (self.pyname + ".c")).read_text())
         self.cfunc = " ".join(search.group(1).split())
-        self.doc = FunctionDoc(search.group(2))
+        self.doc: Final = FunctionDoc(search.group(2), self.pyname)
 
         self.args = []
         for arg in re.search(r"\(([^)]+)\)", self.cfunc).group(1).split(', '):
