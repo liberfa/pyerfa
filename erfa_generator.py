@@ -318,24 +318,27 @@ class Function:
         Directory with the file containing the function implementation.
     """
 
-    def __init__(self, name, source_path):
-        self.name = name
-        self.pyname = name.split('era')[-1].lower()
+    def __init__(self, name: str, source_path: Path) -> None:
+        self.name: Final = name
+        self.pyname: Final = name.removeprefix("era").lower()
 
-        pattern = fr"\n([^\n]+{name} ?\([^)]+\)).+?/\*(.+?)\*/"
-        p = re.compile(pattern, flags=re.DOTALL | re.MULTILINE)
-        search = p.search((source_path / (self.pyname + ".c")).read_text())
-        self.cfunc = " ".join(search.group(1).split())
-        self.doc: Final = FunctionDoc(search.group(2), self.pyname)
+        file = source_path / f"{self.pyname}.c"
+        search = re.search(
+            rf"(\w+) {name} ?\((.+?)\).+?/\*(.+?)\*/", file.read_text(), re.DOTALL
+        )
+        if search is None:
+            raise RuntimeError(f"cannot find {name}() definition in {file}")
 
-        self.args = []
-        for arg in re.search(r"\(([^)]+)\)", self.cfunc).group(1).split(', '):
-            self.args.append(Argument(arg, self.doc))
-        self.ret = re.search(f"^(.*){name}", self.cfunc).group(1).strip()
-        if self.ret == "int" and self.name not in ("eraTpors", "eraTporv"):
-            self.args.append(StatusCode(self.ret, self.doc, name))
-        elif self.ret != "void":
-            self.args.append(Return(self.ret))
+        self.doc: Final = FunctionDoc(search.group(3), self.pyname)
+        self.args: Final[list[Variable]] = [
+            Argument(arg, self.doc) for arg in re.findall("[^,]+", search.group(2))
+        ]
+        if (ret := search.group(1)) != "void":
+            self.args.append(
+                StatusCode(ret, self.doc, name)
+                if ret == "int" and self.pyname not in ("tpors", "tporv")
+                else Return(ret)
+            )
 
     def args_by_inout(self, inout_filter):
         """
