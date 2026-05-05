@@ -27,17 +27,23 @@ class FunctionDoc:
             doc = doc.replace("\n* ", "\n** ", 2).replace("\n*\n", "\n**\n", 1)
         self.doc: Final = doc.replace("\n**", "\n      ").removeprefix("\n")
 
-    def _get_arg_doc_list(self, doc_lines):
+        inout = self._get_arg_doc_list("Given and returned:\n(.+?) +\n")
+        self.input: Final = self._get_arg_doc_list("Given.*?\n(.+?) +\n") + inout
+        self.output: Final = inout + self._get_arg_doc_list("Returned.*?\n(.+?) +\n")
+
+    def _get_arg_doc_list(self, regex: str) -> list["ArgumentDoc"]:
         """Parse input/output doc section lines, getting arguments from them.
 
         Ensure all elements of eraASTROM and eraLDBODY are left out, as those
         are not input or output arguments themselves.  Also remove the nb
         argument in from of eraLDBODY, as we infer nb from the python array.
         """
+        result = re.search(regex, self.doc, re.DOTALL)
+        if result is None:
+            return []
         doc_list = []
         skip = []
-        for d in doc_lines:
-            arg_doc = ArgumentDoc(d)
+        for arg_doc in map(ArgumentDoc, result.group(1).splitlines()):
             if arg_doc.name is not None:
                 if skip:
                     if skip[0] == arg_doc.name:
@@ -65,32 +71,6 @@ class FunctionDoc:
                 doc_list.append(arg_doc)
 
         return doc_list
-
-    @functools.cached_property
-    def input(self):
-        input_ = []
-        for regex in (
-            "Given([^\n]*):.*?\n(.+?)  \n",
-            "Given and returned([^\n]*):\n(.+?)  \n",
-        ):
-            result = re.search(regex, self.doc, re.DOTALL)
-            if result is not None:
-                doc_lines = result.group(2).split("\n")
-                input_ += self._get_arg_doc_list(doc_lines)
-        return input_
-
-    @functools.cached_property
-    def output(self):
-        output = []
-        for regex in (
-            "Given and returned([^\n]*):\n(.+?)  \n",
-            "Returned([^\n]*):.*?\n(.+?)  \n",
-        ):
-            result = re.search(regex, self.doc, re.DOTALL)
-            if result is not None:
-                doc_lines = result.group(2).split("\n")
-                output += self._get_arg_doc_list(doc_lines)
-        return output
 
     @property
     def title(self):
