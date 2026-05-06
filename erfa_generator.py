@@ -25,11 +25,11 @@ class FunctionDoc:
             doc = doc.removeprefix("+")
         elif pyname == "aticqn":
             doc = doc.replace("\n* ", "\n** ", 2).replace("\n*\n", "\n**\n", 1)
-        self.doc: Final = doc.replace("\n**", "\n      ").removeprefix("\n")
+        self.doc: Final = doc.replace("\n**", "\n").removeprefix("\n")
 
-        inout = self._get_arg_doc_list("Given and returned:\n(.+?) +\n")
-        self.input: Final = self._get_arg_doc_list("Given.*?\n(.+?) +\n") + inout
-        self.output: Final = inout + self._get_arg_doc_list("Returned.*?\n(.+?) +\n")
+        inout = self._get_arg_doc_list("Given and returned:\n(.+?)\n\n")
+        self.input: Final = self._get_arg_doc_list("Given.*?\n(.+?)\n\n") + inout
+        self.output: Final = inout + self._get_arg_doc_list("Returned.*?\n(.+?)\n\n")
 
     def _get_arg_doc_list(self, regex: str) -> list["ArgumentDoc"]:
         """Parse input/output doc section lines, getting arguments from them.
@@ -89,10 +89,6 @@ class FunctionDoc:
                 break
 
         return '\n    '.join(description)
-
-    def __repr__(self):
-        return '\n'.join([(ln.rstrip() if ln.strip() else '')
-                          for ln in self.doc.split('\n')])
 
 
 class ArgumentDoc:
