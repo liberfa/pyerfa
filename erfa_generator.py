@@ -27,50 +27,36 @@ class FunctionDoc:
             doc = doc.replace("\n* ", "\n** ", 2).replace("\n*\n", "\n**\n", 1)
         self.doc: Final = doc.replace("\n**", "\n").removeprefix("\n")
 
-        inout = self._get_arg_doc_list("Given and returned:\n(.+?)\n\n")
-        self.input: Final = self._get_arg_doc_list("Given.*?\n(.+?)\n\n") + inout
-        self.output: Final = inout + self._get_arg_doc_list("Returned.*?\n(.+?)\n\n")
+        get_arg_doc_list = functools.partial(
+            self._get_arg_doc_list, n_spaces=4 if pyname in ("ab", "refco") else 5
+        )
+        inout = get_arg_doc_list("Given and returned:\n(.+?)\n\n")
+        self.input: Final = get_arg_doc_list("Given.*?\n(.+?)\n\n") | inout
+        self.output: Final = inout | get_arg_doc_list("Returned.*?\n(.+?)\n\n")
 
-    def _get_arg_doc_list(self, regex: str) -> list["ArgumentDoc"]:
+    def _get_arg_doc_list(self, regex: str, n_spaces: int) -> frozenset[str]:
         """Parse input/output doc section lines, getting arguments from them.
 
-        Ensure all elements of eraASTROM and eraLDBODY are left out, as those
-        are not input or output arguments themselves.  Also remove the nb
-        argument in from of eraLDBODY, as we infer nb from the python array.
+        Also remove the nb argument in front of eraLDBODY, as we infer nb from
+        the python array.
         """
         result = re.search(regex, self.doc, re.DOTALL)
         if result is None:
-            return []
+            return frozenset()
         doc_list = []
-        skip = []
-        for arg_doc in map(ArgumentDoc, result.group(1).splitlines()):
-            if arg_doc.name is not None:
-                if skip:
-                    if skip[0] == arg_doc.name:
-                        skip.pop(0)
-                        continue
-                    raise RuntimeError(
-                        f"We whould be skipping {skip[0]} but {arg_doc.name} encountered."
-                    )
-
-                if arg_doc.type.startswith('eraLDBODY'):
-                    # Special-case LDBODY: for those, the previous argument
-                    # is always the number of bodies, but we don't need it
-                    # as an input argument for the ufunc since we're going
-                    # to determine this from the array itself. Also skip
-                    # the description of its contents; those are not arguments.
-                    doc_list.pop()
-                    skip = ['bm', 'dl', 'pv']
-                elif arg_doc.type.startswith('eraASTROM'):
-                    # Special-case ASTROM: need to skip the description
-                    # of its contents; those are not arguments.
-                    skip = ['pmt', 'eb', 'eh', 'em', 'v', 'bm1',
-                            'bpn', 'along', 'xpl', 'ypl', 'sphi',
-                            'cphi', 'diurab', 'eral', 'refa', 'refb']
-
-                doc_list.append(arg_doc)
-
-        return doc_list
+        for name, c_type in re.findall(
+            rf"^{n_spaces * ' '}([\w\*,]+) +([\w\[\]\*]+) +.+?",
+            result.group(1),
+            re.MULTILINE,
+        ):
+            if c_type.startswith("eraLDBODY"):
+                # Special-case LDBODY: for those, the previous argument
+                # is always the number of bodies, but we don't need it
+                # as an input argument for the ufunc since we're going
+                # to determine this from the array itself.
+                doc_list.pop()
+            doc_list.extend(name.replace("*", "").split(","))
+        return frozenset(doc_list)
 
     @property
     def title(self):
@@ -89,19 +75,6 @@ class FunctionDoc:
                 break
 
         return '\n    '.join(description)
-
-
-class ArgumentDoc:
-
-    def __init__(self, doc):
-        if (match := re.search("^ +([^ ]+)[ ]+([^ ]+)[ ]+.+", doc)) is not None:
-            self.name = match.group(1)
-            if self.name.startswith('*'):  # Easier than getting the regex to behave...
-                self.name = self.name.replace('*', '')
-            self.type = match.group(2)
-        else:
-            self.name = None
-            self.type = None
 
 
 class Variable:
@@ -145,12 +118,10 @@ class Argument(Variable):
     @functools.cached_property
     def inout_state(self) -> str:
         inout_state = ""
-        for i in self.doc.input:
-            if self.name in i.name.split(","):
-                inout_state = "in"
-        for o in self.doc.output:
-            if self.name in o.name.split(","):
-                inout_state = "inout" if inout_state == "in" else "out"
+        if self.name in self.doc.input:
+            inout_state = "in"
+        if self.name in self.doc.output:
+            inout_state = "inout" if inout_state == "in" else "out"
         return inout_state
 
     @property
