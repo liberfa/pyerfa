@@ -176,21 +176,6 @@ class Argument(Variable):
         raise ValueError(f"ctype {self.ctype} with shape {self.shape} not recognized.")
 
     @property
-    def view_dtype(self):
-        """Name of dtype corresponding to the ctype for viewing back as array.
-
-        E.g., dt_double for double, dt_double33 for double[3][3].
-
-        The types are defined in core.py, where they are used for view-casts
-        of structured results as regular arrays.
-        """
-        if self.ctype == 'const char':
-            return 'dt_bytes12'
-        if self.ctype == "char":
-            return 'dt_bytes1'
-        raise ValueError("Only char ctype should need view back!")
-
-    @property
     def ndim(self):
         return len(self.shape)
 
