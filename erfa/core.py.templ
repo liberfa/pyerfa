@@ -98,7 +98,6 @@ def check_errwarn(statcodes, func_name):
 # <------------------------structured dtype conversion------------------------>
 
 dt_bytes1 = np.dtype('S1')
-dt_bytes12 = np.dtype('S12')
 
 # <--------------------------Actual ERFA-wrapping code------------------------>
 
@@ -175,8 +174,8 @@ def {{ func.pyname }}({{ func.args_by_inout('in|inout')|map(attribute='name')|jo
      # Any string outputs will be in structs; view them as their base type.
      #}
     {%- for arg in func.args_by_inout('out') -%}
-    {%- if 'char' in arg.ctype %}
-    {{ arg.name }} = {{ arg.name }}.view({{ arg.view_dtype }})
+    {%- if arg.ctype == "char" %}
+    {{ arg.name }} = {{ arg.name }}.view(dt_bytes1)
     {%- endif %}
     {%- endfor %}
     {#-
