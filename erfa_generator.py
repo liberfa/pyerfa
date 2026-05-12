@@ -478,12 +478,14 @@ class TestFunction:
                     .replace("s, '+'", "s[0], b'+'")  # Rather hacky...
                     .strip())
 
-            # Call of test function vvi or vvd.
-            if line.startswith('v'):
-                line = line.replace(era_name, self.name)
-                # Can call simple functions directly.  Those need little modification.
-                if self.name + '(' in line:
-                    line = line.replace(self.name + '(', f"erfa_ufunc.{self.name}(")
+            if m := re.match(r"viv ?\( ?([\w\[\]]+), +(.+?),", line):
+                line = f"assert {m.group(1)} == {m.group(2)}"
+
+            elif m := re.match(
+                r"vvd\( ?(.+) ?, +([\d\.e-]+), *([\d\.e-]+), .+?, .+?, +status\)", line
+            ):
+                expr = m.group(1).replace(era_name, f"erfa_ufunc.{self.name}")
+                line = f"assert {expr} == pytest.approx({m.group(2)}, abs={m.group(3)})"
 
             # Call of function that is being tested.
             elif era_name in line:
