@@ -348,7 +348,7 @@ class Constant:
 
 class TestFunction:
     """Function holding information about a test in t_erfa_c.c"""
-    def __init__(self, name, t_erfa_c, nin, ninout, nout):
+    def __init__(self, name: str, t_erfa_c: str, nin: int, ninout: int) -> None:
         self.name = name
         # Get lines that test the given erfa function: capture everything
         # between a line starting with '{' after the test function definition
@@ -359,7 +359,6 @@ class TestFunction:
         # Number of input, inplace, and output arguments.
         self.nin = nin
         self.ninout = ninout
-        self.nout = nout
         self.dt_pv_vars: Final = frozenset(
             re.findall(r"(\w+)\[2\]\[3\]", search.group(1))
         )
@@ -367,10 +366,12 @@ class TestFunction:
     @classmethod
     def from_function(cls, func, t_erfa_c):
         """Initialize from a function definition."""
-        return cls(name=func.pyname, t_erfa_c=t_erfa_c,
-                   nin=len(func.args_by_inout('in')),
-                   ninout=len(func.args_by_inout('inout')),
-                   nout=len(func.args_by_inout('out')))
+        return cls(
+            name=func.pyname,
+            t_erfa_c=t_erfa_c,
+            nin=len(func.args_by_inout("in")),
+            ninout=len(func.args_by_inout("inout")),
+        )
 
     def xfail(self):
         """Whether the python test produced for this function will fail when the xfail condition is verified.
@@ -501,8 +502,7 @@ class TestFunction:
                 ]
                 # Get input and output arguments.
                 in_args = [arg.replace('&', '') for arg in args[:self.nin+self.ninout]]
-                out_args = ([arg.replace('&', '') for arg in args[-self.nout-self.ninout:]]
-                            if len(args) > self.nin else [])
+                out_args = [arg.removeprefix("&") for arg in args[self.nin :]]
                 # If the call assigned something, that will have been the status.
                 # Prepend any arguments assigned in the call.
                 if " = " in name:
