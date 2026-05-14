@@ -64,7 +64,7 @@ STATUS_CODES_REMAP = {
 
 
 def check_errwarn(statcodes, func_name):
-    if not np.any(statcodes):
+    if not statcodes.any():
         return
     statcodes = np.atleast_1d(statcodes)
     # Remap any errors into warnings in the STATUS_CODES_REMAP dict.
