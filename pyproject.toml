@@ -26,7 +26,7 @@ classifiers = [
 ]
 urls = {Homepage = "https://github.com/liberfa/pyerfa"}
 requires-python = ">=3.10"
-dependencies = ["numpy>=1.21.3"]
+dependencies = ["numpy>=1.24"]
 dynamic = ["version"]
 
 [project.optional-dependencies]
