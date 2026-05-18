@@ -74,6 +74,7 @@ extend-select = [
     "PT",
     "PTH",
     "RET",
+    "RUF",
     "S101",
     "SIM",
     "UP",
