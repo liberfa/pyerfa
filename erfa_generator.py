@@ -373,18 +373,6 @@ class TestFunction:
             ninout=len(func.args_by_inout("inout")),
         )
 
-    def xfail(self):
-        """Whether the python test produced for this function will fail when the xfail condition is verified.
-
-        Right now this will be true for functions without inputs such
-        as eraIr with numpy < 1.24.
-        """
-        return (
-            "np.__version__ < '1.24', reason='numpy < 1.24 do not support no-input ufuncs'"
-            if self.nin + self.ninout == 0 and self.name != "zpv"
-            else None
-        )
-
     def pre_process_lines(self):
         """Basic pre-processing.
 

@@ -32,9 +32,6 @@ if not erfa.__version__.startswith(erfa.version.erfa_version):
 {%- for test in test_funcs %}
 
 
-{% if test.xfail() -%}
-@pytest.mark.xfail({{ test.xfail() }})
-{% endif -%}
 def test_{{ test.name }}():
     {%- for line in test.to_python() %}
     {{ line }}
