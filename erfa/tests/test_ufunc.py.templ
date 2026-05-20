@@ -32,7 +32,7 @@ if not erfa.__version__.startswith(erfa.version.erfa_version):
 {%- for test in test_funcs %}
 
 
-def test_{{ test.name }}():
+def test_{{ test.func.pyname }}():
     {%- for line in test.to_python() %}
     {{ line }}
     {%- endfor %}

@@ -348,29 +348,17 @@ class Constant:
 
 class TestFunction:
     """Function holding information about a test in t_erfa_c.c"""
-    def __init__(self, name: str, t_erfa_c: str, nin: int, ninout: int) -> None:
-        self.name = name
+
+    def __init__(self, func: Function, t_erfa_c: str) -> None:
+        self.func: Final = func
         # Get lines that test the given erfa function: capture everything
         # between a line starting with '{' after the test function definition
         # and the first line starting with '}' or ' }'.
-        pattern = fr"\nstatic void t_{name}\(" + r".+?(^\{.+?^\s?\})"
+        pattern = rf"^static void t_{func.pyname}\(" + r".+?(^\{.+?^\s?\})"
         search = re.search(pattern, t_erfa_c, flags=re.DOTALL | re.MULTILINE)
         self.lines = search.group(1).split('\n')
-        # Number of input, inplace, and output arguments.
-        self.nin = nin
-        self.ninout = ninout
         self.dt_pv_vars: Final = frozenset(
             re.findall(r"(\w+)\[2\]\[3\]", search.group(1))
-        )
-
-    @classmethod
-    def from_function(cls, func, t_erfa_c):
-        """Initialize from a function definition."""
-        return cls(
-            name=func.pyname,
-            t_erfa_c=t_erfa_c,
-            nin=len(func.args_by_inout("in")),
-            ninout=len(func.args_by_inout("inout")),
         )
 
     def pre_process_lines(self):
@@ -429,15 +417,13 @@ class TestFunction:
         # TODO: this is quite hacky right now!  Would be good to let function
         # calls be understood by the Function class.
 
-        # Name of the erfa C function, so that we can recognize it.
-        era_name = 'era' + self.name.capitalize()
         # Collect actual code lines, without ";", braces, etc.
         lines = self.pre_process_lines()
         out = []
         for line in lines:
             # In ldn ufunc, the number of bodies is inferred from the array size,
             # so no need to keep the definition.
-            if line == 'n = 3' and self.name == 'ldn':
+            if line == "n = 3" and self.func.pyname == "ldn":
                 continue
 
             # Are we dealing with a variable definition that also sets it?
@@ -473,30 +459,32 @@ class TestFunction:
             elif m := re.match(
                 r"vvd\( ?(.+) ?, +([\d\.e-]+), *([\d\.e-]+), .+?, .+?, +status\)", line
             ):
-                expr = m.group(1).replace(era_name, f"erfa_ufunc.{self.name}")
+                expr = m.group(1).replace(
+                    self.func.name, f"erfa_ufunc.{self.func.pyname}"
+                )
                 line = f"assert {expr} == pytest.approx({m.group(2)}, abs={m.group(3)})"
 
             # Call of function that is being tested.
-            elif era_name in line:
+            elif self.func.name in line:
                 # correct for LDBODY (complete hack!)
                 line = line.replace('3, b', 'b').replace('n, b', 'b')
                 name, arguments = _get_funcname_and_args(
-                    line, era_name, f"erfa_ufunc.{self.name}"
+                    line, self.func.name, f"erfa_ufunc.{self.func.pyname}"
                 )
                 # Remove leading zeros from numbers since python cannot deal with them.
                 args = [
-                    (arg.lstrip("0") or "0") if arg.isdigit() else arg
+                    (arg.lstrip("0") or "0") if arg.isdigit() else arg.removeprefix("&")
                     for arg in arguments
                 ]
-                # Get input and output arguments.
-                in_args = [arg.replace('&', '') for arg in args[:self.nin+self.ninout]]
-                out_args = [arg.removeprefix("&") for arg in args[self.nin :]]
+                out_args = args[len(self.func.args_by_inout("in")) :]
                 # If the call assigned something, that will have been the status.
                 # Prepend any arguments assigned in the call.
                 if " = " in name:
                     status, name = name.split(" = ", 1)
                     out_args.append(status)
-                line = _assemble_py_func_call(name, in_args, out_args)
+                line = _assemble_py_func_call(
+                    name, args[: len(self.func.args_by_inout("in|inout"))], out_args
+                )
                 if 'astrom' in out_args:
                     out.append(line)
                     line = 'astrom = astrom.view(np.recarray)'
@@ -585,12 +573,14 @@ def main(srcdir: Path, templateloc: Path) -> None:
     testloc = templateloc / "tests"
     testfn = "test_ufunc.py"
     create_test_funcs = functools.partial(
-        TestFunction.from_function, t_erfa_c=(srcdir / "t_erfa_c.c").read_text()
+        TestFunction, t_erfa_c=(srcdir / "t_erfa_c.c").read_text()
     )
     (testloc / testfn).write_text(
         Environment(loader=FileSystemLoader(testloc))
         .get_template(testfn + ".templ")
-        .render(test_funcs=sorted(map(create_test_funcs, funcs), key=lambda f: f.name))
+        .render(
+            test_funcs=sorted(map(create_test_funcs, funcs), key=lambda f: f.func.name)
+        )
     )
 
 
