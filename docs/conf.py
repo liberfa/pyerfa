@@ -45,7 +45,7 @@ author = 'The PyERFA Developers'
 build_date = datetime.utcfromtimestamp(
     int(os.environ.get('SOURCE_DATE_EPOCH', time.time()))
 )
-copyright = f"2011–{build_date.year}, {author}"
+copyright = f"2011-{build_date.year}, {author}"
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -123,7 +123,7 @@ html_favicon = None
 # Output file base name for HTML help builder.
 htmlhelp_basename = project + 'doc'
 
-# A dictionary of values to pass into the template engine’s context for all pages.
+# A dictionary of values to pass into the template engine's context for all pages.
 html_context = {
     'to_be_indexed': ['stable', 'latest']
 }

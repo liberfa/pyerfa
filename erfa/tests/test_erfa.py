@@ -60,40 +60,43 @@ def test_version_with_embedded_liberfa():
     assert erfa.__version__.startswith(erfa.version.erfa_version)
 
 
-def test_erfa_wrapper():
-    """
-    Runs a set of tests that mostly make sure vectorization is
-    working as expected
-    """
+@pytest.mark.parametrize(
+    ("ra", "dec", "jd", "shape"),
+    [
+        pytest.param(0.0, 0.0, 2456855.5, (), id="scalar"),
+        pytest.param(
+            0.0, 0.0, np.linspace(2456855.5, 2456856.5, 5), (5,), id="simple array"
+        ),
+        pytest.param(
+            np.linspace(0.0, np.pi * 2.0, 5)[:, None, None],
+            np.linspace(-np.pi / 2.0, np.pi / 2.0, 4)[:, None],
+            np.linspace(2456855.5, 2456856.5, 3),
+            (5, 4, 3),
+            id="broadcasting",
+        ),
+    ],
+)
+def test_atco13_shape(ra, dec, jd, shape):
+    assert (
+        erfa.atco13(
+            ra, dec, 0, 0, 0, 0, jd, 0, 0, 0, np.pi / 4, 0, 0, 0, 1014, 0, 0, 0.5
+        ).aob.shape
+        == shape
+    )
 
-    jd = np.linspace(2456855.5, 2456855.5+1.0/24.0/60.0, 60*2+1)
-    ra = np.linspace(0.0, np.pi*2.0, 5)
-    dec = np.linspace(-np.pi/2.0, np.pi/2.0, 4)
 
-    aob, zob, hob, dob, rob, eo = erfa.atco13(
-        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, jd,
-        0.0, 0.0, 0.0, np.pi/4.0, 0.0, 0.0, 0.0, 1014.0, 0.0, 0.0, 0.5)
-    assert aob.shape == (121,)
-
-    aob, zob, hob, dob, rob, eo = erfa.atco13(
-        0.0, 0.0, 0.0, 0.0, 0.0, 0.0, jd[0],
-        0.0, 0.0, 0.0, np.pi/4.0, 0.0, 0.0, 0.0, 1014.0, 0.0, 0.0, 0.5)
-    assert aob.shape == ()
-
-    aob, zob, hob, dob, rob, eo = erfa.atco13(
-        ra[:, None, None], dec[None, :, None], 0.0, 0.0, 0.0, 0.0, jd[None, None, :],
-        0.0, 0.0, 0.0, np.pi/4.0, 0.0, 0.0, 0.0, 1014.0, 0.0, 0.0, 0.5)
-    (aob.shape) == (5, 4, 121)
-
-    iy, im, id, ihmsf = erfa.d2dtf("UTC", 3, jd, 0.0)
-    assert iy.shape == (121,)
-    assert ihmsf.shape == (121,)
-    assert ihmsf.dtype == erfa.dt_hmsf
-
-    iy, im, id, ihmsf = erfa.d2dtf("UTC", 3, jd[0], 0.0)
-    assert iy.shape == ()
-    assert ihmsf.shape == ()
-    assert ihmsf.dtype == erfa.dt_hmsf
+@pytest.mark.parametrize(
+    ("jd", "shape"),
+    [
+        pytest.param(2456855.5, (), id="scalar"),
+        pytest.param([2456855.5, 2456855.75, 2456856.25], (3,), id="array"),
+    ],
+)
+def test_d2dtf_shape(jd, shape):
+    result = erfa.d2dtf("UTC", 3, jd, 0.0)
+    assert result.iy.shape == shape
+    assert result.ihmsf.shape == shape
+    assert result.ihmsf.dtype == erfa.dt_hmsf
 
 
 def test_angle_ops():
