@@ -356,6 +356,8 @@ class TestFunction:
         # and the first line starting with '}' or ' }'.
         pattern = rf"^static void t_{func.pyname}\(" + r".+?(^\{.+?^\s?\})"
         search = re.search(pattern, t_erfa_c, flags=re.DOTALL | re.MULTILINE)
+        if search is None:
+            raise RuntimeError(f"cannot find the test for {func.name}")
         self.lines = search.group(1).split('\n')
         self.dt_pv_vars: Final = frozenset(
             re.findall(r"(\w+)\[2\]\[3\]", search.group(1))
