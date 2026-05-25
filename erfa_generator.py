@@ -30,11 +30,14 @@ class FunctionDoc:
         get_arg_doc_list = functools.partial(
             self._get_arg_doc_list, n_spaces=4 if pyname in ("ab", "refco") else 5
         )
-        inout = get_arg_doc_list("Given and returned:\n(.+?)\n\n")
-        self.input: Final = get_arg_doc_list("Given.*?\n(.+?)\n\n") | inout
-        self.output: Final = inout | get_arg_doc_list("Returned.*?\n(.+?)\n\n")
+        self.input: Final = get_arg_doc_list("Given.*?\n(.+?)\n\n")
+        self.inout: Final = get_arg_doc_list("Given and returned:\n(.+?)\n\n")
+        self.output: Final = get_arg_doc_list("Returned.*?\n(.+?)\n\n")
+        if pyname in ("aper", "aper13"):
+            self.input.remove("astrom")
+            self.inout.add(self.output.pop())
 
-    def _get_arg_doc_list(self, regex: str, n_spaces: int) -> frozenset[str]:
+    def _get_arg_doc_list(self, regex: str, n_spaces: int) -> set[str]:
         """Parse input/output doc section lines, getting arguments from them.
 
         Also remove the nb argument in front of eraLDBODY, as we infer nb from
@@ -42,7 +45,7 @@ class FunctionDoc:
         """
         result = re.search(regex, self.doc, re.DOTALL)
         if result is None:
-            return frozenset()
+            return set()
         doc_list = []
         for name, c_type in re.findall(
             rf"^{n_spaces * ' '}([\w\*,]+) +([\w\[\]\*]+) +.+?",
@@ -56,7 +59,7 @@ class FunctionDoc:
                 # to determine this from the array itself.
                 doc_list.pop()
             doc_list.extend(name.replace("*", "").split(","))
-        return frozenset(doc_list)
+        return set(doc_list)
 
     @property
     def title(self):
@@ -117,12 +120,13 @@ class Argument(Variable):
 
     @functools.cached_property
     def inout_state(self) -> str:
-        inout_state = ""
         if self.name in self.doc.input:
-            inout_state = "in"
+            return "in"
+        if self.name in self.doc.inout:
+            return "inout"
         if self.name in self.doc.output:
-            inout_state = "inout" if inout_state == "in" else "out"
-        return inout_state
+            return "out"
+        return ""
 
     @property
     def name_for_call(self) -> str:
