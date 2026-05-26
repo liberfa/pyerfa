@@ -21,6 +21,7 @@ DEFAULT_TEMPLATE_LOC = Path(__file__).with_name("erfa")
 
 class FunctionDoc:
     def __init__(self, doc: str, pyname: str) -> None:
+        self.pyname: Final = pyname
         if pyname == "ldn":
             doc = doc.removeprefix("+")
         elif pyname == "aticqn":
@@ -62,22 +63,12 @@ class FunctionDoc:
         return set(doc_list)
 
     @property
-    def title(self):
-        # Used for the docstring title.
-        lines = [line.strip() for line in self.doc.split('\n')[4:10]]
-        # Always include the first line, then stop at either an empty
-        # line or at the end of a sentence.
-        description = lines[:1]
-        for line in lines[1:]:
-            if line == '':
-                break
-            if '. ' in line:
-                line = line[:line.index('. ')+1]
-            description.append(line)
-            if line.endswith('.'):
-                break
-
-        return '\n    '.join(description)
+    def first_sentence(self) -> str:
+        if m := re.search(r"[- ]+\n\n  (.+?\.)\s", self.doc, re.DOTALL):
+            return m.group(1)
+        raise RuntimeError(
+            f"cannot find the first sentence of {self.pyname} doc comment"
+        )
 
 
 class Variable:
