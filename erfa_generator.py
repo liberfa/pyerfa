@@ -12,6 +12,7 @@ or dtypes for those structs.  They should be added manually in the template file
 
 import functools
 import re
+from collections.abc import Iterable
 from pathlib import Path
 from typing import Final, final
 
@@ -233,6 +234,18 @@ class Return(Variable):
         super().__init__(ctype)
 
 
+class ResultTuple:
+    def __init__(self, func_name: str, args: Iterable[Argument | Return]) -> None:
+        self.name: Final = f"{func_name.capitalize()}Result"
+        self.arg_names: Final = ", ".join(arg.name for arg in args)
+
+    def create(self) -> str:
+        return f"{self.name}({self.arg_names})"
+
+    def define(self) -> str:
+        return f'{self.name} = namedtuple({self.name!r}, "{self.arg_names}")'
+
+
 class Function:
     """
     A class representing a C function.
@@ -266,6 +279,12 @@ class Function:
                 if ret == "int" and self.pyname not in ("tpors", "tporv")
                 else Return(ret)
             )
+
+        self.result_tuple: Final = (
+            ResultTuple(self.pyname, py_return)
+            if len(py_return := self.args_by_inout("inout|out|ret")) > 1
+            else None
+        )
 
     def args_by_inout(self, inout_filter):
         """
