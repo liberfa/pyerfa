@@ -120,10 +120,10 @@ STATUS_CODES['{{ func.pyname }}'] = {{ stat.to_python() }}
  # For ufuncs with more than one output, define a namedtuple so one
  # can access the outputs by name.
  #}
-{%- if func.args_by_inout('inout|out|ret')|length > 1 %}
+{%- if func.result_tuple %}
 
 
-{{ func.pyname|capitalize }}Result = namedtuple('{{ func.pyname|capitalize }}Result', "{{ func.args_by_inout('inout|out|ret')|map(attribute='name')|join(', ') }}")
+{{ func.result_tuple.define() }}
 {%- endif %}
 
 
@@ -141,8 +141,8 @@ def {{ func.pyname }}({{ func.args_by_inout('in|inout')|map(attribute='name')|jo
 
     Returns
     -------
-    {%- if func.args_by_inout('inout|out|ret')|length > 1 %}
-    A ``{{ func.pyname|capitalize }}Result`` namedtuple with the following attributes:
+    {%- if func.result_tuple %}
+    A ``{{ func.result_tuple.name }}`` namedtuple with the following attributes:
     {%- endif %}
     {%- for arg in func.args_by_inout('inout|out|ret') %}
     {{ arg.name }} : {{ arg.ctype }} array
@@ -181,10 +181,10 @@ def {{ func.pyname }}({{ func.args_by_inout('in|inout')|map(attribute='name')|jo
     {#-
      # Return the output arguments (including the inplace ones)
      #}
-    {%- if func.args_by_inout('inout|out|ret')|length == 1 %}
-    return {{ func.args_by_inout('inout|out|ret')[0].name }}
+    {%- if func.result_tuple %}
+    return {{ func.result_tuple.create() }}
     {%- else %}
-    return {{ func.pyname|capitalize }}Result({{ func.args_by_inout('inout|out|ret')|map(attribute='name')|join(', ') }})
+    return {{ func.args_by_inout('inout|out|ret')[0].name }}
     {%- endif %}
 
 {%- endfor %}
