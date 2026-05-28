@@ -351,6 +351,32 @@ class Function:
         return ('(' + result[:split_point] + '\n    '
                 + result[split_point:].replace(' =', ') ='))
 
+    def generate_python_body(self) -> str:
+        lines = [self.python_call]
+        if status_code := self.args_by_inout("stat"):
+            lines.append(f"check_errwarn({status_code[0].name}, {self.pyname!r})")
+        lines.extend(
+            f"{arg.name} = {arg.name}.view(dt_bytes1)"
+            for arg in self.args_by_inout("out")
+            if arg.ctype == "char"
+        )
+        if len(lines) == 1:
+            arg_names = [arg.name for arg in self.args_by_inout("in|inout")]
+            ufunc_call = f"ufunc.{self.pyname}({', '.join(arg_names)})"
+            ret_val = (
+                ufunc_call
+                if self.result_tuple is None
+                else f"{self.result_tuple.name}(*{ufunc_call})"
+            )
+            return f"return {ret_val}"
+        ret_val = (
+            self.args_by_inout("inout|out|ret")[0].name
+            if self.result_tuple is None
+            else self.result_tuple.create()
+        )
+        lines.append(f"return {ret_val}")
+        return "\n".join(lines)
+
 
 class Constant:
 
