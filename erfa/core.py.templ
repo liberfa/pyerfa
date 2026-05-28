@@ -158,34 +158,7 @@ def {{ func.pyname }}({{ func.args_by_inout('in|inout')|map(attribute='name')|jo
 
 {{ func.doc.doc | indent(6, true) }}
     """
-
-    {#-
-     # Call the ufunc. Note that we pass inout twice, once as input
-     # and once as output, so that changes are done in-place
-     #}
-    {{ func.python_call }}
-    {#-
-     # Check whether any warnings or errors occurred.
-     #}
-    {%- for arg in func.args_by_inout('stat') %}
-    check_errwarn({{ arg.name }}, '{{ func.pyname }}')
-    {%- endfor %}
-    {#-
-     # Any string outputs will be in structs; view them as their base type.
-     #}
-    {%- for arg in func.args_by_inout('out') -%}
-    {%- if arg.ctype == "char" %}
-    {{ arg.name }} = {{ arg.name }}.view(dt_bytes1)
-    {%- endif %}
-    {%- endfor %}
-    {#-
-     # Return the output arguments (including the inplace ones)
-     #}
-    {%- if func.result_tuple %}
-    return {{ func.result_tuple.create() }}
-    {%- else %}
-    return {{ func.args_by_inout('inout|out|ret')[0].name }}
-    {%- endif %}
+    {{ func.generate_python_body() | indent(4) }}
 
 {%- endfor %}
 {# done! (note: this comment also ensures final new line!) #}
