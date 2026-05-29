@@ -71,6 +71,8 @@ skip = [
 extend-select = [
     "ARG",
     "I",
+    "PLC",
+    "PLE",
     "PT",
     "PTH",
     "RET",
