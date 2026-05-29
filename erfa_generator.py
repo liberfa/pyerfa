@@ -3,9 +3,6 @@
 This module's main purpose is to act as a script to create new versions
 of ufunc.c when ERFA is updated (or this generator is enhanced).
 
-`Jinja2 <http://jinja.pocoo.org/>`_ must be installed for this
-module/script to function.
-
 Note that this does *not* currently automate the process of creating structs
 or dtypes for those structs.  They should be added manually in the template file.
 """
@@ -15,6 +12,8 @@ import re
 from collections.abc import Iterable
 from pathlib import Path
 from typing import Final, final
+
+from jinja2 import Environment, FileSystemLoader
 
 DEFAULT_ERFA_LOC = Path(__file__).with_name("liberfa") / "erfa" / "src"
 DEFAULT_TEMPLATE_LOC = Path(__file__).with_name("erfa")
@@ -545,8 +544,6 @@ def _assemble_py_func_call(name: str, in_args: list[str], out_args: list[str]) -
 
 
 def main(srcdir: Path, templateloc: Path) -> None:
-    from jinja2 import Environment, FileSystemLoader
-
     env = Environment(loader=FileSystemLoader(templateloc))
     env.filters["surround"] = lambda elems, pre, post: [pre + e + post for e in elems]
 
