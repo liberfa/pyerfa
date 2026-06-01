@@ -333,25 +333,16 @@ class Function:
              for args in (self.args_by_inout('in|inout'),
                           self.args_by_inout('inout|out|ret|stat'))])
 
-    @property
-    def python_call(self):
-        result = _assemble_py_func_call(
-            "ufunc." + self.pyname,
-            in_args=[arg.name for arg in self.args_by_inout("in|inout")],
-            out_args=[arg.name for arg in self.args_by_inout("inout|out|stat|ret")],
-        )
-        if len(result) < 75:
-            return result
-
-        if result.index('(') < 75:
-            return result.replace('(', '(\n        ')
-
-        split_point = result[:75].rfind(',') + 1
-        return ('(' + result[:split_point] + '\n    '
-                + result[split_point:].replace(' =', ') ='))
-
     def generate_python_body(self) -> str:
-        lines = [self.python_call]
+        ufunc_name = f"ufunc.{self.pyname}"
+        arg_names = [arg.name for arg in self.args_by_inout("in|inout")]
+        lines = [
+            _assemble_py_func_call(
+                ufunc_name,
+                in_args=arg_names,
+                out_args=[arg.name for arg in self.args_by_inout("inout|out|stat|ret")],
+            )
+        ]
         if status_code := self.args_by_inout("stat"):
             lines.append(f"check_errwarn({status_code[0].name}, {self.pyname!r})")
         lines.extend(
@@ -360,8 +351,7 @@ class Function:
             if arg.ctype == "char"
         )
         if len(lines) == 1:
-            arg_names = [arg.name for arg in self.args_by_inout("in|inout")]
-            ufunc_call = f"ufunc.{self.pyname}({', '.join(arg_names)})"
+            ufunc_call = f"{ufunc_name}({', '.join(arg_names)})"
             ret_val = (
                 ufunc_call
                 if self.result_tuple is None
