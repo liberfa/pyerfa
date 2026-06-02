@@ -222,7 +222,7 @@ class StatusCode(Variable):
 
     def to_python(self) -> str:
         return "\n".join(
-            ["{", *[f"    {k!r}: {v!r}," for k, v in self._statuscodes.items()], "}"]
+            ["{", *[f'    {k!r}: "{v}",' for k, v in self._statuscodes.items()], "}"]
         )
 
 
@@ -242,7 +242,7 @@ class ResultTuple:
         return f"{self.name}({self.arg_names})"
 
     def define(self) -> str:
-        return f'{self.name} = namedtuple({self.name!r}, "{self.arg_names}")'
+        return f'{self.name} = namedtuple("{self.name}", "{self.arg_names}")'
 
 
 class Function:
@@ -344,7 +344,7 @@ class Function:
             )
         ]
         if status_code := self.args_by_inout("stat"):
-            lines.append(f"check_errwarn({status_code[0].name}, {self.pyname!r})")
+            lines.append(f'check_errwarn({status_code[0].name}, "{self.pyname}")')
         lines.extend(
             f"{arg.name} = {arg.name}.view(dt_bytes1)"
             for arg in self.args_by_inout("out")
@@ -550,7 +550,9 @@ def main(srcdir: Path, templateloc: Path) -> None:
         constants.extend(
             Constant(name, value, doc)
             for name, value in re.findall(
-                r"#define (ERFA_\w+?) (.+?)$", chunk, flags=re.DOTALL | re.MULTILINE
+                r"#define (ERFA_\w+?) \(?(.+?)\)?$",
+                chunk,
+                flags=re.DOTALL | re.MULTILINE,
             )
         )
 

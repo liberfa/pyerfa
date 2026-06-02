@@ -32,11 +32,15 @@ import numpy as np
 from . import ufunc
 
 __all__ = [
-    'ErfaError', 'ErfaWarning',
-    {{ funcs | map(attribute='pyname') | surround("'","'")
-       | join(", ") | wordwrap(wrapstring='\n    ') }},
-    {{ constants | map(attribute='name') | surround("'","'")
-       | join(", ") | wordwrap(wrapstring='\n    ') }}]
+    {%- for const in constants %}
+    "{{ const.name }}",
+    {%- endfor %}
+    "ErfaError",
+    "ErfaWarning",
+    {%- for func in funcs %}
+    "{{ func.pyname }}",
+    {%- endfor %}
+]
 
 
 class ErfaError(ValueError):
@@ -58,9 +62,7 @@ STATUS_CODES = {}  # populated below before each function that returns an int
 
 # This is a hard-coded list of status codes that need to be remapped,
 # such as to turn errors into warnings.
-STATUS_CODES_REMAP = {
-    'cal2jd': {-3: 3}
-}
+STATUS_CODES_REMAP = {"cal2jd": {-3: 3}}
 
 
 def check_errwarn(statcodes, func_name):
@@ -79,25 +81,29 @@ def check_errwarn(statcodes, func_name):
     if erridx[0].size > 0:
         # Errors present - only report the errors.
         errcodes, counts = np.unique(statcodes[erridx], return_counts=True)
-        elsemsg = STATUS_CODES[func_name].get('else', None)
-        msgs = [STATUS_CODES[func_name].get(e, elsemsg or f'Return code {e}')
-                for e in errcodes]
-        emsg = ', '.join([f'{c} of "{msg}"' for c, msg in zip(counts, msgs)])
+        elsemsg = STATUS_CODES[func_name].get("else", None)
+        msgs = [
+            STATUS_CODES[func_name].get(e, elsemsg or f"Return code {e}")
+            for e in errcodes
+        ]
+        emsg = ", ".join([f'{c} of "{msg}"' for c, msg in zip(counts, msgs)])
         raise ErfaError(f'ERFA function "{func_name}" yielded {emsg}')
 
     warnidx = (statcodes > 0).nonzero()
     if warnidx[0].size > 0:
         warncodes, counts = np.unique(statcodes[warnidx], return_counts=True)
-        elsemsg = STATUS_CODES[func_name].get('else', None)
-        msgs = [STATUS_CODES[func_name].get(w, elsemsg or f'Return code {w}')
-                for w in warncodes]
-        wmsg = ', '.join([f'{c} of "{msg}"' for c, msg in zip(counts, msgs)])
+        elsemsg = STATUS_CODES[func_name].get("else", None)
+        msgs = [
+            STATUS_CODES[func_name].get(w, elsemsg or f"Return code {w}")
+            for w in warncodes
+        ]
+        wmsg = ", ".join([f'{c} of "{msg}"' for c, msg in zip(counts, msgs)])
         warn(f'ERFA function "{func_name}" yielded {wmsg}', ErfaWarning)
 
 
 # <------------------------structured dtype conversion------------------------>
 
-dt_bytes1 = np.dtype('S1')
+dt_bytes1 = np.dtype("S1")
 
 # <--------------------------Actual ERFA-wrapping code------------------------>
 
@@ -114,7 +120,7 @@ dt_bytes1 = np.dtype('S1')
 {%- for stat in func.args_by_inout('stat') %}
 
 
-STATUS_CODES['{{ func.pyname }}'] = {{ stat.to_python() }}
+STATUS_CODES["{{ func.pyname }}"] = {{ stat.to_python() }}
 {%- endfor %}
 {#-
  # For ufuncs with more than one output, define a namedtuple so one
