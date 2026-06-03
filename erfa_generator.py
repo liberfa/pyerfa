@@ -413,8 +413,11 @@ class TestFunction:
                     defines.append(var)
                 # Is variable an array?
                 name, _, rest = var.partition("[")
-                # If not, or one of iymdf or ihmsf, ignore (latter are outputs only).
-                if not rest or rest[:2] == "4]":
+                if (
+                    not rest
+                    or name in self.func.doc.output  # no need to initialize outputs
+                    or name == "iydmf"  # eraJdcalf test has a typo
+                ):
                     continue
                 # Temporarily create an Argument, so we can use its attributes.
                 # This translates, e.g., double pv[2][3] to dtype dt_pv.
@@ -433,11 +436,16 @@ class TestFunction:
         # TODO: this is quite hacky right now!  Would be good to let function
         # calls be understood by the Function class.
 
+        out_array_elems = tuple(f"{arg}[" for arg in self.func.doc.output)
         out = self.process_definitions()
         for line in self.lines:
-            # In ldn ufunc, the number of bodies is inferred from the array size,
-            # so no need to keep the definition.
-            if line == "n = 3" and self.func.pyname == "ldn":
+            if (
+                # No need to initialize output arrays in Python
+                line.startswith(out_array_elems)
+                # In ldn ufunc, the number of bodies is inferred from the array size,
+                # so no need to keep the definition.
+                or (line == "n = 3" and self.func.pyname == "ldn")
+            ):
                 continue
 
             # Actual function. Start with basic replacements.
