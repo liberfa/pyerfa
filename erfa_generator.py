@@ -257,6 +257,8 @@ class Function:
         Directory with the file containing the function implementation.
     """
 
+    c_retval: Return | StatusCode | None = None
+
     def __init__(self, name: str, source_path: Path) -> None:
         self.name: Final = name
         self.pyname: Final = name.removeprefix("era").lower()
@@ -273,11 +275,12 @@ class Function:
             Argument(arg, self.doc) for arg in re.findall("[^,]+", search.group(2))
         ]
         if (ret := search.group(1)) != "void":
-            self.args.append(
+            self.c_retval = (
                 StatusCode(ret, self.doc, name)
                 if ret == "int" and self.pyname not in ("tpors", "tporv")
                 else Return(ret)
             )
+            self.args.append(self.c_retval)
 
         self.result_tuple: Final = (
             ResultTuple(self.pyname, py_return)
@@ -343,8 +346,8 @@ class Function:
                 out_args=[arg.name for arg in self.args_by_inout("inout|out|stat|ret")],
             )
         ]
-        if status_code := self.args_by_inout("stat"):
-            lines.append(f'check_errwarn({status_code[0].name}, "{self.pyname}")')
+        if isinstance(self.c_retval, StatusCode):
+            lines.append(f'check_errwarn({self.c_retval.name}, "{self.pyname}")')
         lines.extend(
             f"{arg.name} = {arg.name}.view(dt_bytes1)"
             for arg in self.args_by_inout("out")
@@ -543,7 +546,6 @@ def _assemble_py_func_call(name: str, in_args: list[str], out_args: list[str]) -
 
 def main(srcdir: Path, templateloc: Path) -> None:
     env = Environment(loader=FileSystemLoader(templateloc))
-    env.filters["surround"] = lambda elems, pre, post: [pre + e + post for e in elems]
 
     funcs = [
         Function(name, srcdir)

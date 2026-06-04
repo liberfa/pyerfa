@@ -200,9 +200,9 @@ static void ufunc_loop_{{ func.pyname }}(
    {%- endif %}
   {%- endfor %}
   {#- /* variables to hold status and return values */ #}
-  {%- for arg in func.args_by_inout('stat|ret') %}
-    {{ arg.ctype }} _{{ arg.name }};
-  {%- endfor %}
+  {%- if func.c_retval %}
+    {{ func.c_retval.ctype }} _{{ func.c_retval.name }};
+  {%- endif %}
   {#- /*
        * For GENERALIZED UFUNCS - inner loop steps, needs for copying.
        */ #}
@@ -321,18 +321,14 @@ static void ufunc_loop_{{ func.pyname }}(
       {#- /*
            * call the actual erfa function
            */ #}
-        {{ func.args_by_inout('ret|stat') |
-                    map(attribute='name') |
-                    surround('_', ' = ') |
-                    join
-        }}{{ func.name
+        {% if func.c_retval %}_{{ func.c_retval.name }} = {% endif %}{{ func.name
         }}({{ func.args_by_inout('in|inout|out') |
                     map(attribute='name_for_call') |
                     join(', ') }});
       {#- /* store any return values */ #}
-      {%- for arg in func.args_by_inout('ret|stat') %}
-        *(({{ arg.ctype }} *){{ arg.name }}) = _{{ arg.name }};
-      {%- endfor %}
+      {%- if func.c_retval %}
+        *(({{ func.c_retval.ctype }} *){{ func.c_retval.name }}) = _{{ func.c_retval.name }};
+      {%- endif %}
       {%- if func.signature %}
        {#- /* for generalized ufunc, copy output from buffer if needed */ #}
        {%- for arg in func.args_by_inout('inout|out') %}
