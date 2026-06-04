@@ -117,11 +117,11 @@ dt_bytes1 = np.dtype("S1")
 {#-
  # Define the status codes that this function returns.
  #}
-{%- for stat in func.args_by_inout('stat') %}
+{%- if func.c_retval.inout_state == "stat" %}
 
 
-STATUS_CODES["{{ func.pyname }}"] = {{ stat.to_python() }}
-{%- endfor %}
+STATUS_CODES["{{ func.pyname }}"] = {{ func.c_retval.to_python() }}
+{%- endif %}
 {#-
  # For ufuncs with more than one output, define a namedtuple so one
  # can access the outputs by name.
