@@ -70,6 +70,7 @@ skip = [
 [tool.ruff.lint]
 extend-select = [
     "ARG",
+    "ERA",
     "I",
     "PLC",
     "PLE",
