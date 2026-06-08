@@ -196,6 +196,23 @@ class Argument(Variable):
                 return "(3, 3)"
         return super().signature_shape
 
+    def inner_loop_steps_and_copy(self, name_suffix: str = "") -> str | None:
+        if self.signature_shape == "()":
+            return None
+        name = self.name + name_suffix
+        lines = [f"npy_intp is_{name}{i} = *steps++;" for i in range(self.ndim or 1)]
+        # copy should be made if buffer not contiguous;
+        # note: one can only have 1 or 2 dimensions
+        lines.append(
+            f"int copy_{name} = (is_{name}0 != sizeof({self.ctype}));"
+            if self.ndim <= 1
+            else (
+                f"int copy_{name} = (is_{name}1 != sizeof({self.ctype}) ||\n"
+                f"          is_{name}0 != {self.shape[1]} * sizeof({self.ctype}));"
+            )
+        )
+        return "\n".join(lines)
+
 
 class StatusCode(Variable):
     def __init__(self, ctype: str, doc: FunctionDoc, funcname: str) -> None:
@@ -368,6 +385,14 @@ class Function:
         )
         lines.append(f"return {ret_val}")
         return "\n".join(lines)
+
+    def inner_loop_steps_and_copies(self) -> str:
+        in_only = [a.inner_loop_steps_and_copy() for a in self.args_by_inout("in")]
+        inout = [
+            a.inner_loop_steps_and_copy("_in") for a in self.args_by_inout("inout")
+        ]
+        out = [a.inner_loop_steps_and_copy() for a in self.args_by_inout("inout|out")]
+        return "\n".join(filter(None, in_only + inout + out))
 
 
 class Constant:
