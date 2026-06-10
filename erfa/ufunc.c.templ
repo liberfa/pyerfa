@@ -240,10 +240,10 @@ static void ufunc_loop_{{ func.pyname }}(
                 {%- endfor %}, {{ arg.name_for_call}});
         }
         else {
-            _{{ arg.name }} = (({{ arg.ctype }} (*){{ arg.cshape }}){{ arg.name }});
+            {{ arg.cast_pointer }}
         }
         {%- else %}
-        _{{ arg.name }} = (({{ arg.ctype }} (*){{ arg.cshape }}){{ arg.name }});
+        {{ arg.cast_pointer }}
         {%- endif %}
        {%- endfor %} {#- end of loop over 'in' #}
        {#- /* for inout arguments, set up output first,
@@ -251,7 +251,7 @@ static void ufunc_loop_{{ func.pyname }}(
        {%- for arg in func.args_by_inout('inout') %}
         {%- if arg.signature_shape != '()' %}
         if (!copy_{{ arg.name }}) {
-            _{{ arg.name }} = (({{ arg.ctype }} (*){{ arg.cshape }}){{ arg.name }});
+            {{ arg.cast_pointer }}
         }
         if (copy_{{ arg.name }}_in || {{ arg.name }} != {{ arg.name }}_in) {
             copy_to_{{ arg.ctype }}{{ arg.shape|join('') }}({{ arg.name }}_in
@@ -260,7 +260,7 @@ static void ufunc_loop_{{ func.pyname }}(
                 {%- endfor %}, {{ arg.name_for_call}});
         }
         {%- else %}
-        _{{ arg.name }} = (({{ arg.ctype }} (*){{ arg.cshape }}){{ arg.name }});
+        {{ arg.cast_pointer }}
         if ({{ arg.name }}_in != {{ arg.name }}) {
             memcpy({{ arg.name }}, {{ arg.name }}_in, {{ arg.size }}*sizeof({{ arg.ctype }}));
         }
@@ -270,10 +270,10 @@ static void ufunc_loop_{{ func.pyname }}(
        {%- for arg in func.args_by_inout('out') %}
         {%- if arg.signature_shape != '()' %}
         if (!copy_{{ arg.name }}) {
-            _{{ arg.name }} = (({{ arg.ctype }} (*){{ arg.cshape }}){{ arg.name }});
+            {{ arg.cast_pointer }}
         }
         {%- else %}
-        _{{ arg.name }} = (({{ arg.ctype }} (*){{ arg.cshape }}){{ arg.name }});
+        {{ arg.cast_pointer }}
         {%- endif %}
        {%- endfor %} {#- end of loop over 'out' #}
       {%- else %}
@@ -282,7 +282,7 @@ static void ufunc_loop_{{ func.pyname }}(
             */ #}
        {#- /* set up pointers to input/output arguments */ #}
        {%- for arg in func.args_by_inout('in|inout|out') %}
-        _{{ arg.name }} = (({{ arg.ctype }} (*){{ arg.cshape }}){{ arg.name }});
+        {{ arg.cast_pointer }}
        {%- endfor %}
        {#- /* copy from in to out for arugments changed in-place */ #}
        {%- for arg in func.args_by_inout('inout') %}

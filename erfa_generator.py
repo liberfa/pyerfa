@@ -213,6 +213,10 @@ class Argument(Variable):
         )
         return "\n".join(lines)
 
+    @functools.cached_property
+    def cast_pointer(self) -> str:
+        return f"_{self.name} = (({self.ctype} (*){self.cshape}){self.name});"
+
 
 class StatusCode(Variable):
     def __init__(self, ctype: str, doc: FunctionDoc, funcname: str) -> None:
