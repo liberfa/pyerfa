@@ -217,6 +217,17 @@ class Argument(Variable):
     def cast_pointer(self) -> str:
         return f"_{self.name} = (({self.ctype} (*){self.cshape}){self.name});"
 
+    def copy_elements(self, direction: str, name_suffix: str = "") -> str:
+        name = self.name + name_suffix
+        shape_description = "".join(str(n) for n in self.shape if n is not None)
+        func_name = f"copy_{direction}_{self.ctype}{shape_description}"
+        args = [
+            name,
+            *[f"is_{name}{i}" for i in range(self.ndim or 1)],
+            self.name_for_call,
+        ]
+        return _assemble_func_call(func_name, args) + ";"
+
 
 class StatusCode(Variable):
     def __init__(self, ctype: str, doc: FunctionDoc, funcname: str) -> None:
@@ -361,7 +372,7 @@ class Function:
         ufunc_name = f"ufunc.{self.pyname}"
         arg_names = [arg.name for arg in self.args_by_inout("in|inout")]
         lines = [
-            _assemble_py_func_call(
+            _assemble_func_call(
                 ufunc_name,
                 in_args=arg_names,
                 out_args=[arg.name for arg in self.args_by_inout("inout|out|stat|ret")],
@@ -520,7 +531,7 @@ class TestFunction:
                 if " = " in name:
                     status, name = name.split(" = ", 1)
                     out_args.append(status)
-                line = _assemble_py_func_call(
+                line = _assemble_func_call(
                     name, args[: len(self.func.args_by_inout("in|inout"))], out_args
                 )
                 if 'astrom' in out_args:
@@ -531,7 +542,7 @@ class TestFunction:
             # Deal with those in a super hacky way for now.
             elif line.startswith('eraA'):
                 name, args = _get_funcname_and_args(line, "eraA", "erfa_ufunc.a")
-                line = _assemble_py_func_call(
+                line = _assemble_func_call(
                     name,
                     in_args=[arg for arg in args if "&" not in arg],
                     out_args=[arg.replace("&", "") for arg in args if "&" in arg],
@@ -543,7 +554,7 @@ class TestFunction:
             # 2-element time as inputs.
             elif line.startswith('eraS'):
                 name, args = _get_funcname_and_args(line, "eraS", "erfa_ufunc.s")
-                line = _assemble_py_func_call(name, in_args=args[:2], out_args=args[2:])
+                line = _assemble_func_call(name, in_args=args[:2], out_args=args[2:])
 
             # Input number setting.
             elif '=' in line:
@@ -569,8 +580,11 @@ def _get_funcname_and_args(
     return funcname, [arg.strip() for arg in args.removesuffix(")").split(",")]
 
 
-def _assemble_py_func_call(name: str, in_args: list[str], out_args: list[str]) -> str:
-    return f"{', '.join(out_args)} = {name}({', '.join(in_args)})"
+def _assemble_func_call(
+    name: str, in_args: list[str], out_args: list[str] | None = None
+) -> str:
+    func_call = f"{name}({', '.join(in_args)})"
+    return f"{', '.join(out_args)} = {func_call}" if out_args else func_call
 
 
 def main(srcdir: Path, templateloc: Path) -> None:
