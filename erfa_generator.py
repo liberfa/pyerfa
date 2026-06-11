@@ -100,14 +100,11 @@ class Argument(Variable):
     def __init__(self, definition: str, doc: FunctionDoc) -> None:
         self.doc = doc
         ctype, ptr_name_arr = definition.strip().rsplit(" ", 1)
-        name_arr = ptr_name_arr.removeprefix("*").removesuffix("[]")
-        self.is_ptr = name_arr != ptr_name_arr
-        if "[" in name_arr:
-            name_arr, arr = name_arr.split("[", 1)
-            self.shape = tuple([int(size) for size in arr[:-1].split("][")])
-        else:
-            self.shape = ()
-        super().__init__(ctype, name_arr)
+        self.is_ptr: Final = ptr_name_arr.startswith("*")
+        self.shape: Final = tuple(
+            int(s) if s else None for s in re.findall(r"\[(\d*)\]", ptr_name_arr)
+        )
+        super().__init__(ctype, ptr_name_arr.removeprefix("*").split("[", 1)[0])
 
     @functools.cached_property
     def inout_state(self) -> str:
@@ -171,19 +168,26 @@ class Argument(Variable):
         raise ValueError(f"ctype {self.ctype} with shape {self.shape} not recognized.")
 
     @property
-    def ndim(self):
+    def ndim(self) -> int:
         return len(self.shape)
 
     @property
-    def size(self):
+    def size(self) -> int | None:
         size = 1
         for s in self.shape:
+            if s is None:
+                return None
             size *= s
         return size
 
     @property
-    def cshape(self):
-        return ''.join([f'[{s}]' for s in self.shape])
+    def cshape(self) -> str:
+        elems = []
+        for s in self.shape:
+            if s is None:
+                return ""
+            elems.append(f"[{s}]")
+        return "".join(elems)
 
     @property
     def signature_shape(self):
@@ -200,12 +204,12 @@ class Argument(Variable):
         if self.signature_shape == "()":
             return None
         name = self.name + name_suffix
-        lines = [f"npy_intp is_{name}{i} = *steps++;" for i in range(self.ndim or 1)]
+        lines = [f"npy_intp is_{name}{i} = *steps++;" for i in range(self.ndim)]
         # copy should be made if buffer not contiguous;
         # note: one can only have 1 or 2 dimensions
         lines.append(
             f"int copy_{name} = (is_{name}0 != sizeof({self.ctype}));"
-            if self.ndim <= 1
+            if self.ndim == 1
             else (
                 f"int copy_{name} = (is_{name}1 != sizeof({self.ctype}) ||\n"
                 f"          is_{name}0 != {self.shape[1]} * sizeof({self.ctype}));"
@@ -221,11 +225,7 @@ class Argument(Variable):
         name = self.name + name_suffix
         shape_description = "".join(str(n) for n in self.shape if n is not None)
         func_name = f"copy_{direction}_{self.ctype}{shape_description}"
-        args = [
-            name,
-            *[f"is_{name}{i}" for i in range(self.ndim or 1)],
-            self.name_for_call,
-        ]
+        args = [name, *[f"is_{name}{i}" for i in range(self.ndim)], self.name_for_call]
         return _assemble_func_call(func_name, args) + ";"
 
 
