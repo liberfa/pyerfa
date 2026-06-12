@@ -117,7 +117,7 @@ dt_bytes1 = np.dtype("S1")
 {#-
  # Define the status codes that this function returns.
  #}
-{%- if func.c_retval.inout_state == "stat" %}
+{%- if func.c_retval.can_fail %}
 
 
 STATUS_CODES["{{ func.pyname }}"] = {{ func.c_retval.to_python() }}

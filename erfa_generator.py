@@ -251,6 +251,7 @@ class StatusCode(Variable):
                 r"(-?\w+) = ((?:[^=]+$)+)", status.group(1), re.MULTILINE
             )
         }
+        self.can_fail: Final = list(self._statuscodes) != [0]
 
     def to_python(self) -> str:
         return "\n".join(
@@ -378,14 +379,14 @@ class Function:
                 out_args=[arg.name for arg in self.args_by_inout("inout|out|stat|ret")],
             )
         ]
-        if isinstance(self.c_retval, StatusCode):
+        if isinstance(self.c_retval, StatusCode) and self.c_retval.can_fail:
             lines.append(f'check_errwarn({self.c_retval.name}, "{self.pyname}")')
         lines.extend(
             f"{arg.name} = {arg.name}.view(dt_bytes1)"
             for arg in self.args_by_inout("out")
             if arg.ctype == "char"
         )
-        if len(lines) == 1:
+        if len(lines) == 1 and not isinstance(self.c_retval, StatusCode):
             ufunc_call = f"{ufunc_name}({', '.join(arg_names)})"
             ret_val = (
                 ufunc_call
