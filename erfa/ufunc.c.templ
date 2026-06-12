@@ -234,10 +234,7 @@ static void ufunc_loop_{{ func.pyname }}(
        {%- for arg in func.args_by_inout('in') %}
         {%- if arg.signature_shape != '()' %}
         if (copy_{{ arg.name }}) {
-            copy_to_{{ arg.ctype }}{{ arg.shape|join('') }}({{ arg.name }}
-                {%- for i in range(arg.ndim or 1) -%}
-                , is_{{ arg.name }}{{ i }}
-                {%- endfor %}, {{ arg.name_for_call}});
+            {{ arg.copy_elements("to") }}
         }
         else {
             {{ arg.cast_pointer }}
@@ -254,10 +251,7 @@ static void ufunc_loop_{{ func.pyname }}(
             {{ arg.cast_pointer }}
         }
         if (copy_{{ arg.name }}_in || {{ arg.name }} != {{ arg.name }}_in) {
-            copy_to_{{ arg.ctype }}{{ arg.shape|join('') }}({{ arg.name }}_in
-                {%- for i in range(arg.ndim or 1) -%}
-                , is_{{ arg.name }}_in{{ i }}
-                {%- endfor %}, {{ arg.name_for_call}});
+            {{ arg.copy_elements("to", "_in") }}
         }
         {%- else %}
         {{ arg.cast_pointer }}
@@ -307,10 +301,7 @@ static void ufunc_loop_{{ func.pyname }}(
        {%- for arg in func.args_by_inout('inout|out') %}
         {%- if arg.signature_shape != '()' %}
         if (copy_{{ arg.name }}) {
-            copy_from_{{ arg.ctype }}{{ arg.shape|join('') }}({{ arg.name }}
-                {%- for i in range(arg.ndim or 1) -%}
-                , is_{{ arg.name }}{{ i }}
-                {%- endfor %}, {{ arg.name_for_call}});
+            {{ arg.copy_elements("from") }}
         }
         {%- endif %}
        {%- endfor %}

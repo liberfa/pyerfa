@@ -100,14 +100,11 @@ class Argument(Variable):
     def __init__(self, definition: str, doc: FunctionDoc) -> None:
         self.doc = doc
         ctype, ptr_name_arr = definition.strip().rsplit(" ", 1)
-        name_arr = ptr_name_arr.removeprefix("*").removesuffix("[]")
-        self.is_ptr = name_arr != ptr_name_arr
-        if "[" in name_arr:
-            name_arr, arr = name_arr.split("[", 1)
-            self.shape = tuple([int(size) for size in arr[:-1].split("][")])
-        else:
-            self.shape = ()
-        super().__init__(ctype, name_arr)
+        self.is_ptr: Final = ptr_name_arr.startswith("*")
+        self.shape: Final = tuple(
+            int(s) if s else None for s in re.findall(r"\[(\d*)\]", ptr_name_arr)
+        )
+        super().__init__(ctype, ptr_name_arr.removeprefix("*").split("[", 1)[0])
 
     @functools.cached_property
     def inout_state(self) -> str:
@@ -171,19 +168,26 @@ class Argument(Variable):
         raise ValueError(f"ctype {self.ctype} with shape {self.shape} not recognized.")
 
     @property
-    def ndim(self):
+    def ndim(self) -> int:
         return len(self.shape)
 
     @property
-    def size(self):
+    def size(self) -> int | None:
         size = 1
         for s in self.shape:
+            if s is None:
+                return None
             size *= s
         return size
 
     @property
-    def cshape(self):
-        return ''.join([f'[{s}]' for s in self.shape])
+    def cshape(self) -> str:
+        elems = []
+        for s in self.shape:
+            if s is None:
+                return ""
+            elems.append(f"[{s}]")
+        return "".join(elems)
 
     @property
     def signature_shape(self):
@@ -200,12 +204,12 @@ class Argument(Variable):
         if self.signature_shape == "()":
             return None
         name = self.name + name_suffix
-        lines = [f"npy_intp is_{name}{i} = *steps++;" for i in range(self.ndim or 1)]
+        lines = [f"npy_intp is_{name}{i} = *steps++;" for i in range(self.ndim)]
         # copy should be made if buffer not contiguous;
         # note: one can only have 1 or 2 dimensions
         lines.append(
             f"int copy_{name} = (is_{name}0 != sizeof({self.ctype}));"
-            if self.ndim <= 1
+            if self.ndim == 1
             else (
                 f"int copy_{name} = (is_{name}1 != sizeof({self.ctype}) ||\n"
                 f"          is_{name}0 != {self.shape[1]} * sizeof({self.ctype}));"
@@ -216,6 +220,13 @@ class Argument(Variable):
     @functools.cached_property
     def cast_pointer(self) -> str:
         return f"_{self.name} = (({self.ctype} (*){self.cshape}){self.name});"
+
+    def copy_elements(self, direction: str, name_suffix: str = "") -> str:
+        name = self.name + name_suffix
+        shape_description = "".join(str(n) for n in self.shape if n is not None)
+        func_name = f"copy_{direction}_{self.ctype}{shape_description}"
+        args = [name, *[f"is_{name}{i}" for i in range(self.ndim)], self.name_for_call]
+        return _assemble_func_call(func_name, args) + ";"
 
 
 class StatusCode(Variable):
@@ -361,7 +372,7 @@ class Function:
         ufunc_name = f"ufunc.{self.pyname}"
         arg_names = [arg.name for arg in self.args_by_inout("in|inout")]
         lines = [
-            _assemble_py_func_call(
+            _assemble_func_call(
                 ufunc_name,
                 in_args=arg_names,
                 out_args=[arg.name for arg in self.args_by_inout("inout|out|stat|ret")],
@@ -520,7 +531,7 @@ class TestFunction:
                 if " = " in name:
                     status, name = name.split(" = ", 1)
                     out_args.append(status)
-                line = _assemble_py_func_call(
+                line = _assemble_func_call(
                     name, args[: len(self.func.args_by_inout("in|inout"))], out_args
                 )
                 if 'astrom' in out_args:
@@ -531,7 +542,7 @@ class TestFunction:
             # Deal with those in a super hacky way for now.
             elif line.startswith('eraA'):
                 name, args = _get_funcname_and_args(line, "eraA", "erfa_ufunc.a")
-                line = _assemble_py_func_call(
+                line = _assemble_func_call(
                     name,
                     in_args=[arg for arg in args if "&" not in arg],
                     out_args=[arg.replace("&", "") for arg in args if "&" in arg],
@@ -543,7 +554,7 @@ class TestFunction:
             # 2-element time as inputs.
             elif line.startswith('eraS'):
                 name, args = _get_funcname_and_args(line, "eraS", "erfa_ufunc.s")
-                line = _assemble_py_func_call(name, in_args=args[:2], out_args=args[2:])
+                line = _assemble_func_call(name, in_args=args[:2], out_args=args[2:])
 
             # Input number setting.
             elif '=' in line:
@@ -569,8 +580,11 @@ def _get_funcname_and_args(
     return funcname, [arg.strip() for arg in args.removesuffix(")").split(",")]
 
 
-def _assemble_py_func_call(name: str, in_args: list[str], out_args: list[str]) -> str:
-    return f"{', '.join(out_args)} = {name}({', '.join(in_args)})"
+def _assemble_func_call(
+    name: str, in_args: list[str], out_args: list[str] | None = None
+) -> str:
+    func_call = f"{name}({', '.join(in_args)})"
+    return f"{', '.join(out_args)} = {func_call}" if out_args else func_call
 
 
 def main(srcdir: Path, templateloc: Path) -> None:
