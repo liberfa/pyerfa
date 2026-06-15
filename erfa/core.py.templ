@@ -133,14 +133,14 @@ STATUS_CODES["{{ func.pyname }}"] = {{ func.c_retval.to_python() }}
 {%- endif %}
 
 
-def {{ func.pyname }}({{ func.args_by_inout('in|inout')|map(attribute='name')|join(', ') }}):
+def {{ func.pyname }}({{ func.py_args|map(attribute='name')|join(', ') }}):
     """
     {{ func.doc.first_sentence | indent(2)}}
-    {%- if func.args_by_inout('in|inout') %}
+    {%- if func.py_args %}
 
     Parameters
     ----------
-    {%- for arg in func.args_by_inout('in|inout') %}
+    {%- for arg in func.py_args %}
     {{ arg.name }} : {{ arg.ctype }} array
     {%- endfor %}
     {%- endif %}
@@ -150,15 +150,15 @@ def {{ func.pyname }}({{ func.args_by_inout('in|inout')|map(attribute='name')|jo
     {%- if func.result_tuple %}
     A ``{{ func.result_tuple.name }}`` namedtuple with the following attributes:
     {%- endif %}
-    {%- for arg in func.args_by_inout('inout|out|ret') %}
+    {%- for arg in func.py_return %}
     {{ arg.name }} : {{ arg.ctype }} array
     {%- endfor %}
 
     Notes
     -----
     Wraps ERFA function ``{{ func.name }}``.
-    {%- if func.args_by_inout('inout') %} Note that, unlike the erfa routine,
-    the python wrapper does not change {{ func.args_by_inout('inout')
+    {%- if func.inout_args %} Note that, unlike the erfa routine,
+    the python wrapper does not change {{ func.inout_args
     | map(attribute='name')|join(', ') }} in-place.
     {%- endif %} The ERFA documentation is::
 
