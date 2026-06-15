@@ -159,24 +159,24 @@ static void ufunc_loop_{{ func.pyname }}(
        * Pointers to each argument, required step size
        */ #}
   {#- /* normal input arguments */ #}
-  {%- for arg in func.args_by_inout('in') %}
+  {%- for arg in func.in_args %}
     char *{{ arg.name }} = *args++;
     npy_intp s_{{ arg.name }} = *steps++;
   {%- endfor -%}
   {#- /* for in part of in-place arguments, we need a different name */ #}
-  {%- for arg in func.args_by_inout('inout') %}
+  {%- for arg in func.inout_args %}
     char *{{ arg.name }}_in = *args++;
     npy_intp s_{{ arg.name }}_in = *steps++;
   {%- endfor -%}
   {#- /* out part of input, and output arguments, including status */ #}
-  {%- for arg in func.args_by_inout('inout|out|stat|ret') %}
+  {%- for arg in func.ufunc_return %}
     char *{{ arg.name }} = *args++;
     npy_intp s_{{ arg.name }} = *steps++;
   {%- endfor -%}
   {#- /*
        * Cast pointers and possible contiguous buffers (for gufuncs)
        */ #}
-  {%- for arg in func.args_by_inout('in|inout|out') %}
+  {%- for arg in func.c_args %}
    {%- if arg.signature_shape == '()' or arg.ctype == 'eraLDBODY'  %}
     {{ arg.ctype }} (*_{{ arg.name }}){{ arg.cshape }};
    {%- else %}
@@ -193,7 +193,7 @@ static void ufunc_loop_{{ func.pyname }}(
        */ #}
   {%- if func.signature %}
    {#- /* loop step sizes and whether copies are needed */ #}
-   {%- for arg in func.args_by_inout('in') %}
+   {%- for arg in func.in_args %}
     {#- /* only LDBODY has non-fixed dimension; it is always first */ #}
     {%- if arg.ctype == 'eraLDBODY' %}
     int nb = (int)dimensions[0];  /* Refuse to worry about INT_MAX */
@@ -220,10 +220,10 @@ static void ufunc_loop_{{ func.pyname }}(
        * Actual inner loop, increasing all pointers by their steps
        */ #}
     for (i_o = 0; i_o < n_o;
-         i_o++ {%- for arg in func.args_by_inout('in|inout|out|stat|ret') -%}
+         i_o++ {%- for arg in func.args -%}
              , {{ arg.name }} += s_{{ arg.name }}
              {%- endfor -%}
-             {%- for arg in func.args_by_inout('inout') -%}
+             {%- for arg in func.inout_args -%}
              , {{ arg.name }}_in += s_{{ arg.name }}_in
              {%- endfor -%}) {
       {%- if func.signature %}
@@ -231,7 +231,7 @@ static void ufunc_loop_{{ func.pyname }}(
             * GENERALIZED UFUNC, prepare for call.
             */ #}
        {#- /* copy input arguments to buffer if needed */ #}
-       {%- for arg in func.args_by_inout('in') %}
+       {%- for arg in func.in_args %}
         {%- if arg.signature_shape != '()' %}
         if (copy_{{ arg.name }}) {
             {{ arg.copy_elements("to") }}
@@ -245,7 +245,7 @@ static void ufunc_loop_{{ func.pyname }}(
        {%- endfor %} {#- end of loop over 'in' #}
        {#- /* for inout arguments, set up output first,
               and then copy to it if needed */ #}
-       {%- for arg in func.args_by_inout('inout') %}
+       {%- for arg in func.inout_args %}
         {%- if arg.signature_shape != '()' %}
         if (!copy_{{ arg.name }}) {
             {{ arg.cast_pointer }}
@@ -261,7 +261,7 @@ static void ufunc_loop_{{ func.pyname }}(
         {%- endif %}
        {%- endfor %} {#- end of loop over 'inout' #}
        {#- /* set up gufunc outputs */ #}
-       {%- for arg in func.args_by_inout('out') %}
+       {%- for arg in func.out_args %}
         {%- if arg.signature_shape != '()' %}
         if (!copy_{{ arg.name }}) {
             {{ arg.cast_pointer }}
@@ -275,11 +275,11 @@ static void ufunc_loop_{{ func.pyname }}(
             * NORMAL UFUNC, prepare for call
             */ #}
        {#- /* set up pointers to input/output arguments */ #}
-       {%- for arg in func.args_by_inout('in|inout|out') %}
+       {%- for arg in func.c_args %}
         {{ arg.cast_pointer }}
        {%- endfor %}
        {#- /* copy from in to out for arugments changed in-place */ #}
-       {%- for arg in func.args_by_inout('inout') %}
+       {%- for arg in func.inout_args %}
         if ({{ arg.name }}_in != {{ arg.name }}) {
             memcpy({{ arg.name }}, {{ arg.name }}_in, {{ arg.size }}*sizeof({{ arg.ctype }}));
         }
@@ -289,16 +289,14 @@ static void ufunc_loop_{{ func.pyname }}(
            * call the actual erfa function
            */ #}
         {% if func.c_retval %}_{{ func.c_retval.name }} = {% endif %}{{ func.name
-        }}({{ func.args_by_inout('in|inout|out') |
-                    map(attribute='name_for_call') |
-                    join(', ') }});
+        }}({{ func.c_args | map(attribute='name_for_call') | join(', ') }});
       {#- /* store any return values */ #}
       {%- if func.c_retval %}
         *(({{ func.c_retval.ctype }} *){{ func.c_retval.name }}) = _{{ func.c_retval.name }};
       {%- endif %}
       {%- if func.signature %}
        {#- /* for generalized ufunc, copy output from buffer if needed */ #}
-       {%- for arg in func.args_by_inout('inout|out') %}
+       {%- for arg in func.inout_or_out_args %}
         {%- if arg.signature_shape != '()' %}
         if (copy_{{ arg.name }}) {
             {{ arg.copy_elements("from") }}
@@ -737,10 +735,9 @@ PyMODINIT_FUNC PyInit_ufunc(void)
            as these do not get copied */ #}
     {%- for func in funcs %}
     {%- if not func.user_dtype %}
-    static char types_{{ func.pyname }}[{{ func.args_by_inout('in|inout')|count
-                                         + func.args_by_inout('inout|out|ret|stat')|count }}] = {
-    {%- for arg in func.args_by_inout('in|inout') %}{{ arg.npy_type }}, {% endfor %}
-    {%- for arg in func.args_by_inout('inout|out|ret|stat') -%}
+    static char types_{{ func.pyname }}[{{ func.py_args|count + func.ufunc_return|count }}] = {
+    {%- for arg in func.py_args %}{{ arg.npy_type }}, {% endfor %}
+    {%- for arg in func.ufunc_return -%}
     {%- if loop.index > 1 %}, {% endif %}{{ arg.npy_type }}{%- endfor -%}
     };
     static PyUFuncGenericFunction funcs_{{ func.pyname }}[1] = { &ufunc_loop_{{ func.pyname }} };
@@ -907,7 +904,7 @@ PyMODINIT_FUNC PyInit_ufunc(void)
     {%- if not func.user_dtype %}
     ufunc = (PyUFuncObject *)PyUFunc_FromFuncAndDataAndSignature(
         funcs_{{ func.pyname }}, data, types_{{ func.pyname }},
-        1, {{ func.args_by_inout('in|inout')|count }}, {{ func.args_by_inout('inout|out|ret|stat')|count }}, PyUFunc_None,
+        1, {{ func.py_args|count }}, {{ func.ufunc_return|count }}, PyUFunc_None,
         "{{ func.pyname }}",
         "UFunc wrapper for {{ func.name }}",
         0, {% if func.signature -%} "{{ func.signature }}" {%- else -%} NULL {%- endif -%});
@@ -917,18 +914,18 @@ PyMODINIT_FUNC PyInit_ufunc(void)
     {%- else %}
     ufunc = (PyUFuncObject *)PyUFunc_FromFuncAndDataAndSignature(
         NULL, NULL, NULL,
-        0, {{ func.args_by_inout('in|inout')|count }}, {{ func.args_by_inout('inout|out|ret|stat')|count }}, PyUFunc_None,
+        0, {{ func.py_args|count }}, {{ func.ufunc_return|count }}, PyUFunc_None,
         "{{ func.pyname }}",
         "UFunc wrapper for {{ func.name }}",
         0, {% if func.signature -%} "{{ func.signature }}" {%- else -%} NULL {%- endif -%});
     if (ufunc == NULL) {
         goto fail;
     }
-    {%- for arg in func.args_by_inout('in|inout') %}
+    {%- for arg in func.py_args %}
     dtypes[{{ loop.index - 1 }}] = {{ arg.dtype }};
     {%- endfor %}
-    {%- for arg in func.args_by_inout('inout|out|ret|stat') %}
-    dtypes[{{ loop.index - 1 + func.args_by_inout('in|inout')|count }}] = {{ arg.dtype }};
+    {%- for arg in func.ufunc_return %}
+    dtypes[{{ loop.index - 1 + func.py_args|count }}] = {{ arg.dtype }};
     {%- endfor %}
     status = PyUFunc_RegisterLoopForDescr(
         ufunc, {{ func.user_dtype }},

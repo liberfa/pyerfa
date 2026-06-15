@@ -106,16 +106,6 @@ class Argument(Variable):
         )
         super().__init__(ctype, ptr_name_arr.removeprefix("*").split("[", 1)[0])
 
-    @functools.cached_property
-    def inout_state(self) -> str:
-        if self.name in self.doc.input:
-            return "in"
-        if self.name in self.doc.inout:
-            return "inout"
-        if self.name in self.doc.output:
-            return "out"
-        return ""
-
     @property
     def name_for_call(self) -> str:
         """How the argument should be used in the call to the ERFA function.
@@ -231,7 +221,6 @@ class Argument(Variable):
 
 class StatusCode(Variable):
     def __init__(self, ctype: str, doc: FunctionDoc, funcname: str) -> None:
-        self.inout_state = "stat"
         super().__init__(ctype)
 
         status = re.search(
@@ -260,10 +249,7 @@ class StatusCode(Variable):
 
 
 class Return(Variable):
-
-    def __init__(self, ctype: str) -> None:
-        self.inout_state = "ret"
-        super().__init__(ctype)
+    pass
 
 
 class ResultTuple:
@@ -304,9 +290,16 @@ class Function:
             raise RuntimeError(f"cannot find {name}() definition in {file}")
 
         self.doc: Final = FunctionDoc(search.group(3), self.pyname)
-        self.args: Final[list[Variable]] = [
-            Argument(arg, self.doc) for arg in re.findall("[^,]+", search.group(2))
-        ]
+        args = [Argument(arg, self.doc) for arg in re.findall("[^,]+", search.group(2))]
+        self.in_args: Final = tuple(a for a in args if a.name in self.doc.input)
+        self.inout_args: Final = tuple(a for a in args if a.name in self.doc.inout)
+        self.out_args: Final = tuple(a for a in args if a.name in self.doc.output)
+
+        self.py_args: Final = (*self.in_args, *self.inout_args)
+        self.c_args: Final = (*self.py_args, *self.out_args)
+        self.inout_or_out_args: Final = (*self.inout_args, *self.out_args)
+
+        self.args: Final[list[Variable]] = list(self.c_args)
         if (ret := search.group(1)) != "void":
             self.c_retval = (
                 StatusCode(ret, self.doc, name)
@@ -315,30 +308,29 @@ class Function:
             )
             self.args.append(self.c_retval)
 
-        self.result_tuple: Final = (
-            ResultTuple(self.pyname, py_return)
-            if len(py_return := self.args_by_inout("inout|out|ret")) > 1
+    @functools.cached_property
+    def result_tuple(self) -> ResultTuple | None:
+        return (
+            ResultTuple(self.pyname, self.py_return)
+            if len(self.py_return) > 1
             else None
         )
 
-    def args_by_inout(self, inout_filter):
-        """
-        Gives all of the arguments and/or returned values, depending on whether
-        they are inputs, outputs, etc.
+    @functools.cached_property
+    def py_return(self) -> tuple[Argument | Return, ...]:
+        return (
+            (*self.inout_or_out_args, self.c_retval)
+            if isinstance(self.c_retval, Return)
+            else self.inout_or_out_args
+        )
 
-        The value for `inout_filter` should be a string containing anything
-        that arguments' `inout_state` attribute produces.  Currently, that can be:
-
-          * "in" : input
-          * "out" : output
-          * "inout" : something that's could be input or output (e.g. a struct)
-          * "ret" : the return value of the C function
-          * "stat" : the return value of the C function if it is a status code
-
-        It can also be a "|"-separated string giving inout states to OR
-        together.
-        """
-        return [arg for arg in self.args if arg.inout_state in inout_filter.split("|")]
+    @functools.cached_property
+    def ufunc_return(self) -> tuple[Variable, ...]:
+        return (
+            self.inout_or_out_args
+            if self.c_retval is None
+            else (*self.inout_or_out_args, self.c_retval)
+        )
 
     @property
     def user_dtype(self):
@@ -349,7 +341,7 @@ class Function:
         should be a generalized ufunc.
         """
         user_dtype = None
-        for arg in self.args_by_inout('in|inout|out'):
+        for arg in self.c_args:
             if arg.ctype == 'eraLDBODY':
                 return arg.dtype
             if user_dtype is None and arg.dtype not in ("dt_double", "dt_int"):
@@ -360,30 +352,31 @@ class Function:
     @property
     def signature(self):
         """Possible signature, if this function should be a gufunc."""
-        if all(arg.signature_shape == '()'
-               for arg in self.args_by_inout('in|inout|out')):
-            return None
-
-        return '->'.join(
-            [','.join([arg.signature_shape for arg in args])
-             for args in (self.args_by_inout('in|inout'),
-                          self.args_by_inout('inout|out|ret|stat'))])
+        return (
+            (
+                ",".join(arg.signature_shape for arg in self.py_args)
+                + "->"
+                + ",".join(arg.signature_shape for arg in self.ufunc_return)
+            )
+            if any(arg.signature_shape != "()" for arg in self.c_args)
+            else None
+        )
 
     def generate_python_body(self) -> str:
         ufunc_name = f"ufunc.{self.pyname}"
-        arg_names = [arg.name for arg in self.args_by_inout("in|inout")]
+        arg_names = [arg.name for arg in self.py_args]
         lines = [
             _assemble_func_call(
                 ufunc_name,
                 in_args=arg_names,
-                out_args=[arg.name for arg in self.args_by_inout("inout|out|stat|ret")],
+                out_args=[arg.name for arg in self.ufunc_return],
             )
         ]
         if isinstance(self.c_retval, StatusCode) and self.c_retval.can_fail:
             lines.append(f'check_errwarn({self.c_retval.name}, "{self.pyname}")')
         lines.extend(
             f"{arg.name} = {arg.name}.view(dt_bytes1)"
-            for arg in self.args_by_inout("out")
+            for arg in self.out_args
             if arg.ctype == "char"
         )
         if len(lines) == 1 and not isinstance(self.c_retval, StatusCode):
@@ -395,7 +388,7 @@ class Function:
             )
             return f"return {ret_val}"
         ret_val = (
-            self.args_by_inout("inout|out|ret")[0].name
+            self.py_return[0].name
             if self.result_tuple is None
             else self.result_tuple.create()
         )
@@ -403,11 +396,9 @@ class Function:
         return "\n".join(lines)
 
     def inner_loop_steps_and_copies(self) -> str:
-        in_only = [a.inner_loop_steps_and_copy() for a in self.args_by_inout("in")]
-        inout = [
-            a.inner_loop_steps_and_copy("_in") for a in self.args_by_inout("inout")
-        ]
-        out = [a.inner_loop_steps_and_copy() for a in self.args_by_inout("inout|out")]
+        in_only = [a.inner_loop_steps_and_copy() for a in self.in_args]
+        inout = [a.inner_loop_steps_and_copy("_in") for a in self.inout_args]
+        out = [a.inner_loop_steps_and_copy() for a in self.inout_or_out_args]
         return "\n".join(filter(None, in_only + inout + out))
 
 
@@ -526,14 +517,14 @@ class TestFunction:
                     (arg.lstrip("0") or "0") if arg.isdigit() else arg.removeprefix("&")
                     for arg in arguments
                 ]
-                out_args = args[len(self.func.args_by_inout("in")) :]
+                out_args = args[len(self.func.in_args) :]
                 # If the call assigned something, that will have been the status.
                 # Prepend any arguments assigned in the call.
                 if " = " in name:
                     status, name = name.split(" = ", 1)
                     out_args.append(status)
                 line = _assemble_func_call(
-                    name, args[: len(self.func.args_by_inout("in|inout"))], out_args
+                    name, args[: len(self.func.py_args)], out_args
                 )
                 if 'astrom' in out_args:
                     out.append(line)
