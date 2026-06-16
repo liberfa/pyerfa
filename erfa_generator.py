@@ -47,7 +47,7 @@ class FunctionDoc:
         result = re.search(regex, self.doc, re.DOTALL)
         if result is None:
             return set()
-        doc_list = []
+        doc_list: list[str] = []
         for name, c_type in re.findall(
             rf"^{n_spaces * ' '}([\w\*,]+) +([\w\[\]\*]+) +.+?",
             result.group(1),
@@ -120,7 +120,7 @@ class Argument(Variable):
         return ("_" if self.is_ptr else "*_") + self.name
 
     @property
-    def dtype(self):
+    def dtype(self) -> str:
         """Name of dtype corresponding to the ctype.
 
         Specifically,
@@ -180,7 +180,7 @@ class Argument(Variable):
         return "".join(elems)
 
     @property
-    def signature_shape(self):
+    def signature_shape(self) -> str:
         match self.ctype, self.shape:
             case "eraLDBODY", _:
                 return "(n)"
@@ -333,7 +333,7 @@ class Function:
         )
 
     @property
-    def user_dtype(self):
+    def user_dtype(self) -> str | None:
         """The non-standard dtype, if any, needed by this function's ufunc.
 
         This would be any structured array for any input or output, but
@@ -350,7 +350,7 @@ class Function:
         return user_dtype
 
     @property
-    def signature(self):
+    def signature(self) -> str | None:
         """Possible signature, if this function should be a gufunc."""
         return (
             (
@@ -404,7 +404,7 @@ class Function:
 
 class Constant:
 
-    def __init__(self, name, value, doc):
+    def __init__(self, name: str, value: str, doc: list[str]) -> None:
         self.name = name.replace("ERFA_", "")
         self.value = value.replace("ERFA_", "")
         self.doc = doc
@@ -466,7 +466,7 @@ class TestFunction:
                     defines[-1] += ".view(np.recarray)"
         return defines
 
-    def to_python(self):
+    def to_python(self) -> list[str]:
         """Lines defining the body of a python version of the test function."""
         # TODO: this is quite hacky right now!  Would be good to let function
         # calls be understood by the Function class.
@@ -589,7 +589,7 @@ def main(srcdir: Path, templateloc: Path) -> None:
         )
     ]
 
-    constants = []
+    constants: list[Constant] = []
     for chunk in (srcdir / "erfam.h").read_text().split("\n\n"):
         doc = re.findall(r"/\* (.+?) \*/\n", chunk, flags=re.DOTALL)
         constants.extend(
