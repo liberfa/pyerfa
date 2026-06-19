@@ -11,7 +11,7 @@ from warnings import warn
 import numpy as np
 import packaging.version
 import setuptools
-from setuptools_scm import Configuration, git
+from setuptools_scm import Configuration, ScmVersion, git
 from setuptools_scm.version import guess_next_version
 
 LIBERFADIR = Path("liberfa", "erfa")
@@ -23,7 +23,7 @@ GEN_FILES = [Path("erfa", "core.py"), Path("erfa", "ufunc.c")]
 # support the limited API in py313t)
 USE_PY_LIMITED_API = not sysconfig.get_config_var("Py_GIL_DISABLED")
 
-define_macros = []
+define_macros: list[tuple[str, str | None]] = []
 options = {}
 if USE_PY_LIMITED_API:
     define_macros.append(("Py_LIMITED_API", "0x30a00f0"))
@@ -58,7 +58,7 @@ def get_liberfa_versions(
     ]
 
 
-def get_extensions():
+def get_extensions() -> list[setuptools.Extension]:
     gen_files_exist = all(path.is_file() for path in GEN_FILES)
     if ERFA_SRC.is_dir():
         # assume that 'erfaversion.c' is updated at each release at least
@@ -89,7 +89,7 @@ def get_extensions():
             if file.suffix == ".c" and not file.name.startswith("t_")
         )
 
-        include_dirs.append(ERFA_SRC)
+        include_dirs.append(str(ERFA_SRC))
 
         # liberfa configuration
         config_h = LIBERFADIR / "config.h"
@@ -114,7 +114,7 @@ def get_extensions():
                 warn('unable to get liberfa version')
 
         if config_h.exists():
-            include_dirs.append(LIBERFADIR)
+            include_dirs.append(str(LIBERFADIR))
             define_macros.append(('HAVE_CONFIG_H', '1'))
 
     erfa_ext = setuptools.Extension(
@@ -129,8 +129,10 @@ def get_extensions():
     return [erfa_ext]
 
 
-def guess_next_dev(version):
+def guess_next_dev(version: ScmVersion) -> str:
     erfa_version = git.parse(LIBERFADIR, config=Configuration(root=LIBERFADIR))
+    if erfa_version is None:
+        raise RuntimeError("unable to determine liberfa/erfa version")
     if not erfa_version.exact:
         warn(f"liberfa/erfa not at a tagged release, but at {erfa_version}")
 
