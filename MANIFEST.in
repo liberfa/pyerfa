@@ -1,11 +1,3 @@
-include README.rst
-include pyproject.toml
-include setup.cfg
-include erfa_generator.py
-
-recursive-include erfa *.c *.h *.templ
-
-recursive-include licenses *
 recursive-include liberfa/erfa *
 
 exclude liberfa/erfa/Makefile
@@ -22,6 +14,5 @@ prune liberfa/erfa/autom4te.cache
 prune liberfa/erfa/src/.deps
 
 exclude .gitignore
-prune build
 
-global-exclude *.pyc *.o
+global-exclude *.o
