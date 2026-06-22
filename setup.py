@@ -130,14 +130,15 @@ def get_extensions() -> list[setuptools.Extension]:
 
 
 def guess_next_dev(version: ScmVersion) -> str:
+    version_string = str(version.tag)
     erfa_version = git.parse(LIBERFADIR, config=Configuration(root=LIBERFADIR))
     if erfa_version is None:
-        raise RuntimeError("unable to determine liberfa/erfa version")
+        # Must be installing from an sdist. Any warnings should have been dealt with
+        # when the sdist was built, so we can assume version_string is correct.
+        return version_string
     if not erfa_version.exact:
         warn(f"liberfa/erfa not at a tagged release, but at {erfa_version}")
-
     erfa_tag = erfa_version.format_with("{tag}")
-    version_string = str(version.tag)
 
     if version.exact:
         if not version_string.startswith(erfa_tag):
