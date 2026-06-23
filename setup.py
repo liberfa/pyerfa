@@ -58,77 +58,6 @@ def get_liberfa_versions(
     ]
 
 
-def get_extensions() -> list[setuptools.Extension]:
-    gen_files_exist = all(path.is_file() for path in GEN_FILES)
-    if ERFA_SRC.is_dir():
-        # assume that 'erfaversion.c' is updated at each release at least
-        src_mtime = (ERFA_SRC / "erfaversion.c").stat().st_mtime
-    elif not gen_files_exist:
-        raise RuntimeError(
-            'Missing "liberfa" source files, unable to generate '
-            '"erfa/ufunc.c" and "erfa/core.py". '
-            'Please check your source tree. '
-            'Maybe "git submodule update" could help.')
-
-    if not gen_files_exist or any(fn.stat().st_mtime < src_mtime for fn in GEN_FILES):
-        print('Run "erfa_generator.py"')
-        subprocess.run([sys.executable, "erfa_generator.py", ERFA_SRC], check=True)
-
-    sources = [Path("erfa", "ufunc.c")]
-    include_dirs = [np.get_include()]
-    libraries = []
-
-    if int(os.environ.get('PYERFA_USE_SYSTEM_LIBERFA', 0)):
-        print('Using system liberfa')
-        libraries.append('erfa')
-    else:
-        # get all of the .c files in the liberfa/erfa/src directory
-        sources.extend(
-            file
-            for file in ERFA_SRC.iterdir()
-            if file.suffix == ".c" and not file.name.startswith("t_")
-        )
-
-        include_dirs.append(str(ERFA_SRC))
-
-        # liberfa configuration
-        config_h = LIBERFADIR / "config.h"
-        if not config_h.exists():
-            print('Configure liberfa')
-            try:
-                if not (LIBERFADIR / "configure").exists():
-                    subprocess.run(
-                        ['./bootstrap.sh'], check=True, cwd=LIBERFADIR)
-                subprocess.run(['./configure'], check=True, cwd=LIBERFADIR)
-            except (subprocess.SubprocessError, OSError) as exc:
-                warn(f'unable to configure liberfa: {exc}')
-
-        if not config_h.exists():
-            if version_definitions := "\n".join(
-                f"#define {name} {value!r}".replace("'", '"')
-                for name, value in get_liberfa_versions()
-            ):
-                print('Configure liberfa ("configure.ac" scan)')
-                config_h.write_text(version_definitions)
-            else:
-                warn('unable to get liberfa version')
-
-        if config_h.exists():
-            include_dirs.append(str(LIBERFADIR))
-            define_macros.append(('HAVE_CONFIG_H', '1'))
-
-    erfa_ext = setuptools.Extension(
-        name="erfa.ufunc",
-        sources=sources,
-        include_dirs=include_dirs,
-        libraries=libraries,
-        define_macros=define_macros,
-        py_limited_api=USE_PY_LIMITED_API,
-        language="c")
-
-    return [erfa_ext]
-
-
 def guess_next_dev(version: ScmVersion) -> str:
     version_string = str(version.tag)
     erfa_version = git.parse(LIBERFADIR, config=Configuration(root=LIBERFADIR))
@@ -153,12 +82,76 @@ def guess_next_dev(version: ScmVersion) -> str:
         else version.format_next_version(guess_next_version)
     )
 
+
+gen_files_exist = all(path.is_file() for path in GEN_FILES)
+if ERFA_SRC.is_dir():
+    # assume that 'erfaversion.c' is updated at each release at least
+    src_mtime = (ERFA_SRC / "erfaversion.c").stat().st_mtime
+elif not gen_files_exist:
+    raise RuntimeError(
+        'Missing "liberfa" source files, unable to generate '
+        '"erfa/ufunc.c" and "erfa/core.py". '
+        "Please check your source tree. "
+        'Maybe "git submodule update" could help.'
+    )
+
+if not gen_files_exist or any(fn.stat().st_mtime < src_mtime for fn in GEN_FILES):
+    print('Run "erfa_generator.py"')
+    subprocess.run([sys.executable, "erfa_generator.py", ERFA_SRC], check=True)
+
+sources = [Path("erfa", "ufunc.c")]
+include_dirs = [np.get_include()]
+libraries = []
+if int(os.environ.get("PYERFA_USE_SYSTEM_LIBERFA", 0)):
+    print("Using system liberfa")
+    libraries.append("erfa")
+else:
+    sources.extend(
+        file
+        for file in ERFA_SRC.iterdir()
+        if file.suffix == ".c" and not file.name.startswith("t_")
+    )
+    include_dirs.append(str(ERFA_SRC))
+    # liberfa configuration
+    config_h = LIBERFADIR / "config.h"
+    if not config_h.exists():
+        print("Configure liberfa")
+        try:
+            if not (LIBERFADIR / "configure").exists():
+                subprocess.run(["./bootstrap.sh"], check=True, cwd=LIBERFADIR)
+            subprocess.run(["./configure"], check=True, cwd=LIBERFADIR)
+        except (subprocess.SubprocessError, OSError) as exc:
+            warn(f"unable to configure liberfa: {exc}")
+
+        if not config_h.exists():
+            if version_definitions := "\n".join(
+                f"#define {name} {value!r}".replace("'", '"')
+                for name, value in get_liberfa_versions()
+            ):
+                print('Configure liberfa ("configure.ac" scan)')
+                config_h.write_text(version_definitions)
+            else:
+                warn("unable to get liberfa version")
+    if config_h.exists():
+        include_dirs.append(str(LIBERFADIR))
+        define_macros.append(("HAVE_CONFIG_H", "1"))
+
 use_scm_version = {
     'version_scheme': guess_next_dev,
 }
 
 setuptools.setup(
     use_scm_version=use_scm_version,
-    ext_modules=get_extensions(),
+    ext_modules=[
+        setuptools.Extension(
+            name="erfa.ufunc",
+            sources=sources,
+            include_dirs=include_dirs,
+            libraries=libraries,
+            define_macros=define_macros,
+            py_limited_api=USE_PY_LIMITED_API,
+            language="c",
+        )
+    ],
     options=options,
 )
