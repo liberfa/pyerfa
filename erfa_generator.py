@@ -162,15 +162,6 @@ class Argument(Variable):
         return len(self.shape)
 
     @property
-    def size(self) -> int | None:
-        size = 1
-        for s in self.shape:
-            if s is None:
-                return None
-            size *= s
-        return size
-
-    @property
     def cshape(self) -> str:
         elems = []
         for s in self.shape:
@@ -217,6 +208,19 @@ class Argument(Variable):
         func_name = f"copy_{direction}_{self.ctype}{shape_description}"
         args = [name, *[f"is_{name}{i}" for i in range(self.ndim)], self.name_for_call]
         return _assemble_func_call(func_name, args) + ";"
+
+    @functools.cached_property
+    def memcpy_if_needed(self) -> str:
+        size = 1
+        for s in self.shape:
+            if s is None:
+                raise RuntimeError("{self.name} size not known at compile-time")
+            size *= s
+        return (
+            f"if ({self.name}_in != {self.name}) {{\n"
+            f"    memcpy({self.name}, {self.name}_in, {size}*sizeof({self.ctype}));\n"
+            "}"
+        )
 
 
 class StatusCode(Variable):

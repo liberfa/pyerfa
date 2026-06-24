@@ -255,9 +255,7 @@ static void ufunc_loop_{{ func.pyname }}(
         }
         {%- else %}
         {{ arg.cast_pointer }}
-        if ({{ arg.name }}_in != {{ arg.name }}) {
-            memcpy({{ arg.name }}, {{ arg.name }}_in, {{ arg.size }}*sizeof({{ arg.ctype }}));
-        }
+        {{ arg.memcpy_if_needed | indent(8) }}
         {%- endif %}
        {%- endfor %} {#- end of loop over 'inout' #}
        {#- /* set up gufunc outputs */ #}
@@ -280,9 +278,7 @@ static void ufunc_loop_{{ func.pyname }}(
        {%- endfor %}
        {#- /* copy from in to out for arugments changed in-place */ #}
        {%- for arg in func.inout_args %}
-        if ({{ arg.name }}_in != {{ arg.name }}) {
-            memcpy({{ arg.name }}, {{ arg.name }}_in, {{ arg.size }}*sizeof({{ arg.ctype }}));
-        }
+        {{ arg.memcpy_if_needed | indent(8) }}
        {%- endfor %}
       {%- endif %} {#- end of gufunc/ufunc preparation #}
       {#- /*
