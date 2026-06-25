@@ -220,12 +220,7 @@ static void ufunc_loop_{{ func.pyname }}(
        * Actual inner loop, increasing all pointers by their steps
        */ #}
     for (i_o = 0; i_o < n_o;
-         i_o++ {%- for arg in func.args -%}
-             , {{ arg.name }} += s_{{ arg.name }}
-             {%- endfor -%}
-             {%- for arg in func.inout_args -%}
-             , {{ arg.name }}_in += s_{{ arg.name }}_in
-             {%- endfor -%}) {
+         i_o++, {{ func.increment_arg_pointers }}) {
       {%- if func.signature %}
        {#- /*
             * GENERALIZED UFUNC, prepare for call.
@@ -233,11 +228,9 @@ static void ufunc_loop_{{ func.pyname }}(
        {#- /* copy input arguments to buffer if needed */ #}
        {%- for arg in func.in_args %}
         {%- if arg.signature_shape != '()' %}
-        if (copy_{{ arg.name }}) {
-            {{ arg.copy_elements("to") }}
-        }
+        {{ arg.cast_pointer_if_needed | indent(8) }}
         else {
-            {{ arg.cast_pointer }}
+            {{ arg.copy_elements("to") }}
         }
         {%- else %}
         {{ arg.cast_pointer }}
@@ -247,9 +240,7 @@ static void ufunc_loop_{{ func.pyname }}(
               and then copy to it if needed */ #}
        {%- for arg in func.inout_args %}
         {%- if arg.signature_shape != '()' %}
-        if (!copy_{{ arg.name }}) {
-            {{ arg.cast_pointer }}
-        }
+        {{ arg.cast_pointer_if_needed | indent(8) }}
         if (copy_{{ arg.name }}_in || {{ arg.name }} != {{ arg.name }}_in) {
             {{ arg.copy_elements("to", "_in") }}
         }
@@ -261,9 +252,7 @@ static void ufunc_loop_{{ func.pyname }}(
        {#- /* set up gufunc outputs */ #}
        {%- for arg in func.out_args %}
         {%- if arg.signature_shape != '()' %}
-        if (!copy_{{ arg.name }}) {
-            {{ arg.cast_pointer }}
-        }
+        {{ arg.cast_pointer_if_needed | indent(8) }}
         {%- else %}
         {{ arg.cast_pointer }}
         {%- endif %}
@@ -281,15 +270,7 @@ static void ufunc_loop_{{ func.pyname }}(
         {{ arg.memcpy_if_needed | indent(8) }}
        {%- endfor %}
       {%- endif %} {#- end of gufunc/ufunc preparation #}
-      {#- /*
-           * call the actual erfa function
-           */ #}
-        {% if func.c_retval %}_{{ func.c_retval.name }} = {% endif %}{{ func.name
-        }}({{ func.c_args | map(attribute='name_for_call') | join(', ') }});
-      {#- /* store any return values */ #}
-      {%- if func.c_retval %}
-        *(({{ func.c_retval.ctype }} *){{ func.c_retval.name }}) = _{{ func.c_retval.name }};
-      {%- endif %}
+        {{ func.erfa_call | indent(8) }}
       {%- if func.signature %}
        {#- /* for generalized ufunc, copy output from buffer if needed */ #}
        {%- for arg in func.inout_or_out_args %}

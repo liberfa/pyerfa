@@ -202,6 +202,16 @@ class Argument(Variable):
     def cast_pointer(self) -> str:
         return f"_{self.name} = (({self.ctype} (*){self.cshape}){self.name});"
 
+    @functools.cached_property
+    def cast_pointer_if_needed(self) -> str:
+        return "\n".join(
+            [
+                f"if (!copy_{self.name}) {{",
+                f"    {self.cast_pointer}",
+                "}",
+            ]
+        )
+
     def copy_elements(self, direction: str, name_suffix: str = "") -> str:
         name = self.name + name_suffix
         shape_description = "".join(str(n) for n in self.shape if n is not None)
@@ -303,14 +313,12 @@ class Function:
         self.c_args: Final = (*self.py_args, *self.out_args)
         self.inout_or_out_args: Final = (*self.inout_args, *self.out_args)
 
-        self.args: Final[list[Variable]] = list(self.c_args)
         if (ret := search.group(1)) != "void":
             self.c_retval = (
                 StatusCode(ret, self.doc, name)
                 if ret == "int" and self.pyname not in ("tpors", "tporv")
                 else Return(ret)
             )
-            self.args.append(self.c_retval)
 
     @functools.cached_property
     def result_tuple(self) -> ResultTuple | None:
@@ -404,6 +412,25 @@ class Function:
         inout = [a.inner_loop_steps_and_copy("_in") for a in self.inout_args]
         out = [a.inner_loop_steps_and_copy() for a in self.inout_or_out_args]
         return "\n".join(filter(None, in_only + inout + out))
+
+    @functools.cached_property
+    def increment_arg_pointers(self) -> str:
+        return ", ".join(
+            [f"{arg.name} += s_{arg.name}" for arg in self.in_args + self.ufunc_return]
+            + [f"{arg.name}_in += s_{arg.name}_in" for arg in self.inout_args],
+        )
+
+    @functools.cached_property
+    def erfa_call(self) -> str:
+        call = _assemble_func_call(self.name, [a.name_for_call for a in self.c_args])
+        return (
+            (
+                f"_{c_retval.name} = {call};\n"
+                f"*(({c_retval.ctype} *){c_retval.name}) = _{c_retval.name};"
+            )
+            if (c_retval := self.c_retval)
+            else f"{call};"
+        )
 
 
 class Constant:
