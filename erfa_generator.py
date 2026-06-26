@@ -97,8 +97,7 @@ class Variable:
 
 
 class Argument(Variable):
-    def __init__(self, definition: str, doc: FunctionDoc) -> None:
-        self.doc = doc
+    def __init__(self, definition: str) -> None:
         ctype, ptr_name_arr = definition.strip().rsplit(" ", 1)
         self.is_ptr: Final = ptr_name_arr.startswith("*")
         self.shape: Final = tuple(
@@ -304,7 +303,7 @@ class Function:
             raise RuntimeError(f"cannot find {name}() definition in {file}")
 
         self.doc: Final = FunctionDoc(search.group(3), self.pyname)
-        args = [Argument(arg, self.doc) for arg in re.findall("[^,]+", search.group(2))]
+        args = [Argument(arg) for arg in re.findall("[^,]+", search.group(2))]
         self.in_args: Final = tuple(a for a in args if a.name in self.doc.input)
         self.inout_args: Final = tuple(a for a in args if a.name in self.doc.inout)
         self.out_args: Final = tuple(a for a in args if a.name in self.doc.output)
@@ -487,7 +486,7 @@ class TestFunction:
                     continue
                 # Temporarily create an Argument, so we can use its attributes.
                 # This translates, e.g., double pv[2][3] to dtype dt_pv.
-                v = Argument(f"{ctype} {var}", FunctionDoc("", self.func.pyname))
+                v = Argument(f"{ctype} {var}")
                 shape = v.shape if v.signature_shape != "()" else "()"
                 dtype = "float" if v.dtype == "dt_double" else "erfa_ufunc." + v.dtype
                 defines.append(f"{name} = np.empty({shape}, {dtype})")
