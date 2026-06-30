@@ -66,9 +66,9 @@ STATUS_CODES_REMAP = {"cal2jd": {-3: 3}}
 
 
 def check_errwarn(statcodes, func_name):
-    if not statcodes.any():
-        return
     statcodes = np.atleast_1d(statcodes)
+    if not statcodes.nonzero()[0].size:  # faster than .any()
+        return
     # Remap any errors into warnings in the STATUS_CODES_REMAP dict.
     if func_name in STATUS_CODES_REMAP:
         for before, after in STATUS_CODES_REMAP[func_name].items():
