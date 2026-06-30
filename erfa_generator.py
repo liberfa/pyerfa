@@ -542,9 +542,10 @@ class TestFunction:
                 name, arguments = _get_funcname_and_args(
                     line, self.func.name, f"erfa_ufunc.{self.func.pyname}"
                 )
-                # Remove leading zeros from numbers since python cannot deal with them.
                 args = [
-                    (arg.lstrip("0") or "0") if arg.isdigit() else arg.removeprefix("&")
+                    str(int(arg, 8))  # convert any C octal integer literals
+                    if arg.startswith("0") and arg.isdigit()
+                    else arg.removeprefix("&")
                     for arg in arguments
                 ]
                 out_args = args[len(self.func.in_args) :]
