@@ -95,6 +95,13 @@ class Variable:
     def signature_shape(self) -> str:
         return "()"
 
+    def init_pointer_and_step_size(self, name_suffix: str = "") -> str:
+        name = self.name + name_suffix
+        return "\n".join([
+            f"char *{name} = *args++;",
+            f"npy_intp s_{name} = *steps++;",
+        ])
+
 
 class Argument(Variable):
     def __init__(self, definition: str) -> None:
@@ -179,6 +186,17 @@ class Argument(Variable):
             case "double", (3, 3):
                 return "(3, 3)"
         return super().signature_shape
+
+    @functools.cached_property
+    def cast_pointer_and_possible_contiguous_buffer(self) -> str:
+        return (
+            f"{self.ctype} (*_{self.name}){self.cshape};"
+            if self.signature_shape == "()" or self.ctype == "eraLDBODY"
+            else "\n".join([
+                f"double b_{self.name}{self.cshape};",
+                f"{self.ctype} (*_{self.name}){self.cshape} = &b_{self.name};",
+            ])
+        )
 
     def inner_loop_steps_and_copy(self, name_suffix: str = "") -> str | None:
         if self.signature_shape == "()":
@@ -404,6 +422,20 @@ class Function:
             else self.result_tuple.create()
         )
         lines.append(f"return {ret_val}")
+        return "\n".join(lines)
+
+    @functools.cached_property
+    def init_ufunc_loop_local_vars(self) -> str:
+        lines = [
+            "npy_intp i_o;",  # loop index
+            "npy_intp n_o = *dimensions++;",  # loop length
+            *[arg.init_pointer_and_step_size() for arg in self.in_args],
+            *[arg.init_pointer_and_step_size("_in") for arg in self.inout_args],
+            *[arg.init_pointer_and_step_size() for arg in self.ufunc_return],
+            *[arg.cast_pointer_and_possible_contiguous_buffer for arg in self.c_args],
+        ]
+        if self.c_retval:
+            lines.append(f"{self.c_retval.ctype} _{self.c_retval.name};")
         return "\n".join(lines)
 
     def inner_loop_steps_and_copies(self) -> str:
