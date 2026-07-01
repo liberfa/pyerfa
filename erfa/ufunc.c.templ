@@ -154,98 +154,11 @@ static void ufunc_loop_{{ func.pyname }}(
 {
     {{ func.init_ufunc_loop_local_vars | indent(4) }}
   {#- /*
-       * For GENERALIZED UFUNCS - inner loop steps, needs for copying.
-       */ #}
-  {%- if func.signature %}
-   {#- /* loop step sizes and whether copies are needed */ #}
-   {%- for arg in func.in_args %}
-    {#- /* only LDBODY has non-fixed dimension; it is always first */ #}
-    {%- if arg.ctype == 'eraLDBODY' %}
-    int nb = (int)dimensions[0];  /* Refuse to worry about INT_MAX */
-    {%- endif %}
-   {%- endfor %}
-    {{ func.inner_loop_steps_and_copies() | indent(4) }}
-   {#- /* if needed, allocate memory for contiguous eraLDBODY copies */ #}
-   {%- if func.user_dtype == 'dt_eraLDBODY' %}
-    if (copy_b) {
-        // Note that we can't use PyArray_malloc here as it is an alias to PyMem_RawMalloc
-        // which is not available in the Python limited API
-        _b = malloc(nb * sizeof(eraLDBODY));
-        if (_b == NULL) {
-            PyErr_NoMemory();
-            return;
-        }
-    }
-    else { {#- /* just to keep compiler happy */ #}
-        _b = NULL;
-    }
-   {%- endif %}
-  {%- endif %} {#- /* end of GUFUNC inner loop definitions */ #}
-  {#- /*
        * Actual inner loop, increasing all pointers by their steps
        */ #}
     for (i_o = 0; i_o < n_o;
          i_o++, {{ func.increment_arg_pointers }}) {
-      {%- if func.signature %}
-       {#- /*
-            * GENERALIZED UFUNC, prepare for call.
-            */ #}
-       {#- /* copy input arguments to buffer if needed */ #}
-       {%- for arg in func.in_args %}
-        {%- if arg.signature_shape != '()' %}
-        {{ arg.cast_pointer_if_needed | indent(8) }}
-        else {
-            {{ arg.copy_elements("to") }}
-        }
-        {%- else %}
-        {{ arg.cast_pointer }}
-        {%- endif %}
-       {%- endfor %} {#- end of loop over 'in' #}
-       {#- /* for inout arguments, set up output first,
-              and then copy to it if needed */ #}
-       {%- for arg in func.inout_args %}
-        {%- if arg.signature_shape != '()' %}
-        {{ arg.cast_pointer_if_needed | indent(8) }}
-        if (copy_{{ arg.name }}_in || {{ arg.name }} != {{ arg.name }}_in) {
-            {{ arg.copy_elements("to", "_in") }}
-        }
-        {%- else %}
-        {{ arg.cast_pointer }}
-        {{ arg.memcpy_if_needed | indent(8) }}
-        {%- endif %}
-       {%- endfor %} {#- end of loop over 'inout' #}
-       {#- /* set up gufunc outputs */ #}
-       {%- for arg in func.out_args %}
-        {%- if arg.signature_shape != '()' %}
-        {{ arg.cast_pointer_if_needed | indent(8) }}
-        {%- else %}
-        {{ arg.cast_pointer }}
-        {%- endif %}
-       {%- endfor %} {#- end of loop over 'out' #}
-      {%- else %}
-       {#- /*
-            * NORMAL UFUNC, prepare for call
-            */ #}
-       {#- /* set up pointers to input/output arguments */ #}
-       {%- for arg in func.c_args %}
-        {{ arg.cast_pointer }}
-       {%- endfor %}
-       {#- /* copy from in to out for arugments changed in-place */ #}
-       {%- for arg in func.inout_args %}
-        {{ arg.memcpy_if_needed | indent(8) }}
-       {%- endfor %}
-      {%- endif %} {#- end of gufunc/ufunc preparation #}
-        {{ func.erfa_call | indent(8) }}
-      {%- if func.signature %}
-       {#- /* for generalized ufunc, copy output from buffer if needed */ #}
-       {%- for arg in func.inout_or_out_args %}
-        {%- if arg.signature_shape != '()' %}
-        if (copy_{{ arg.name }}) {
-            {{ arg.copy_elements("from") }}
-        }
-        {%- endif %}
-       {%- endfor %}
-      {%- endif %}
+        {{ func.ufunc_loop_inner_loop_body | indent(8) }}
     }
     {%- if func.user_dtype == 'dt_eraLDBODY' %}
     if (copy_b) {
@@ -849,7 +762,7 @@ PyMODINIT_FUNC PyInit_ufunc(void)
         1, {{ func.py_args|count }}, {{ func.ufunc_return|count }}, PyUFunc_None,
         "{{ func.pyname }}",
         "UFunc wrapper for {{ func.name }}",
-        0, {% if func.signature -%} "{{ func.signature }}" {%- else -%} NULL {%- endif -%});
+        0, {{ func.signature }});
     if (ufunc == NULL) {
         goto fail;
     }
@@ -859,7 +772,7 @@ PyMODINIT_FUNC PyInit_ufunc(void)
         0, {{ func.py_args|count }}, {{ func.ufunc_return|count }}, PyUFunc_None,
         "{{ func.pyname }}",
         "UFunc wrapper for {{ func.name }}",
-        0, {% if func.signature -%} "{{ func.signature }}" {%- else -%} NULL {%- endif -%});
+        0, {{ func.signature }});
     if (ufunc == NULL) {
         goto fail;
     }

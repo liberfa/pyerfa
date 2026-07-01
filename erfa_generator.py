@@ -9,7 +9,8 @@ or dtypes for those structs.  They should be added manually in the template file
 
 import functools
 import re
-from collections.abc import Iterable
+from abc import ABC, abstractproperty
+from collections.abc import Iterable, Sequence
 from pathlib import Path
 from typing import Final, final
 
@@ -295,7 +296,7 @@ class ResultTuple:
         return f'{self.name} = namedtuple("{self.name}", "{self.arg_names}")'
 
 
-class Function:
+class Function(ABC):
     """
     A class representing a C function.
 
@@ -307,21 +308,18 @@ class Function:
         Directory with the file containing the function implementation.
     """
 
-    c_retval: Return | StatusCode | None = None
-
-    def __init__(self, name: str, source_path: Path) -> None:
+    def __init__(
+        self,
+        name: str,
+        doc: FunctionDoc,
+        args: Sequence[Argument],
+        c_retval: Return | StatusCode | None,
+    ) -> None:
         self.name: Final = name
         self.pyname: Final = name.removeprefix("era").lower()
+        self.doc: Final = doc
+        self.c_retval: Final = c_retval
 
-        file = source_path / f"{self.pyname}.c"
-        search = re.search(
-            rf"(\w+) {name} ?\((.+?)\).+?/\*(.+?)\*/", file.read_text(), re.DOTALL
-        )
-        if search is None:
-            raise RuntimeError(f"cannot find {name}() definition in {file}")
-
-        self.doc: Final = FunctionDoc(search.group(3), self.pyname)
-        args = [Argument(arg) for arg in re.findall("[^,]+", search.group(2))]
         self.in_args: Final = tuple(a for a in args if a.name in self.doc.input)
         self.inout_args: Final = tuple(a for a in args if a.name in self.doc.inout)
         self.out_args: Final = tuple(a for a in args if a.name in self.doc.output)
@@ -330,12 +328,30 @@ class Function:
         self.c_args: Final = (*self.py_args, *self.out_args)
         self.inout_or_out_args: Final = (*self.inout_args, *self.out_args)
 
+    @classmethod
+    def from_c_code(cls, name: str, source_path: Path) -> "Function":
+        pyname = name.removeprefix("era").lower()
+        file = source_path / f"{pyname}.c"
+        search = re.search(
+            rf"(\w+) {name} ?\((.+?)\).+?/\*(.+?)\*/", file.read_text(), re.DOTALL
+        )
+        if search is None:
+            raise RuntimeError(f"cannot find {name}() definition in {file}")
+
+        doc = FunctionDoc(search.group(3), pyname)
+        args = [Argument(arg) for arg in re.findall("[^,]+", search.group(2))]
+        c_retval = None
         if (ret := search.group(1)) != "void":
-            self.c_retval = (
-                StatusCode(ret, self.doc, name)
-                if ret == "int" and self.pyname not in ("tpors", "tporv")
+            c_retval = (
+                StatusCode(ret, doc, name)
+                if ret == "int" and pyname not in ("tpors", "tporv")
                 else Return(ret)
             )
+        return (
+            UFunc(name, doc, args, c_retval)
+            if all(arg.signature_shape == "()" for arg in args)
+            else GUFunc(name, doc, args, c_retval)
+        )
 
     @functools.cached_property
     def result_tuple(self) -> ResultTuple | None:
@@ -378,18 +394,9 @@ class Function:
 
         return user_dtype
 
-    @property
-    def signature(self) -> str | None:
+    @abstractproperty
+    def signature(self) -> str:
         """Possible signature, if this function should be a gufunc."""
-        return (
-            (
-                ",".join(arg.signature_shape for arg in self.py_args)
-                + "->"
-                + ",".join(arg.signature_shape for arg in self.ufunc_return)
-            )
-            if any(arg.signature_shape != "()" for arg in self.c_args)
-            else None
-        )
 
     def generate_python_body(self) -> str:
         ufunc_name = f"ufunc.{self.pyname}"
@@ -438,12 +445,6 @@ class Function:
             lines.append(f"{self.c_retval.ctype} _{self.c_retval.name};")
         return "\n".join(lines)
 
-    def inner_loop_steps_and_copies(self) -> str:
-        in_only = [a.inner_loop_steps_and_copy() for a in self.in_args]
-        inout = [a.inner_loop_steps_and_copy("_in") for a in self.inout_args]
-        out = [a.inner_loop_steps_and_copy() for a in self.inout_or_out_args]
-        return "\n".join(filter(None, in_only + inout + out))
-
     @functools.cached_property
     def increment_arg_pointers(self) -> str:
         return ", ".join(
@@ -451,17 +452,117 @@ class Function:
             + [f"{arg.name}_in += s_{arg.name}_in" for arg in self.inout_args],
         )
 
+    @abstractproperty
+    def prepare_for_call(self) -> str:
+        pass
+
     @functools.cached_property
-    def erfa_call(self) -> str:
+    def ufunc_loop_inner_loop_body(self) -> str:
+        lines = [self.prepare_for_call]
         call = _assemble_func_call(self.name, [a.name_for_call for a in self.c_args])
+        if retval := self.c_retval:
+            lines.extend([
+                f"_{retval.name} = {call};",
+                f"*(({retval.ctype} *){retval.name}) = _{retval.name};",
+            ])
+        else:
+            lines.append(call + ";")
+        return "\n".join(lines)
+
+
+class UFunc(Function):
+    @functools.cached_property
+    def signature(self) -> str:
+        return "NULL"
+
+    @functools.cached_property
+    def prepare_for_call(self) -> str:
+        return "\n".join([
+            *[arg.cast_pointer for arg in self.c_args],
+            *[arg.memcpy_if_needed for arg in self.inout_args],
+        ])
+
+
+class GUFunc(Function):
+    @functools.cached_property
+    def signature(self) -> str:
         return (
-            (
-                f"_{c_retval.name} = {call};\n"
-                f"*(({c_retval.ctype} *){c_retval.name}) = _{c_retval.name};"
-            )
-            if (c_retval := self.c_retval)
-            else f"{call};"
+            f'"{",".join(arg.signature_shape for arg in self.py_args)}'
+            f'->{",".join(arg.signature_shape for arg in self.ufunc_return)}"'
         )
+
+    @functools.cached_property
+    def init_ufunc_loop_local_vars(self) -> str:
+        lines = [super().init_ufunc_loop_local_vars]
+        lines.extend([  # only LDBODY has non-fixed dimension; it is always first
+            "int nb = (int)dimensions[0];  /* Refuse to worry about INT_MAX */"
+            for arg in self.in_args
+            if arg.ctype == "eraLDBODY"
+        ])
+        in_only = [a.inner_loop_steps_and_copy() for a in self.in_args]
+        inout = [a.inner_loop_steps_and_copy("_in") for a in self.inout_args]
+        out = [a.inner_loop_steps_and_copy() for a in self.inout_or_out_args]
+        lines.extend(filter(None, in_only + inout + out))
+        if self.user_dtype == "dt_eraLDBODY":
+            # if needed, allocate memory for contiguous eraLDBODY copies
+            lines.extend([
+                "if (copy_b) {",
+                "    // Note that we can't use PyArray_malloc here as it is an alias to PyMem_RawMalloc",
+                "    // which is not available in the Python limited API",
+                "    _b = malloc(nb * sizeof(eraLDBODY));",
+                "    if (_b == NULL) {",
+                "        PyErr_NoMemory();",
+                "        return;",
+                "    }",
+                "}",
+                "else {",  # just to keep compiler happy
+                "    _b = NULL;",
+                "}",
+            ])
+        return "\n".join(lines)
+
+    @functools.cached_property
+    def prepare_for_call(self) -> str:
+        lines = []
+        for arg in self.in_args:  # copy input arguments to buffer if needed
+            if arg.signature_shape == "()":
+                lines.append(arg.cast_pointer)
+            else:
+                lines.extend([
+                    arg.cast_pointer_if_needed,
+                    "else {",
+                    f"    {arg.copy_elements('to')}",
+                    "}",
+                ])
+        # for inout arguments, set up output first, and then copy to it if needed
+        for arg in self.inout_args:
+            lines.extend(
+                [arg.cast_pointer, arg.memcpy_if_needed]
+                if arg.signature_shape == "()"
+                else [
+                    arg.cast_pointer_if_needed,
+                    f"if (copy_{arg.name}_in || {arg.name} != {arg.name}_in) {{",
+                    f"    {arg.copy_elements('to', '_in')}",
+                    "}",
+                ]
+            )
+        lines.extend([  # set up gufunc outputs
+            a.cast_pointer if a.signature_shape == "()" else a.cast_pointer_if_needed
+            for a in self.out_args
+        ])
+        return "\n".join(lines)
+
+    @functools.cached_property
+    def ufunc_loop_inner_loop_body(self) -> str:
+        lines = [super().ufunc_loop_inner_loop_body]
+        for arg in self.inout_or_out_args:
+            if arg.signature_shape != "()":
+                lines.extend([
+                    f"if (copy_{arg.name}) {{",
+                    f"    {arg.copy_elements('from')}",
+                    "}",
+                ])
+        return "\n".join(lines)
 
 
 class Constant:
@@ -646,7 +747,7 @@ def main(srcdir: Path, templateloc: Path) -> None:
     env = Environment(loader=FileSystemLoader(templateloc))
 
     funcs = [
-        Function(name, srcdir)
+        Function.from_c_code(name, srcdir)
         for name in re.findall(
             r"\w+ (\w+)\(.*?\);", (srcdir / "erfa.h").read_text(), flags=re.DOTALL
         )
