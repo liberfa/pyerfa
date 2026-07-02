@@ -9,6 +9,7 @@ or dtypes for those structs.  They should be added manually in the template file
 
 import functools
 import re
+import textwrap
 from abc import ABC, abstractproperty
 from collections.abc import Iterable, Sequence
 from pathlib import Path
@@ -446,11 +447,18 @@ class Function(ABC):
         return "\n".join(lines)
 
     @functools.cached_property
-    def increment_arg_pointers(self) -> str:
-        return ", ".join(
+    def ufunc_loop_body(self) -> str:
+        arg_pointer_incrementation = ", ".join(
             [f"{arg.name} += s_{arg.name}" for arg in self.in_args + self.ufunc_return]
             + [f"{arg.name}_in += s_{arg.name}_in" for arg in self.inout_args],
         )
+        return "\n".join([
+            self.init_ufunc_loop_local_vars,
+            "for (i_o = 0; i_o < n_o;",
+            f"     i_o++, {arg_pointer_incrementation}) {{",
+            textwrap.indent(self.ufunc_loop_inner_loop_body, 4 * " "),
+            "}",
+        ])
 
     @abstractproperty
     def prepare_for_call(self) -> str:
@@ -490,6 +498,17 @@ class GUFunc(Function):
             f'"{",".join(arg.signature_shape for arg in self.py_args)}'
             f'->{",".join(arg.signature_shape for arg in self.ufunc_return)}"'
         )
+
+    @functools.cached_property
+    def ufunc_loop_body(self) -> str:
+        lines = [super().ufunc_loop_body]
+        if self.user_dtype == "dt_eraLDBODY":
+            lines.extend([
+                "if (copy_b) {",
+                "    free(_b);",
+                "}",
+            ])
+        return "\n".join(lines)
 
     @functools.cached_property
     def init_ufunc_loop_local_vars(self) -> str:
