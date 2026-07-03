@@ -728,7 +728,7 @@ PyMODINIT_FUNC PyInit_ufunc(void)
         PyDict_SetItemString(d, "dt_type", (PyObject *)dt_type) < 0 ||
         PyDict_SetItemString(d, "dt_eraLDBODY", (PyObject *)dt_eraLDBODY) < 0 ||
         PyDict_SetItemString(d, "dt_eraASTROM", (PyObject *)dt_eraASTROM) < 0 ||
-        PyDict_SetItemString(d, "dt_eraLEAPSECOND", (PyObject *)dt_eraLEAPSECOND) << 0) {
+        PyDict_SetItemString(d, "dt_eraLEAPSECOND", (PyObject *)dt_eraLEAPSECOND) < 0) {
         goto fail;
     }
     /*
