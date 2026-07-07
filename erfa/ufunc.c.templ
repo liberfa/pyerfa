@@ -147,15 +147,7 @@ static inline void copy_to_eraLDBODY(char *ptr, npy_intp s, npy_intp n,
  *    not contiguous.
  */
 
-{%- for func in funcs %}
-
-static void ufunc_loop_{{ func.pyname }}(
-    char **args, npy_intp const *dimensions, npy_intp const* steps, void* data)
-{
-    {{ func.ufunc_loop_body | indent(4) }}
-}
-
-{%- endfor %}
+$ufunc_loops
 
 /*
  * UFUNC LOOP MATCHING HELPERS
@@ -574,18 +566,7 @@ PyMODINIT_FUNC PyInit_ufunc(void)
     int status;
     PyUFuncObject *ufunc = NULL;
     static void *data[1] = {NULL};
-    {#- /* for non-structured functions, define there types and functions
-           as these do not get copied */ #}
-    {%- for func in funcs %}
-    {%- if not func.user_dtype %}
-    static char types_{{ func.pyname }}[{{ func.py_args|count + func.ufunc_return|count }}] = {
-    {%- for arg in func.py_args %}{{ arg.npy_type }}, {% endfor %}
-    {%- for arg in func.ufunc_return -%}
-    {%- if loop.index > 1 %}, {% endif %}{{ arg.npy_type }}{%- endfor -%}
-    };
-    static PyUFuncGenericFunction funcs_{{ func.pyname }}[1] = { &ufunc_loop_{{ func.pyname }} };
-    {%- endif %}
-    {%- endfor %}
+    $type_and_func_definitions
 
     m = PyModule_Create(&moduledef);
     if (m == NULL) {
@@ -743,40 +724,7 @@ PyMODINIT_FUNC PyInit_ufunc(void)
      * since we want the ufuncs not to do in-place changes (unless
      * explicitly requested with ufunc(..., in,..., out=in))
      */
-    {%- for func in funcs %}
-    ufunc = (PyUFuncObject *)PyUFunc_FromFuncAndDataAndSignature(
-    {%- if func.user_dtype %}
-        NULL, NULL, NULL, 0,
-    {%- else %}
-        funcs_{{ func.pyname }}, data, types_{{ func.pyname }}, 1,
-    {%- endif %}
-        {{ func.py_args|count }}, {{ func.ufunc_return|count }}, PyUFunc_None,
-        "{{ func.pyname }}",
-        "UFunc wrapper for {{ func.name }}",
-        0, {{ func.signature }});
-    if (ufunc == NULL) {
-        goto fail;
-    }
-    {%- if func.user_dtype %}
-    {%- for arg in func.py_args %}
-    dtypes[{{ loop.index - 1 }}] = {{ arg.dtype }};
-    {%- endfor %}
-    {%- for arg in func.ufunc_return %}
-    dtypes[{{ loop.index - 1 + func.py_args|count }}] = {{ arg.dtype }};
-    {%- endfor %}
-    status = PyUFunc_RegisterLoopForDescr(
-        ufunc, {{ func.user_dtype }},
-        ufunc_loop_{{ func.pyname }}, dtypes, NULL);
-    if(status != 0){
-        goto fail;
-    }
-    {%- endif %}
-    ufunc->type_resolver = &ErfaUFuncTypeResolver;
-    if (PyDict_SetItemString(d, "{{ func.pyname }}", (PyObject *)ufunc) < 0) {
-        goto fail;
-    }
-    Py_DECREF(ufunc);
-    {%- endfor %}
+    $ufunc_definitions
 
     goto decref;
 

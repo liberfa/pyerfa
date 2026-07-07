@@ -13,6 +13,7 @@ import textwrap
 from abc import ABC, abstractproperty
 from collections.abc import Iterable, Sequence
 from pathlib import Path
+from string import Template
 from typing import Final, final
 
 from jinja2 import Environment, FileSystemLoader
@@ -477,6 +478,69 @@ class Function(ABC):
             lines.append(call + ";")
         return "\n".join(lines)
 
+    @functools.cached_property
+    def ufunc_loop(self) -> str:
+        return "\n".join([
+            f"static void ufunc_loop_{self.pyname}(",
+            "    char **args, npy_intp const *dimensions, npy_intp const* steps, void* data)",
+            "{",
+            textwrap.indent(self.ufunc_loop_body, 4 * " "),
+            "}",
+        ])
+
+    @functools.cached_property
+    def define_types_and_functions(self) -> str | None:
+        if self.user_dtype:
+            return None
+        # for non-structured functions, define there types and functions
+        # as these do not get copied
+        npy_types = [arg.npy_type for arg in self.py_args + self.ufunc_return]
+        return "\n".join([
+            f"static char types_{self.pyname}[{len(npy_types)}] = {{{', '.join(npy_types)}}};",
+            f"static PyUFuncGenericFunction funcs_{self.pyname}[1] = {{ &ufunc_loop_{self.pyname} }};",
+        ])
+
+    @functools.cached_property
+    def define_ufunc(self) -> str:
+        lines = [
+            "ufunc = (PyUFuncObject *)PyUFunc_FromFuncAndDataAndSignature(",
+            (
+                "    NULL, NULL, NULL, 0,"
+                if self.user_dtype
+                else f"    funcs_{self.pyname}, data, types_{self.pyname}, 1,"
+            ),
+            f"    {len(self.py_args)}, {len(self.ufunc_return)}, PyUFunc_None,",
+            f'    "{self.pyname}",',
+            f'    "UFunc wrapper for {self.name}",',
+            f"    0, {self.signature});",
+            "if (ufunc == NULL) {",
+            "    goto fail;",
+            "}",
+        ]
+        if self.user_dtype:
+            lines.extend(
+                f"dtypes[{i}] = {dtype};"
+                for i, dtype in enumerate(
+                    arg.dtype for arg in self.py_args + self.ufunc_return
+                )
+            )
+            lines.extend([
+                "status = PyUFunc_RegisterLoopForDescr(",
+                f"    ufunc, {self.user_dtype},",
+                f"    ufunc_loop_{self.pyname}, dtypes, NULL);",
+                "if(status != 0){",
+                "    goto fail;",
+                "}",
+            ])
+        lines.extend([
+            "ufunc->type_resolver = &ErfaUFuncTypeResolver;",
+            f'if (PyDict_SetItemString(d, "{self.pyname}", (PyObject *)ufunc) < 0) {{',
+            "    goto fail;",
+            "}",
+            "Py_DECREF(ufunc);",
+        ])
+        return "\n".join(lines)
+
 
 class UFunc(Function):
     @functools.cached_property
@@ -761,6 +825,10 @@ def _assemble_func_call(
     func_call = f"{name}({', '.join(in_args)})"
     return f"{', '.join(out_args)} = {func_call}" if out_args else func_call
 
+def _indent(text: str) -> str:
+    first, *others = text.split("\n", 1)
+    return f"{first}\n{textwrap.indent(others[0], 4 * ' ')}" if others else text
+
 
 def main(srcdir: Path, templateloc: Path) -> None:
     env = Environment(loader=FileSystemLoader(templateloc))
@@ -791,7 +859,15 @@ def main(srcdir: Path, templateloc: Path) -> None:
 
     ufuncfn = "ufunc.c"
     (templateloc / ufuncfn).write_text(
-        env.get_template(ufuncfn + ".templ").render(funcs=funcs)
+        Template((templateloc / f"{ufuncfn}.templ").read_text().strip()).substitute(
+            ufunc_loops="\n\n".join(func.ufunc_loop for func in funcs),
+            type_and_func_definitions=_indent(
+                "\n".join(
+                    filter(None, [func.define_types_and_functions for func in funcs])
+                )
+            ),
+            ufunc_definitions=_indent("\n".join(func.define_ufunc for func in funcs)),
+        )
     )
 
     testloc = templateloc / "tests"
