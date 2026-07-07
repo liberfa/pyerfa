@@ -744,26 +744,20 @@ PyMODINIT_FUNC PyInit_ufunc(void)
      * explicitly requested with ufunc(..., in,..., out=in))
      */
     {%- for func in funcs %}
-    {%- if not func.user_dtype %}
     ufunc = (PyUFuncObject *)PyUFunc_FromFuncAndDataAndSignature(
-        funcs_{{ func.pyname }}, data, types_{{ func.pyname }},
-        1, {{ func.py_args|count }}, {{ func.ufunc_return|count }}, PyUFunc_None,
-        "{{ func.pyname }}",
-        "UFunc wrapper for {{ func.name }}",
-        0, {{ func.signature }});
-    if (ufunc == NULL) {
-        goto fail;
-    }
+    {%- if func.user_dtype %}
+        NULL, NULL, NULL, 0,
     {%- else %}
-    ufunc = (PyUFuncObject *)PyUFunc_FromFuncAndDataAndSignature(
-        NULL, NULL, NULL,
-        0, {{ func.py_args|count }}, {{ func.ufunc_return|count }}, PyUFunc_None,
+        funcs_{{ func.pyname }}, data, types_{{ func.pyname }}, 1,
+    {%- endif %}
+        {{ func.py_args|count }}, {{ func.ufunc_return|count }}, PyUFunc_None,
         "{{ func.pyname }}",
         "UFunc wrapper for {{ func.name }}",
         0, {{ func.signature }});
     if (ufunc == NULL) {
         goto fail;
     }
+    {%- if func.user_dtype %}
     {%- for arg in func.py_args %}
     dtypes[{{ loop.index - 1 }}] = {{ arg.dtype }};
     {%- endfor %}
