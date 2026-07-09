@@ -1,0 +1,27 @@
+static void ufunc_loop_$pyname(
+    char **args, npy_intp const *dimensions, npy_intp const* steps, void* data)
+{
+    npy_intp i_o;
+    npy_intp n_o = *dimensions++;
+    $init_ufunc_loop_local_vars
+    if (copy_b) {
+        // If needed, allocate memory for contiguous eraLDBODY copies.
+        // Note that we can't use PyArray_malloc here as it is an alias to PyMem_RawMalloc
+        // which is not available in the Python limited API
+        _b = malloc(nb * sizeof(eraLDBODY));
+        if (_b == NULL) {
+            PyErr_NoMemory();
+            return;
+        }
+    }
+    else { // just to keep compiler happy
+        _b = NULL;
+    }
+    for (i_o = 0; i_o < n_o;
+         i_o++, $increment_arg_pointers) {
+        $ufunc_inner_loop_body
+    }
+    if (copy_b) {
+        free(_b);
+    }
+}
