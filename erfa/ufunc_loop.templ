@@ -1,0 +1,11 @@
+static void ufunc_loop_$pyname(
+    char **args, npy_intp const *dimensions, npy_intp const* steps, void* data)
+{
+    npy_intp i_o;
+    npy_intp n_o = *dimensions++;
+    $init_ufunc_loop_local_vars
+    for (i_o = 0; i_o < n_o;
+         i_o++, $increment_arg_pointers) {
+        $ufunc_inner_loop_body
+    }
+}

@@ -316,11 +316,13 @@ class Function(ABC):
         doc: FunctionDoc,
         args: Sequence[Argument],
         c_retval: Return | StatusCode | None,
+        templateloc: Path,
     ) -> None:
         self.name: Final = name
         self.pyname: Final = name.removeprefix("era").lower()
         self.doc: Final = doc
         self.c_retval: Final = c_retval
+        self.templateloc: Final = templateloc
 
         self.in_args: Final = tuple(a for a in args if a.name in self.doc.input)
         self.inout_args: Final = tuple(a for a in args if a.name in self.doc.inout)
@@ -331,7 +333,7 @@ class Function(ABC):
         self.inout_or_out_args: Final = (*self.inout_args, *self.out_args)
 
     @classmethod
-    def from_c_code(cls, name: str, source_path: Path) -> "Function":
+    def from_c_code(cls, name: str, source_path: Path, templateloc: Path) -> "Function":
         pyname = name.removeprefix("era").lower()
         file = source_path / f"{pyname}.c"
         search = re.search(
@@ -350,9 +352,9 @@ class Function(ABC):
                 else Return(ret)
             )
         return (
-            UFunc(name, doc, args, c_retval)
+            UFunc(name, doc, args, c_retval, templateloc)
             if all(arg.signature_shape == "()" for arg in args)
-            else GUFunc(name, doc, args, c_retval)
+            else GUFunc(name, doc, args, c_retval, templateloc)
         )
 
     @functools.cached_property
@@ -436,8 +438,6 @@ class Function(ABC):
     @functools.cached_property
     def init_ufunc_loop_local_vars(self) -> str:
         lines = [
-            "npy_intp i_o;",  # loop index
-            "npy_intp n_o = *dimensions++;",  # loop length
             *[arg.init_pointer_and_step_size() for arg in self.in_args],
             *[arg.init_pointer_and_step_size("_in") for arg in self.inout_args],
             *[arg.init_pointer_and_step_size() for arg in self.ufunc_return],
@@ -448,18 +448,21 @@ class Function(ABC):
         return "\n".join(lines)
 
     @functools.cached_property
-    def ufunc_loop_body(self) -> str:
+    def ufunc_loop_template(self) -> Template:
+        return Template((self.templateloc / "ufunc_loop.templ").read_text().strip())
+
+    @functools.cached_property
+    def ufunc_loop(self) -> str:
         arg_pointer_incrementation = ", ".join(
             [f"{arg.name} += s_{arg.name}" for arg in self.in_args + self.ufunc_return]
             + [f"{arg.name}_in += s_{arg.name}_in" for arg in self.inout_args],
         )
-        return "\n".join([
-            self.init_ufunc_loop_local_vars,
-            "for (i_o = 0; i_o < n_o;",
-            f"     i_o++, {arg_pointer_incrementation}) {{",
-            textwrap.indent(self.ufunc_loop_inner_loop_body, 4 * " "),
-            "}",
-        ])
+        return self.ufunc_loop_template.substitute(
+            pyname=self.pyname,
+            init_ufunc_loop_local_vars=_indent(self.init_ufunc_loop_local_vars),
+            increment_arg_pointers=arg_pointer_incrementation,
+            ufunc_inner_loop_body=_indent(self.ufunc_loop_inner_loop_body, 2),
+        )
 
     @abstractproperty
     def prepare_for_call(self) -> str:
@@ -477,16 +480,6 @@ class Function(ABC):
         else:
             lines.append(call + ";")
         return "\n".join(lines)
-
-    @functools.cached_property
-    def ufunc_loop(self) -> str:
-        return "\n".join([
-            f"static void ufunc_loop_{self.pyname}(",
-            "    char **args, npy_intp const *dimensions, npy_intp const* steps, void* data)",
-            "{",
-            textwrap.indent(self.ufunc_loop_body, 4 * " "),
-            "}",
-        ])
 
     @functools.cached_property
     def define_types_and_functions(self) -> str | None:
@@ -564,15 +557,13 @@ class GUFunc(Function):
         )
 
     @functools.cached_property
-    def ufunc_loop_body(self) -> str:
-        lines = [super().ufunc_loop_body]
-        if self.user_dtype == "dt_eraLDBODY":
-            lines.extend([
-                "if (copy_b) {",
-                "    free(_b);",
-                "}",
-            ])
-        return "\n".join(lines)
+    def ufunc_loop_template(self) -> Template:
+        template_file = (
+            "eraLDBODY_ufunc_loop.templ"
+            if self.user_dtype == "dt_eraLDBODY"
+            else "ufunc_loop.templ"
+        )
+        return Template((self.templateloc / template_file).read_text().strip())
 
     @functools.cached_property
     def init_ufunc_loop_local_vars(self) -> str:
@@ -586,22 +577,6 @@ class GUFunc(Function):
         inout = [a.inner_loop_steps_and_copy("_in") for a in self.inout_args]
         out = [a.inner_loop_steps_and_copy() for a in self.inout_or_out_args]
         lines.extend(filter(None, in_only + inout + out))
-        if self.user_dtype == "dt_eraLDBODY":
-            # if needed, allocate memory for contiguous eraLDBODY copies
-            lines.extend([
-                "if (copy_b) {",
-                "    // Note that we can't use PyArray_malloc here as it is an alias to PyMem_RawMalloc",
-                "    // which is not available in the Python limited API",
-                "    _b = malloc(nb * sizeof(eraLDBODY));",
-                "    if (_b == NULL) {",
-                "        PyErr_NoMemory();",
-                "        return;",
-                "    }",
-                "}",
-                "else {",  # just to keep compiler happy
-                "    _b = NULL;",
-                "}",
-            ])
         return "\n".join(lines)
 
     @functools.cached_property
@@ -825,16 +800,16 @@ def _assemble_func_call(
     func_call = f"{name}({', '.join(in_args)})"
     return f"{', '.join(out_args)} = {func_call}" if out_args else func_call
 
-def _indent(text: str) -> str:
+def _indent(text: str, levels: int = 1) -> str:
     first, *others = text.split("\n", 1)
-    return f"{first}\n{textwrap.indent(others[0], 4 * ' ')}" if others else text
+    return f"{first}\n{textwrap.indent(others[0], levels * '    ')}" if others else text
 
 
 def main(srcdir: Path, templateloc: Path) -> None:
     env = Environment(loader=FileSystemLoader(templateloc))
 
     funcs = [
-        Function.from_c_code(name, srcdir)
+        Function.from_c_code(name, srcdir, templateloc)
         for name in re.findall(
             r"\w+ (\w+)\(.*?\);", (srcdir / "erfa.h").read_text(), flags=re.DOTALL
         )
