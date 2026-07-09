@@ -62,9 +62,14 @@ def guess_next_dev(version: ScmVersion) -> str:
     version_string = str(version.tag)
     erfa_version = git.parse(LIBERFADIR, config=Configuration(root=LIBERFADIR))
     if erfa_version is None:
-        # Must be installing from an sdist. Any warnings should have been dealt with
-        # when the sdist was built, so we can assume version_string is correct.
-        return version_string
+        # Must be installing from an sdist so we cannot check the ERFA tag. We will
+        # assume it is consistent with the pyerfa version tag, otherwise there was
+        # a problem when the sdist was built that we cannot fix at this point.
+        return (
+            version_string
+            if version.exact
+            else version.format_next_version(guess_next_version)
+        )
     if not erfa_version.exact:
         warn(f"liberfa/erfa not at a tagged release, but at {erfa_version}")
     erfa_tag = erfa_version.format_with("{tag}")
