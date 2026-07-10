@@ -29,10 +29,12 @@ class FunctionDoc:
             doc = doc.removeprefix("+")
         elif pyname == "aticqn":
             doc = doc.replace("\n* ", "\n** ", 2).replace("\n*\n", "\n**\n", 1)
-        self.doc: Final = doc.replace("\n**", "\n").removeprefix("\n")
+        self.doc: Final = re.sub(
+            r"^\*\* {,2}", "", doc.removeprefix("\n"), flags=re.MULTILINE
+        )
 
         get_arg_doc_list = functools.partial(
-            self._get_arg_doc_list, n_spaces=4 if pyname in ("ab", "refco") else 5
+            self._get_arg_doc_list, n_spaces=2 if pyname in ("ab", "refco") else 3
         )
         self.input: Final = get_arg_doc_list("Given.*?\n(.+?)\n\n")
         self.inout: Final = get_arg_doc_list("Given and returned:\n(.+?)\n\n")
@@ -67,7 +69,7 @@ class FunctionDoc:
 
     @property
     def first_sentence(self) -> str:
-        if m := re.search(r"[- ]+\n\n  (.+?\.)\s", self.doc, re.DOTALL):
+        if m := re.search(r"[- ]+\n\n(.+?\.)\s", self.doc, re.DOTALL):
             return m.group(1)
         raise RuntimeError(
             f"cannot find the first sentence of {self.pyname} doc comment"
