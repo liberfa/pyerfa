@@ -135,7 +135,7 @@ STATUS_CODES["{{ func.pyname }}"] = {{ func.c_retval.to_python() }}
 
 def {{ func.pyname }}({{ func.py_args|map(attribute='name')|join(', ') }}):
     """
-    {{ func.doc.first_sentence | indent(2)}}
+    {{ func.doc.first_sentence | indent(4)}}
     {%- if func.py_args %}
 
     Parameters
@@ -162,7 +162,7 @@ def {{ func.pyname }}({{ func.py_args|map(attribute='name')|join(', ') }}):
     | map(attribute='name')|join(', ') }} in-place.
     {%- endif %} The ERFA documentation is::
 
-{{ func.doc.doc | indent(6, true) }}
+        {{ func.doc.doc | indent(8) }}
     """
     {{ func.generate_python_body() | indent(4) }}
 
