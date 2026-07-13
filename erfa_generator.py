@@ -536,6 +536,39 @@ class Function(ABC):
         ])
         return "\n".join(lines)
 
+    @functools.cached_property
+    def py_docstring(self) -> str:
+        lines = ['"""', self.doc.first_sentence]
+        if self.py_args:
+            lines.extend(_docstring_section_title("Parameters"))
+            lines.extend(f"{arg.name} : {arg.ctype} array" for arg in self.py_args)
+        lines.extend(_docstring_section_title("Returns"))
+        if self.result_tuple:
+            lines.append(
+                f"A ``{self.result_tuple.name}`` namedtuple with the following attributes:"
+            )
+        lines.extend(f"{arg.name} : {arg.ctype} array" for arg in self.py_return)
+        lines.extend(_docstring_section_title("Notes"))
+        lines.append(f"Wraps ERFA function ``{self.name}``. ")
+        if inout_names := ", ".join(arg.name for arg in self.inout_args):
+            lines[-1] += "Note that, unlike the erfa routine,"
+            lines.append(
+                f"the python wrapper does not change {inout_names} in-place. ",
+            )
+        lines[-1] += "The ERFA documentation is::\n"
+        lines.extend([textwrap.indent(self.doc.doc, 4 * " "), '"""'])
+        return "\n".join(lines)
+
+    @functools.cached_property
+    def python_wrapper(self) -> str:
+        return _indent(
+            "\n".join([
+                f"def {self.pyname}({', '.join(arg.name for arg in self.py_args)}):",
+                self.py_docstring,
+                self.generate_python_body(),
+            ])
+        )
+
 
 class UFunc(Function):
     @functools.cached_property
@@ -805,6 +838,10 @@ def _assemble_func_call(
 def _indent(text: str, levels: int = 1) -> str:
     first, *others = text.split("\n", 1)
     return f"{first}\n{textwrap.indent(others[0], levels * '    ')}" if others else text
+
+
+def _docstring_section_title(title: str) -> tuple[str, str, str]:
+    return ("", title, len(title) * "-")
 
 
 def main(srcdir: Path, templateloc: Path) -> None:
