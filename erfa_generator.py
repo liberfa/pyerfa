@@ -660,7 +660,7 @@ class GUFunc(Function):
 
 class Constant:
 
-    def __init__(self, name: str, value: str, doc: list[str]) -> None:
+    def __init__(self, name: str, value: str, doc: str) -> None:
         self.name = name.replace("ERFA_", "")
         self.value = value.replace("ERFA_", "")
         self.doc = doc
@@ -856,7 +856,7 @@ def main(srcdir: Path, templateloc: Path) -> None:
 
     constants: list[Constant] = []
     for chunk in (srcdir / "erfam.h").read_text().split("\n\n"):
-        doc = re.findall(r"/\* (.+?) \*/\n", chunk, flags=re.DOTALL)
+        doc = "\n".join(re.findall(r"/\* (.+?) \*/\n", chunk, flags=re.DOTALL))
         constants.extend(
             Constant(name, value, doc)
             for name, value in re.findall(
