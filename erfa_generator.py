@@ -569,6 +569,19 @@ class Function(ABC):
             ])
         )
 
+    @functools.cached_property
+    def to_python(self) -> str:
+        lines = []
+        if (
+            isinstance((status_code := self.c_retval), StatusCode)
+            and status_code.can_fail
+        ):
+            lines.append(f'STATUS_CODES["{self.pyname}"] = {status_code.to_python()}')
+        if self.result_tuple:
+            lines.append(self.result_tuple.define())
+        lines.append(self.python_wrapper)
+        return "\n\n\n".join(lines)
+
 
 class UFunc(Function):
     @functools.cached_property
@@ -664,6 +677,10 @@ class Constant:
         self.name = name.replace("ERFA_", "")
         self.value = value.replace("ERFA_", "")
         self.doc = doc
+
+    @functools.cached_property
+    def define(self) -> str:
+        return "\n".join([f"{self.name} = {self.value}", f'"""{self.doc}"""'])
 
 
 class TestFunction:
@@ -845,8 +862,6 @@ def _docstring_section_title(title: str) -> tuple[str, str, str]:
 
 
 def main(srcdir: Path, templateloc: Path) -> None:
-    env = Environment(loader=FileSystemLoader(templateloc))
-
     funcs = [
         Function.from_c_code(name, srcdir, templateloc)
         for name in re.findall(
@@ -868,7 +883,18 @@ def main(srcdir: Path, templateloc: Path) -> None:
 
     outfn = "core.py"
     (templateloc / outfn).write_text(
-        env.get_template(outfn + ".templ").render(funcs=funcs, constants=constants)
+        Template((templateloc / f"{outfn}.templ").read_text()).substitute(
+            all_list=_indent(
+                "\n".join([
+                    *[f'"{constant.name}",' for constant in constants],
+                    '"ErfaError",',
+                    '"ErfaWarning",',
+                    *[f'"{func.pyname}",' for func in funcs],
+                ])
+            ),
+            constants="\n".join(constant.define for constant in constants),
+            funcs="\n\n\n".join([func.to_python for func in funcs]),
+        )
     )
 
     ufuncfn = "ufunc.c"
