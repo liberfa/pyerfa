@@ -32,14 +32,7 @@ import numpy as np
 from . import ufunc
 
 __all__ = [
-    {%- for const in constants %}
-    "{{ const.name }}",
-    {%- endfor %}
-    "ErfaError",
-    "ErfaWarning",
-    {%- for func in funcs %}
-    "{{ func.pyname }}",
-    {%- endfor %}
+    $all_list
 ]
 
 
@@ -107,33 +100,8 @@ dt_bytes1 = np.dtype("S1")
 
 # <--------------------------Actual ERFA-wrapping code------------------------>
 
-{% for constant in constants %}
-{{ constant.name }} = {{ constant.value }}
-"""{{ constant.doc }}"""
-{%- endfor %}
+
+$constants
 
 
-{%- for func in funcs %}
-{#-
- # Define the status codes that this function returns.
- #}
-{%- if func.c_retval.can_fail %}
-
-
-STATUS_CODES["{{ func.pyname }}"] = {{ func.c_retval.to_python() }}
-{%- endif %}
-{#-
- # For ufuncs with more than one output, define a namedtuple so one
- # can access the outputs by name.
- #}
-{%- if func.result_tuple %}
-
-
-{{ func.result_tuple.define() }}
-{%- endif %}
-
-
-{{ func.python_wrapper }}
-
-{%- endfor %}
-{# done! (note: this comment also ensures final new line!) #}
+$funcs
