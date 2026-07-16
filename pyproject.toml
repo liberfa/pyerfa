@@ -2,7 +2,6 @@
 requires = [
     "setuptools>=77.0.0",
     "setuptools_scm>=8.0.0",
-    "jinja2>=2.10.3",
     "numpy>=2.0.0rc1",
 ]
 build-backend = 'setuptools.build_meta'
@@ -38,7 +37,6 @@ docs = ["sphinx-astropy>=1.3"]
 
 [dependency-groups]
 typing = [
-    "jinja2>=2.10.3",
     "mypy>=1.20.1",
     # Some code was moved from setuptools-scm 10 to a separate vcs-versioning library,
     # but vcs-versioning<= 1.1.1 lacks the py.typed marker file (accidentally).

@@ -16,8 +16,6 @@ from pathlib import Path
 from string import Template
 from typing import Final, final
 
-from jinja2 import Environment, FileSystemLoader
-
 DEFAULT_ERFA_LOC = Path(__file__).with_name("liberfa") / "erfa" / "src"
 DEFAULT_TEMPLATE_LOC = Path(__file__).with_name("erfa")
 
@@ -916,10 +914,18 @@ def main(srcdir: Path, templateloc: Path) -> None:
         TestFunction, t_erfa_c=(srcdir / "t_erfa_c.c").read_text()
     )
     (testloc / testfn).write_text(
-        Environment(loader=FileSystemLoader(testloc))
-        .get_template(testfn + ".templ")
-        .render(
-            test_funcs=sorted(map(create_test_funcs, funcs), key=lambda f: f.func.name)
+        Template((testloc / f"{testfn}.templ").read_text()).substitute(
+            test_functions="\n\n\n".join([
+                _indent(
+                    "\n".join([
+                        f"def test_{test_func.func.pyname}():",
+                        *test_func.to_python(),
+                    ])
+                )
+                for test_func in sorted(
+                    map(create_test_funcs, funcs), key=lambda f: f.func.name
+                )
+            ])
         )
     )
 

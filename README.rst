@@ -13,8 +13,7 @@ called with scalar or array inputs.
 
 The project is a split of ``astropy._erfa`` module, developed in the
 context of Astropy_ project, into a standalone package.  It contains
-the ERFA_ C source code as a git submodule.  The wrapping is done
-with help of the Jinja2_ template engine.
+the ERFA_ C source code as a git submodule.
 
 If you use this package in your research, please cita it via DOI
 `10.5281/zenodo.3940699 <https://doi.org/10.5281/zenodo.3940699>`_.
@@ -116,7 +115,6 @@ PyERFA is licensed under a 3-clause BSD style license - see the
 .. _Numpy: https://numpy.org/
 .. _Astropy: https://www.astropy.org
 .. _PyPI: https://pypi.org/project/pyerfa/
-.. _Jinja2: https://palletsprojects.com/p/jinja/
 .. |PyPI Status| image:: https://img.shields.io/pypi/v/pyerfa.svg
     :target: https://pypi.python.org/pypi/pyerfa
     :alt: PyPI Status
