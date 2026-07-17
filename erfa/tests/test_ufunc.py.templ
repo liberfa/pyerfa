@@ -29,14 +29,6 @@ if not erfa.__version__.startswith(erfa.version.erfa_version):
 
 
 # <--------------------------Actual test-wrapping code------------------------>
-{%- for test in test_funcs %}
 
 
-def test_{{ test.func.pyname }}():
-    {%- for line in test.to_python() %}
-    {{ line }}
-    {%- endfor %}
-
-
-{%- endfor %}
-{# done! (note: this comment also ensures final new line!) #}
+$test_functions
