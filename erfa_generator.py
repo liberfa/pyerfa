@@ -859,6 +859,12 @@ def _docstring_section_title(title: str) -> tuple[str, str, str]:
     return ("", title, len(title) * "-")
 
 
+def _render_template(template: Path, /, **kwargs: str) -> None:
+    template.with_suffix("").write_text(
+        Template(template.read_text()).substitute(**kwargs)
+    )
+
+
 def main(srcdir: Path, templateloc: Path) -> None:
     funcs = [
         Function.from_c_code(name, srcdir, templateloc)
@@ -879,54 +885,40 @@ def main(srcdir: Path, templateloc: Path) -> None:
             )
         )
 
-    outfn = "core.py"
-    (templateloc / outfn).write_text(
-        Template((templateloc / f"{outfn}.templ").read_text()).substitute(
-            all_list=_indent(
-                "\n".join([
-                    *[f'"{constant.name}",' for constant in constants],
-                    '"ErfaError",',
-                    '"ErfaWarning",',
-                    *[f'"{func.pyname}",' for func in funcs],
-                ])
-            ),
-            constants="\n".join(constant.define for constant in constants),
-            funcs="\n\n\n".join([func.to_python for func in funcs]),
-        )
+    _render_template(
+        templateloc / "core.py.templ",
+        all_list=_indent(
+            "\n".join([
+                *[f'"{constant.name}",' for constant in constants],
+                '"ErfaError",',
+                '"ErfaWarning",',
+                *[f'"{func.pyname}",' for func in funcs],
+            ])
+        ),
+        constants="\n".join(constant.define for constant in constants),
+        funcs="\n\n\n".join([func.to_python for func in funcs]),
     )
 
-    ufuncfn = "ufunc.c"
-    (templateloc / ufuncfn).write_text(
-        Template((templateloc / f"{ufuncfn}.templ").read_text().strip()).substitute(
-            ufunc_loops="\n\n".join(func.ufunc_loop for func in funcs),
-            type_and_func_definitions=_indent(
-                "\n".join(
-                    filter(None, [func.define_types_and_functions for func in funcs])
-                )
-            ),
-            ufunc_definitions=_indent("\n".join(func.define_ufunc for func in funcs)),
-        )
+    _render_template(
+        templateloc / "ufunc.c.templ",
+        ufunc_loops="\n\n".join(func.ufunc_loop for func in funcs),
+        type_and_func_definitions=_indent(
+            "\n".join(filter(None, [func.define_types_and_functions for func in funcs]))
+        ),
+        ufunc_definitions=_indent("\n".join(func.define_ufunc for func in funcs)),
     )
 
-    testloc = templateloc / "tests"
-    testfn = "test_ufunc.py"
     create_test_funcs = functools.partial(
         TestFunction, t_erfa_c=(srcdir / "t_erfa_c.c").read_text()
     )
-    (testloc / testfn).write_text(
-        Template((testloc / f"{testfn}.templ").read_text()).substitute(
-            test_functions="\n\n\n".join([
-                _indent(
-                    "\n".join([
-                        f"def test_{test_func.func.pyname}():",
-                        *test_func.to_python(),
-                    ])
-                )
-                for test_func in sorted(
-                    map(create_test_funcs, funcs), key=lambda f: f.func.name
-                )
-            ])
-        )
+    _render_template(
+        templateloc / "tests" / "test_ufunc.py.templ",
+        test_functions="\n\n\n".join([
+            _indent("\n".join([f"def test_{tfunc.func.pyname}():", *tfunc.to_python()]))
+            for tfunc in sorted(
+                map(create_test_funcs, funcs), key=lambda f: f.func.name
+            )
+        ]),
     )
 
 
