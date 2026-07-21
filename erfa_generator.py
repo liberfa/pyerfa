@@ -487,44 +487,23 @@ class Function(ABC):
 
     @functools.cached_property
     def define_ufunc(self) -> str:
-        lines = [
-            "ufunc = (PyUFuncObject *)PyUFunc_FromFuncAndDataAndSignature(",
-            (
-                "    NULL, NULL, NULL, 0,"
-                if self.user_dtype
-                else f"    funcs_{self.pyname}, data, types_{self.pyname}, 1,"
-            ),
-            f"    {len(self.py_args)}, {len(self.ufunc_return)}, PyUFunc_None,",
-            f'    "{self.pyname}",',
-            f'    "UFunc wrapper for {self.name}",',
-            f"    0, {self.signature});",
-            "if (ufunc == NULL) {",
-            "    goto fail;",
-            "}",
-        ]
+        placeholders = {
+            "name": self.name,
+            "pyname": self.pyname,
+            "n_py_args": len(self.py_args),
+            "n_ufunc_return": len(self.ufunc_return),
+            "signature": self.signature,
+        }
         if self.user_dtype:
-            lines.extend(
-                f"dtypes[{i}] = {dtype};"
-                for i, dtype in enumerate(
-                    arg.dtype for arg in self.py_args + self.ufunc_return
-                )
+            placeholders["user_dtype"] = self.user_dtype
+            placeholders["register_dtypes"] = "\n".join(
+                f"dtypes[{i}] = {arg.dtype};"
+                for i, arg in enumerate(self.py_args + self.ufunc_return)
             )
-            lines.extend([
-                "status = PyUFunc_RegisterLoopForDescr(",
-                f"    ufunc, {self.user_dtype},",
-                f"    ufunc_loop_{self.pyname}, dtypes, NULL);",
-                "if(status != 0){",
-                "    goto fail;",
-                "}",
-            ])
-        lines.extend([
-            "ufunc->type_resolver = &ErfaUFuncTypeResolver;",
-            f'if (PyDict_SetItemString(d, "{self.pyname}", (PyObject *)ufunc) < 0) {{',
-            "    goto fail;",
-            "}",
-            "Py_DECREF(ufunc);",
-        ])
-        return "\n".join(lines)
+            file = "define_ufunc_user_dtype.templ"
+        else:
+            file = "define_ufunc.templ"
+        return Template((self.templateloc / file).read_text()).substitute(placeholders)
 
     @functools.cached_property
     def py_docstring(self) -> str:
@@ -899,7 +878,7 @@ def main(srcdir: Path, templateloc: Path) -> None:
         type_and_func_definitions=_indent(
             "\n".join(filter(None, [func.define_types_and_functions for func in funcs]))
         ),
-        ufunc_definitions=_indent("\n".join(func.define_ufunc for func in funcs)),
+        ufunc_definitions=_indent("".join(func.define_ufunc for func in funcs)),
     )
 
     create_test_funcs = functools.partial(
