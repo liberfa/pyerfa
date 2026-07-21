@@ -289,13 +289,14 @@ class Return(Variable):
 class ResultTuple:
     def __init__(self, func_name: str, args: Iterable[Argument | Return]) -> None:
         self.name: Final = f"{func_name.capitalize()}Result"
-        self.arg_names: Final = ", ".join(arg.name for arg in args)
+        self.args: Final = tuple(args)
 
     def create(self) -> str:
-        return f"{self.name}({self.arg_names})"
+        return _assemble_func_call(self.name, [arg.name for arg in self.args])
 
     def define(self) -> str:
-        return f'{self.name} = namedtuple("{self.name}", "{self.arg_names}")'
+        arg_names = ", ".join(arg.name for arg in self.args)
+        return f'{self.name} = namedtuple("{self.name}", "{arg_names}")'
 
 
 class Function(ABC):
@@ -358,20 +359,13 @@ class Function(ABC):
         )
 
     @functools.cached_property
-    def result_tuple(self) -> ResultTuple | None:
-        return (
-            ResultTuple(self.pyname, self.py_return)
-            if len(self.py_return) > 1
-            else None
-        )
-
-    @functools.cached_property
-    def py_return(self) -> tuple[Argument | Return, ...]:
-        return (
+    def py_return(self) -> Argument | Return | ResultTuple:
+        returns: tuple[Argument | Return, ...] = (
             (*self.inout_or_out_args, self.c_retval)
             if isinstance(self.c_retval, Return)
             else self.inout_or_out_args
         )
+        return returns[0] if len(returns) == 1 else ResultTuple(self.pyname, returns)
 
     @functools.cached_property
     def ufunc_return(self) -> tuple[Variable, ...]:
@@ -421,18 +415,16 @@ class Function(ABC):
         )
         if len(lines) == 1 and not isinstance(self.c_retval, StatusCode):
             ufunc_call = f"{ufunc_name}({', '.join(arg_names)})"
-            ret_val = (
-                ufunc_call
-                if self.result_tuple is None
-                else f"{self.result_tuple.name}(*{ufunc_call})"
+            return (
+                f"return {self.py_return.name}(*{ufunc_call})"
+                if isinstance(self.py_return, ResultTuple)
+                else f"return {ufunc_call}"
             )
-            return f"return {ret_val}"
-        ret_val = (
-            self.py_return[0].name
-            if self.result_tuple is None
-            else self.result_tuple.create()
+        lines.append(
+            f"return {self.py_return.create()}"
+            if isinstance(self.py_return, ResultTuple)
+            else f"return {self.py_return.name}"
         )
-        lines.append(f"return {ret_val}")
         return "\n".join(lines)
 
     @functools.cached_property
@@ -541,11 +533,13 @@ class Function(ABC):
             lines.extend(_docstring_section_title("Parameters"))
             lines.extend(f"{arg.name} : {arg.ctype} array" for arg in self.py_args)
         lines.extend(_docstring_section_title("Returns"))
-        if self.result_tuple:
+        if isinstance(self.py_return, ResultTuple):
             lines.append(
-                f"A ``{self.result_tuple.name}`` namedtuple with the following attributes:"
+                f"A ``{self.py_return.name}`` namedtuple with the following attributes:"
             )
-        lines.extend(f"{arg.name} : {arg.ctype} array" for arg in self.py_return)
+            lines.extend(f"{a.name} : {a.ctype} array" for a in self.py_return.args)
+        else:
+            lines.append(f"{self.py_return.name} : {self.py_return.ctype} array")
         lines.extend(_docstring_section_title("Notes"))
         lines.append(f"Wraps ERFA function ``{self.name}``. ")
         if inout_names := ", ".join(arg.name for arg in self.inout_args):
@@ -575,8 +569,8 @@ class Function(ABC):
             and status_code.can_fail
         ):
             lines.append(f'STATUS_CODES["{self.pyname}"] = {status_code.to_python()}')
-        if self.result_tuple:
-            lines.append(self.result_tuple.define())
+        if isinstance(self.py_return, ResultTuple):
+            lines.append(self.py_return.define())
         lines.append(self.python_wrapper)
         return "\n\n\n".join(lines)
 
