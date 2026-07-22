@@ -1,0 +1,14 @@
+ufunc = (PyUFuncObject *)PyUFunc_FromFuncAndDataAndSignature(
+    funcs_$pyname, data, types_$pyname, 1,
+    $n_py_args, $n_ufunc_return, PyUFunc_None,
+    "$pyname",
+    "UFunc wrapper for $name",
+    0, $signature);
+if (ufunc == NULL) {
+    goto fail;
+}
+ufunc->type_resolver = &ErfaUFuncTypeResolver;
+if (PyDict_SetItemString(d, "$pyname", (PyObject *)ufunc) < 0) {
+    goto fail;
+}
+Py_DECREF(ufunc);
