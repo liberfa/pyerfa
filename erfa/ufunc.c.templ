@@ -27,19 +27,6 @@ that do not support it (e.g., 3.13t)
 #define PyDataType_ELSIZE(descr) ((descr)->elsize)
 #endif
 
-// On gcc<10 we can run into the following:
-//
-//   error: dereferencing pointer to incomplete type 'PyTypeObject'
-//
-// As mentioned in https://github.com/numpy/numpy/issues/16970,
-// the workaround is to define a fake _typeobject struct.
-
-#if (defined Py_LIMITED_API) && !(defined PYPY_VERSION)
-typedef struct _typeobject {
-    int dummy;
-};
-#endif
-
 #define MODULE_DOCSTRING \
     "Ufunc wrappers of the ERFA routines.\n\n" \
     "These ufuncs vectorize the ERFA functions assuming structured dtypes\n" \
