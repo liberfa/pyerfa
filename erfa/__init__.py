@@ -2,8 +2,18 @@
 
 # Import version first, as this gives a more useful error message
 # if a system liberfa is too old.
-from .version import version as __version__  # noqa
-from .core import *  # noqa
-from .ufunc import (dt_eraASTROM, dt_eraLDBODY, dt_eraLEAPSECOND,  # noqa
-                    dt_pv, dt_sign, dt_type, dt_ymdf, dt_hmsf, dt_dmsf)
-from . import leap_seconds  # noqa
+from .version import version as __version__  # noqa: I001
+
+from .core import *
+from .ufunc import (
+    dt_eraASTROM,
+    dt_eraLDBODY,
+    dt_eraLEAPSECOND,
+    dt_pv,
+    dt_sign,
+    dt_type,
+    dt_ymdf,
+    dt_hmsf,
+    dt_dmsf,
+)
+from . import leap_seconds
