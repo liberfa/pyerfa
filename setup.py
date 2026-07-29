@@ -16,7 +16,6 @@ from setuptools_scm.version import guess_next_version
 
 LIBERFADIR = Path("liberfa", "erfa")
 ERFA_SRC = LIBERFADIR / "src"
-GEN_FILES = [Path("erfa", "core.py"), Path("erfa", "ufunc.c")]
 
 
 # build with Py_LIMITED_API unless in freethreading build (which does not currently
@@ -88,21 +87,15 @@ def guess_next_dev(version: ScmVersion) -> str:
     )
 
 
-gen_files_exist = all(path.is_file() for path in GEN_FILES)
-if ERFA_SRC.is_dir():
-    # assume that 'erfaversion.c' is updated at each release at least
-    src_mtime = (ERFA_SRC / "erfaversion.c").stat().st_mtime
-elif not gen_files_exist:
-    raise RuntimeError(
-        'Missing "liberfa" source files, unable to generate '
-        '"erfa/ufunc.c" and "erfa/core.py". '
-        "Please check your source tree. "
-        'Maybe "git submodule update" could help.'
-    )
-
-if not gen_files_exist or any(fn.stat().st_mtime < src_mtime for fn in GEN_FILES):
+if Path(".git").is_dir():  # don't run erfa_generator if building from an sdist
     print('Run "erfa_generator.py"')
-    subprocess.run([sys.executable, "erfa_generator.py"], check=True)
+    try:
+        subprocess.run([sys.executable, "erfa_generator.py"], check=True)
+    except subprocess.CalledProcessError as err:
+        raise RuntimeError(
+            "unable to generate pyerfa files. Please check your source tree. "
+            'Maybe "git submodule update" could help.'
+        ) from err
 
 sources = [Path("erfa", "ufunc.c")]
 include_dirs = [np.get_include()]
