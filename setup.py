@@ -16,6 +16,7 @@ from setuptools_scm.version import guess_next_version
 
 LIBERFADIR = Path("liberfa", "erfa")
 ERFA_SRC = LIBERFADIR / "src"
+BUILDING_FROM_SDIST = not Path(".git").is_dir()
 
 
 # build with Py_LIMITED_API unless in freethreading build (which does not currently
@@ -87,7 +88,7 @@ def guess_next_dev(version: ScmVersion) -> str:
     )
 
 
-if Path(".git").is_dir():  # don't run erfa_generator if building from an sdist
+if not BUILDING_FROM_SDIST:
     print('Run "erfa_generator.py"')
     try:
         subprocess.run([sys.executable, "erfa_generator.py"], check=True)
@@ -110,25 +111,23 @@ else:
         if file.suffix == ".c" and not file.name.startswith("t_")
     )
     # liberfa configuration
-    config_h = LIBERFADIR / "config.h"
-    if not config_h.exists():
+    if not BUILDING_FROM_SDIST:
         print("Configure liberfa")
         try:
-            if not (LIBERFADIR / "configure").exists():
-                subprocess.run(["./bootstrap.sh"], check=True, cwd=LIBERFADIR)
-            subprocess.run(["./configure"], check=True, cwd=LIBERFADIR)
-        except (subprocess.SubprocessError, OSError) as exc:
-            warn(f"unable to configure liberfa: {exc}")
-
-        if not config_h.exists():
-            if version_definitions := "\n".join(
-                f"#define {name} {value!r}".replace("'", '"')
-                for name, value in get_liberfa_versions()
-            ):
-                print('Configure liberfa ("configure.ac" scan)')
-                config_h.write_text(version_definitions)
-            else:
-                raise RuntimeError("unable to get liberfa version")
+            subprocess.run(["./bootstrap.sh"], check=True, cwd=LIBERFADIR)
+        except (subprocess.CalledProcessError, FileNotFoundError) as err:
+            warn(f"{err}\nMaybe installing autoconf, automake and libtool could help")
+    try:
+        subprocess.run(["./configure"], check=True, cwd=LIBERFADIR)
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        if version_definitions := "\n".join(
+            f"#define {name} {value!r}".replace("'", '"')
+            for name, value in get_liberfa_versions()
+        ):
+            print('Configure liberfa ("configure.ac" scan)')
+            (LIBERFADIR / "config.h").write_text(version_definitions)
+        else:
+            raise RuntimeError("unable to get liberfa version")
     include_dirs.extend(map(str, [ERFA_SRC, LIBERFADIR]))
     define_macros.append(("HAVE_CONFIG_H", "1"))
 
