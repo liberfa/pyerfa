@@ -101,7 +101,7 @@ if not BUILDING_FROM_SDIST:
 sources = [Path("erfa", "ufunc.c")]
 include_dirs = [np.get_include()]
 libraries = []
-if int(os.environ.get("PYERFA_USE_SYSTEM_LIBERFA", 0)):
+if int(os.environ.get("PYERFA_USE_SYSTEM_LIBERFA", "0")):
     print("Using system liberfa")
     libraries.append("erfa")
 else:
