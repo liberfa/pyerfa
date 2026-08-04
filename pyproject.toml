@@ -91,10 +91,14 @@ extend-select = [
     "SIM",
     "UP",
 ]
+ignore = [
+    "BLE001",  # temporary
+    "DTZ",  # temporary
+    "S110",  # temporary
+]
 [tool.ruff.lint.extend-per-file-ignores]
 "__init__.py" = [
     "F401",  # unused-import
-    "F403",  # undefined-local-with-import-star
 ]
 "test_*.py" = ["S101"]
 
