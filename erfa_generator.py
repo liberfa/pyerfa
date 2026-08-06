@@ -444,13 +444,12 @@ class Function(ABC):
             ufunc_inner_loop_body=_indent(self.ufunc_loop_inner_loop_body, 2),
         )
 
-    @abstractproperty
-    def prepare_for_call(self) -> str:
-        pass
-
     @functools.cached_property
     def ufunc_loop_inner_loop_body(self) -> str:
-        lines = [self.prepare_for_call]
+        lines = [
+            *[a.cast_pointer for a in self.c_args if a.signature_shape == "()"],
+            *[a.memcpy_if_needed for a in self.inout_args if a.signature_shape == "()"],
+        ]
         call = _assemble_func_call(self.name, [a.name_for_call for a in self.c_args])
         if retval := self.c_retval:
             lines.extend([
@@ -547,13 +546,6 @@ class UFunc(Function):
     def signature(self) -> str:
         return "NULL"
 
-    @functools.cached_property
-    def prepare_for_call(self) -> str:
-        return "\n".join([
-            *[arg.cast_pointer for arg in self.c_args],
-            *[arg.memcpy_if_needed for arg in self.inout_args],
-        ])
-
 
 class GUFunc(Function):
     @functools.cached_property
@@ -587,12 +579,10 @@ class GUFunc(Function):
         return "\n".join(lines)
 
     @functools.cached_property
-    def prepare_for_call(self) -> str:
+    def ufunc_loop_inner_loop_body(self) -> str:
         lines = []
         for arg in self.in_args:  # copy input arguments to buffer if needed
-            if arg.signature_shape == "()":
-                lines.append(arg.cast_pointer)
-            else:
+            if arg.signature_shape != "()":
                 lines.extend([
                     arg.cast_pointer_if_needed,
                     "else {",
@@ -601,25 +591,17 @@ class GUFunc(Function):
                 ])
         # for inout arguments, set up output first, and then copy to it if needed
         for arg in self.inout_args:
-            lines.extend(
-                [arg.cast_pointer, arg.memcpy_if_needed]
-                if arg.signature_shape == "()"
-                else [
+            if arg.signature_shape != "()":
+                lines.extend([
                     arg.cast_pointer_if_needed,
                     f"if (copy_{arg.name}_in || {arg.name} != {arg.name}_in) {{",
                     f"    {arg.copy_elements('to', '_in')}",
                     "}",
-                ]
-            )
+                ])
         lines.extend([  # set up gufunc outputs
-            a.cast_pointer if a.signature_shape == "()" else a.cast_pointer_if_needed
-            for a in self.out_args
+            a.cast_pointer_if_needed for a in self.out_args if a.signature_shape != "()"
         ])
-        return "\n".join(lines)
-
-    @functools.cached_property
-    def ufunc_loop_inner_loop_body(self) -> str:
-        lines = [super().ufunc_loop_inner_loop_body]
+        lines.append(super().ufunc_loop_inner_loop_body)
         for arg in self.inout_or_out_args:
             if arg.signature_shape != "()":
                 lines.extend([
