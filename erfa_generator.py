@@ -203,16 +203,6 @@ class Argument(Variable):
     def cast_pointer(self) -> str:
         return f"_{self.name} = (({self.ctype} (*){self.cshape}){self.name});"
 
-    @functools.cached_property
-    def cast_pointer_if_needed(self) -> str:
-        return "\n".join(
-            [
-                f"if (!copy_{self.name}) {{",
-                f"    {self.cast_pointer}",
-                "}",
-            ]
-        )
-
     def copy_elements(self, direction: str, name_suffix: str = "") -> str:
         name = self.name + name_suffix
         shape_description = "".join(str(n) for n in self.shape if n is not None)
@@ -581,26 +571,26 @@ class GUFunc(Function):
     @functools.cached_property
     def ufunc_loop_inner_loop_body(self) -> str:
         lines = []
-        for arg in self.in_args:  # copy input arguments to buffer if needed
+        for arg in self.c_args:
             if arg.signature_shape != "()":
                 lines.extend([
-                    arg.cast_pointer_if_needed,
-                    "else {",
-                    f"    {arg.copy_elements('to')}",
+                    f"if (!copy_{arg.name}) {{",
+                    f"    {arg.cast_pointer}",
                     "}",
                 ])
-        # for inout arguments, set up output first, and then copy to it if needed
-        for arg in self.inout_args:
-            if arg.signature_shape != "()":
-                lines.extend([
-                    arg.cast_pointer_if_needed,
-                    f"if (copy_{arg.name}_in || {arg.name} != {arg.name}_in) {{",
-                    f"    {arg.copy_elements('to', '_in')}",
-                    "}",
-                ])
-        lines.extend([  # set up gufunc outputs
-            a.cast_pointer_if_needed for a in self.out_args if a.signature_shape != "()"
-        ])
+                if arg in self.in_args:  # copy input arguments to buffer if needed
+                    lines.extend([
+                        "else {",
+                        f"    {arg.copy_elements('to')}",
+                        "}",
+                    ])
+                elif arg in self.inout_args:
+                    # for inout arguments copy to output if needed
+                    lines.extend([
+                        f"if (copy_{arg.name}_in || {arg.name} != {arg.name}_in) {{",
+                        f"    {arg.copy_elements('to', '_in')}",
+                        "}",
+                    ])
         lines.append(super().ufunc_loop_inner_loop_body)
         for arg in self.inout_or_out_args:
             if arg.signature_shape != "()":
