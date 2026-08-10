@@ -210,19 +210,6 @@ class Argument(Variable):
         args = [name, *[f"is_{name}{i}" for i in range(self.ndim)], self.name_for_call]
         return _assemble_func_call(func_name, args) + ";"
 
-    @functools.cached_property
-    def memcpy_if_needed(self) -> str:
-        size = 1
-        for s in self.shape:
-            if s is None:
-                raise RuntimeError("{self.name} size not known at compile-time")
-            size *= s
-        return (
-            f"if ({self.name}_in != {self.name}) {{\n"
-            f"    memcpy({self.name}, {self.name}_in, {size}*sizeof({self.ctype}));\n"
-            "}"
-        )
-
 
 class StatusCode(Variable):
     def __init__(self, ctype: str, doc: FunctionDoc, funcname: str) -> None:
@@ -436,10 +423,20 @@ class Function(ABC):
 
     @functools.cached_property
     def ufunc_loop_inner_loop_body(self) -> str:
-        lines = [
-            *[a.cast_pointer for a in self.c_args if a.signature_shape == "()"],
-            *[a.memcpy_if_needed for a in self.inout_args if a.signature_shape == "()"],
-        ]
+        lines = [*[a.cast_pointer for a in self.c_args if a.signature_shape == "()"]]
+        for arg in filter(lambda a: a.signature_shape == "()", self.inout_args):
+            size = 1
+            for s in arg.shape:
+                if s is None:
+                    raise RuntimeError(
+                        f"{arg.name} size in {self.name} not known at compile-time"
+                    )
+                size *= s
+            lines.extend([
+                f"if ({arg.name}_in != {arg.name}) {{",
+                f"    memcpy({arg.name}, {arg.name}_in, {size}*sizeof({arg.ctype}));",
+                "}",
+            ])
         call = _assemble_func_call(self.name, [a.name_for_call for a in self.c_args])
         if retval := self.c_retval:
             lines.extend([
