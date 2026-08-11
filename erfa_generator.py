@@ -12,6 +12,7 @@ import re
 import textwrap
 from abc import ABC, abstractproperty
 from collections.abc import Iterable, Sequence
+from itertools import chain
 from pathlib import Path
 from string import Template
 from typing import Final, final
@@ -182,22 +183,21 @@ class Argument(Variable):
                 return "(3, 3)"
         return super().signature_shape
 
-    def inner_loop_steps_and_copy(self, name_suffix: str = "") -> str | None:
+    def inner_loop_steps_and_copy(self, name_suffix: str = "") -> list[str]:
         if self.signature_shape == "()":
-            return None
+            return []
         name = self.name + name_suffix
         lines = [f"npy_intp is_{name}{i} = *steps++;" for i in range(self.ndim)]
         # copy should be made if buffer not contiguous;
         # note: one can only have 1 or 2 dimensions
-        lines.append(
-            f"int copy_{name} = (is_{name}0 != sizeof({self.ctype}));"
-            if self.ndim == 1
-            else (
-                f"int copy_{name} = (is_{name}1 != sizeof({self.ctype}) ||\n"
-                f"          is_{name}0 != {self.shape[1]} * sizeof({self.ctype}));"
-            )
-        )
-        return "\n".join(lines)
+        if self.ndim == 1:
+            lines.append(f"int copy_{name} = (is_{name}0 != sizeof({self.ctype}));")
+        else:
+            lines.extend([
+                f"int copy_{name} = (is_{name}1 != sizeof({self.ctype}) ||",
+                f"          is_{name}0 != {self.shape[1]} * sizeof({self.ctype}));",
+            ])
+        return lines
 
     @functools.cached_property
     def cast_pointer(self) -> str:
@@ -354,7 +354,7 @@ class Function(ABC):
     def signature(self) -> str:
         """Possible signature, if this function should be a gufunc."""
 
-    def generate_python_body(self) -> str:
+    def generate_python_body(self) -> list[str]:
         ufunc_name = f"ufunc.{self.pyname}"
         arg_names = [arg.name for arg in self.py_args]
         lines = [
@@ -373,20 +373,20 @@ class Function(ABC):
         )
         if len(lines) == 1 and not isinstance(self.c_retval, StatusCode):
             ufunc_call = f"{ufunc_name}({', '.join(arg_names)})"
-            return (
+            return [
                 f"return {self.py_return.name}(*{ufunc_call})"
                 if isinstance(self.py_return, ResultTuple)
                 else f"return {ufunc_call}"
-            )
+            ]
         lines.append(
             f"return {self.py_return.create()}"
             if isinstance(self.py_return, ResultTuple)
             else f"return {self.py_return.name}"
         )
-        return "\n".join(lines)
+        return lines
 
-    @functools.cached_property
-    def init_ufunc_loop_local_vars(self) -> str:
+    @property
+    def init_ufunc_loop_local_vars(self) -> list[str]:
         lines: list[str] = []
         for f in ("char *{} = *args++;".format, "npy_intp s_{} = *steps++;".format):
             lines.extend(f(arg.name) for arg in self.in_args)
@@ -402,7 +402,7 @@ class Function(ABC):
                 ])
         if self.c_retval:
             lines.append(f"{self.c_retval.ctype} _{self.c_retval.name};")
-        return "\n".join(lines)
+        return lines
 
     @functools.cached_property
     def ufunc_loop_template(self) -> Template:
@@ -421,8 +421,8 @@ class Function(ABC):
             ufunc_inner_loop_body=_indent(self.ufunc_loop_inner_loop_body, 2),
         )
 
-    @functools.cached_property
-    def ufunc_loop_inner_loop_body(self) -> str:
+    @property
+    def ufunc_loop_inner_loop_body(self) -> list[str]:
         lines = [*[a.cast_pointer for a in self.c_args if a.signature_shape == "()"]]
         for arg in filter(lambda a: a.signature_shape == "()", self.inout_args):
             size = 1
@@ -445,19 +445,19 @@ class Function(ABC):
             ])
         else:
             lines.append(call + ";")
-        return "\n".join(lines)
+        return lines
 
-    @functools.cached_property
-    def define_types_and_functions(self) -> str | None:
+    @property
+    def define_types_and_functions(self) -> list[str]:
         if self.user_dtype:
-            return None
+            return []
         # for non-structured functions, define there types and functions
         # as these do not get copied
         npy_types = [arg.npy_type for arg in self.py_args + self.ufunc_return]
-        return "\n".join([
+        return [
             f"static char types_{self.pyname}[{len(npy_types)}] = {{{', '.join(npy_types)}}};",
             f"static PyUFuncGenericFunction funcs_{self.pyname}[1] = {{ &ufunc_loop_{self.pyname} }};",
-        ])
+        ]
 
     @functools.cached_property
     def define_ufunc(self) -> str:
@@ -506,13 +506,11 @@ class Function(ABC):
 
     @functools.cached_property
     def python_wrapper(self) -> str:
-        return _indent(
-            "\n".join([
-                f"def {self.pyname}({', '.join(arg.name for arg in self.py_args)}):",
-                self.py_docstring,
-                self.generate_python_body(),
-            ])
-        )
+        return _indent([
+            f"def {self.pyname}({', '.join(arg.name for arg in self.py_args)}):",
+            *self.py_docstring.splitlines(),
+            *self.generate_python_body(),
+        ])
 
     @functools.cached_property
     def to_python(self) -> str:
@@ -551,22 +549,24 @@ class GUFunc(Function):
         )
         return Template((self.templateloc / template_file).read_text().strip())
 
-    @functools.cached_property
-    def init_ufunc_loop_local_vars(self) -> str:
-        lines = [super().init_ufunc_loop_local_vars]
+    @property
+    def init_ufunc_loop_local_vars(self) -> list[str]:
+        lines = super().init_ufunc_loop_local_vars
         lines.extend([  # only LDBODY has non-fixed dimension; it is always first
             "int nb = (int)dimensions[0];  /* Refuse to worry about INT_MAX */"
             for arg in self.in_args
             if arg.ctype == "eraLDBODY"
         ])
-        in_only = [a.inner_loop_steps_and_copy() for a in self.in_args]
-        inout = [a.inner_loop_steps_and_copy("_in") for a in self.inout_args]
-        out = [a.inner_loop_steps_and_copy() for a in self.inout_or_out_args]
-        lines.extend(filter(None, in_only + inout + out))
-        return "\n".join(lines)
+        for arg in self.in_args:
+            lines.extend(arg.inner_loop_steps_and_copy())
+        for arg in self.inout_args:
+            lines.extend(arg.inner_loop_steps_and_copy("_in"))
+        for arg in self.inout_or_out_args:
+            lines.extend(arg.inner_loop_steps_and_copy())
+        return lines
 
-    @functools.cached_property
-    def ufunc_loop_inner_loop_body(self) -> str:
+    @property
+    def ufunc_loop_inner_loop_body(self) -> list[str]:
         lines = []
         for arg in self.c_args:
             if arg.signature_shape != "()":
@@ -588,7 +588,7 @@ class GUFunc(Function):
                         f"    {arg.copy_elements('to', '_in')}",
                         "}",
                     ])
-        lines.append(super().ufunc_loop_inner_loop_body)
+        lines.extend(super().ufunc_loop_inner_loop_body)
         for arg in self.inout_or_out_args:
             if arg.signature_shape != "()":
                 lines.extend([
@@ -596,7 +596,7 @@ class GUFunc(Function):
                     f"    {arg.copy_elements('from')}",
                     "}",
                 ])
-        return "\n".join(lines)
+        return lines
 
 
 class Constant:
@@ -780,9 +780,12 @@ def _assemble_func_call(
     func_call = f"{name}({', '.join(in_args)})"
     return f"{', '.join(out_args)} = {func_call}" if out_args else func_call
 
-def _indent(text: str, levels: int = 1) -> str:
-    first, *others = text.split("\n", 1)
-    return f"{first}\n{textwrap.indent(others[0], levels * '    ')}" if others else text
+
+def _indent(lines: list[str], levels: int = 1) -> str:
+    for i in range(1, len(lines)):
+        if lines[i]:
+            lines[i] = levels * "    " + lines[i]
+    return "\n".join(lines)
 
 
 def _docstring_section_title(title: str) -> tuple[str, str, str]:
@@ -817,14 +820,12 @@ def main(srcdir: Path, templateloc: Path) -> None:
 
     _render_template(
         templateloc / "core.py.templ",
-        all_list=_indent(
-            "\n".join([
-                *[f'"{constant.name}",' for constant in constants],
-                '"ErfaError",',
-                '"ErfaWarning",',
-                *[f'"{func.pyname}",' for func in funcs],
-            ])
-        ),
+        all_list=_indent([
+            *[f'"{constant.name}",' for constant in constants],
+            '"ErfaError",',
+            '"ErfaWarning",',
+            *[f'"{func.pyname}",' for func in funcs],
+        ]),
         constants="\n".join(constant.define for constant in constants),
         funcs="\n\n\n".join([func.to_python for func in funcs]),
     )
@@ -833,9 +834,11 @@ def main(srcdir: Path, templateloc: Path) -> None:
         templateloc / "ufunc.c.templ",
         ufunc_loops="\n\n".join(func.ufunc_loop for func in funcs),
         type_and_func_definitions=_indent(
-            "\n".join(filter(None, [func.define_types_and_functions for func in funcs]))
+            list(chain(*[func.define_types_and_functions for func in funcs]))
         ),
-        ufunc_definitions=_indent("".join(func.define_ufunc for func in funcs)),
+        ufunc_definitions=_indent(
+            list(chain(*[func.define_ufunc.splitlines() for func in funcs]))
+        ),
     )
 
     create_test_funcs = functools.partial(
@@ -844,7 +847,7 @@ def main(srcdir: Path, templateloc: Path) -> None:
     _render_template(
         templateloc / "tests" / "test_ufunc.py.templ",
         test_functions="\n\n\n".join([
-            _indent("\n".join([f"def test_{tfunc.func.pyname}():", *tfunc.to_python()]))
+            _indent([f"def test_{tfunc.func.pyname}():", *tfunc.to_python()])
             for tfunc in sorted(
                 map(create_test_funcs, funcs), key=lambda f: f.func.name
             )
