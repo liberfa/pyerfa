@@ -234,10 +234,8 @@ class StatusCode(Variable):
         }
         self.can_fail: Final = list(self._statuscodes) != [0]
 
-    def to_python(self) -> str:
-        return "\n".join(
-            ["{", *[f'    {k!r}: "{v}",' for k, v in self._statuscodes.items()], "}"]
-        )
+    def to_python(self) -> list[str]:
+        return ["{", *[f'    {k!r}: "{v}",' for k, v in self._statuscodes.items()], "}"]
 
 
 class Return(Variable):
@@ -515,11 +513,6 @@ class Function(ABC):
     @functools.cached_property
     def to_python(self) -> str:
         lines = []
-        if (
-            isinstance((status_code := self.c_retval), StatusCode)
-            and status_code.can_fail
-        ):
-            lines.append(f'STATUS_CODES["{self.pyname}"] = {status_code.to_python()}')
         if isinstance(self.py_return, ResultTuple):
             lines.append(self.py_return.define())
         lines.append(self.python_wrapper)
@@ -805,6 +798,7 @@ def main(srcdir: Path, templateloc: Path) -> None:
             r"\w+ (\w+)\(.*?\);", (srcdir / "erfa.h").read_text(), flags=re.DOTALL
         )
     ]
+    funcs_sorted_by_name = sorted(funcs, key=lambda f: f.pyname)
 
     constants: list[Constant] = []
     for chunk in (srcdir / "erfam.h").read_text().split("\n\n"):
@@ -825,6 +819,11 @@ def main(srcdir: Path, templateloc: Path) -> None:
             '"ErfaError",',
             '"ErfaWarning",',
             *[f'"{func.pyname}",' for func in funcs],
+        ]),
+        status_code_entries=_indent([
+            f'"{func.pyname}": {_indent(scode.to_python())},'
+            for func in funcs_sorted_by_name
+            if isinstance((scode := func.c_retval), StatusCode) and scode.can_fail
         ]),
         constants="\n".join(constant.define for constant in constants),
         funcs="\n\n\n".join([func.to_python for func in funcs]),
@@ -848,9 +847,7 @@ def main(srcdir: Path, templateloc: Path) -> None:
         templateloc / "tests" / "test_ufunc.py.templ",
         test_functions="\n\n\n".join([
             _indent([f"def test_{tfunc.func.pyname}():", *tfunc.to_python()])
-            for tfunc in sorted(
-                map(create_test_funcs, funcs), key=lambda f: f.func.name
-            )
+            for tfunc in map(create_test_funcs, funcs_sorted_by_name)
         ]),
     )
 
