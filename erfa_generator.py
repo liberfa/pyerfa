@@ -11,7 +11,7 @@ import functools
 import re
 import textwrap
 from abc import ABC, abstractproperty
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from itertools import chain
 from pathlib import Path
 from string import Template
@@ -607,19 +607,26 @@ class Constant:
 class TestFunction:
     """Function holding information about a test in t_erfa_c.c"""
 
-    def __init__(self, func: Function, t_erfa_c: str) -> None:
+    def __init__(
+        self, func: Function, t_erfa_c: str, erfa_funcs: Mapping[str, Function]
+    ) -> None:
         self.func: Final = func
         # Get lines that test the given erfa function: capture everything
         # between a line starting with '{' after the test function definition
         # and the first line starting with '}' or ' }'.
         search = re.search(
-            rf"^static void t_{func.pyname}\(" + r".+?^\{(.+?)^\s?\}",
+            rf"^static void t_{func.pyname}\(.+?\).+?Called: (.+?)$.+?^\{{(.+?)^\s?\}}",
             t_erfa_c,
             re.DOTALL | re.MULTILINE,
         )
         if search is None:
             raise RuntimeError(f"cannot find the test for {func.name}")
-        source = re.sub(r"\s\s+", " ", search.group(1))
+        self.called_functions: Final[Mapping[str, Function]] = {
+            name: erfa_funcs[name]
+            for name in re.findall(r"(\w+),?", search.group(1))
+            if name not in (self.func.name, "and", "viv", "vvd")
+        }
+        source = re.sub(r"\s\s+", " ", search.group(2))
         self.definitions: Final = []
         self.lines: Final = []
         for line in re.findall(r" (.*?);", source):
@@ -726,22 +733,16 @@ class TestFunction:
                     line = 'astrom = astrom.view(np.recarray)'
 
             # In some test functions, there are calls to other ERFA functions.
-            # Deal with those in a super hacky way for now.
-            elif line.startswith('eraA'):
-                name, args = _get_funcname_and_args(line, "eraA", "erfa_ufunc.a")
+            elif called_func := self.called_functions.get(line.split("(", 1)[0]):
+                args = re.findall(r"&?(\w+)[,)]", line)
+                out_args = args[len(called_func.in_args) :]
+                if isinstance(called_func.c_retval, StatusCode):
+                    out_args.append("j")
                 line = _assemble_func_call(
-                    name,
-                    in_args=[arg for arg in args if "&" not in arg],
-                    out_args=[arg.replace("&", "") for arg in args if "&" in arg],
+                    f"erfa_ufunc.{called_func.pyname}",
+                    args[: len(called_func.py_args)],
+                    out_args,
                 )
-                if 'atioq' in line or 'atio13' in line or 'apio13' in line:
-                    line = line.replace(' =', ', j =')
-
-            # And the same for some other functions, which always have a
-            # 2-element time as inputs.
-            elif line.startswith('eraS'):
-                name, args = _get_funcname_and_args(line, "eraS", "erfa_ufunc.s")
-                line = _assemble_func_call(name, in_args=args[:2], out_args=args[2:])
 
             # Input number setting.
             elif '=' in line:
@@ -798,7 +799,7 @@ def main(srcdir: Path, templateloc: Path) -> None:
             r"\w+ (\w+)\(.*?\);", (srcdir / "erfa.h").read_text(), flags=re.DOTALL
         )
     ]
-    funcs_sorted_by_name = sorted(funcs, key=lambda f: f.pyname)
+    funcs_sorted_by_name = {f.name: f for f in sorted(funcs, key=lambda f: f.pyname)}
 
     constants: list[Constant] = []
     for chunk in (srcdir / "erfam.h").read_text().split("\n\n"):
@@ -822,7 +823,7 @@ def main(srcdir: Path, templateloc: Path) -> None:
         ]),
         status_code_entries=_indent([
             f'"{func.pyname}": {_indent(scode.to_python())},'
-            for func in funcs_sorted_by_name
+            for func in funcs_sorted_by_name.values()
             if isinstance((scode := func.c_retval), StatusCode) and scode.can_fail
         ]),
         constants="\n".join(constant.define for constant in constants),
@@ -841,13 +842,15 @@ def main(srcdir: Path, templateloc: Path) -> None:
     )
 
     create_test_funcs = functools.partial(
-        TestFunction, t_erfa_c=(srcdir / "t_erfa_c.c").read_text()
+        TestFunction,
+        t_erfa_c=(srcdir / "t_erfa_c.c").read_text(),
+        erfa_funcs=funcs_sorted_by_name,
     )
     _render_template(
         templateloc / "tests" / "test_ufunc.py.templ",
         test_functions="\n\n\n".join([
             _indent([f"def test_{tfunc.func.pyname}():", *tfunc.to_python()])
-            for tfunc in map(create_test_funcs, funcs_sorted_by_name)
+            for tfunc in map(create_test_funcs, funcs_sorted_by_name.values())
         ]),
     )
 
