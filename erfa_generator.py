@@ -650,8 +650,13 @@ class TestFunction:
                 # Is variable an array?
                 name, _, rest = var.partition("[")
                 if (
-                    not rest
+                    (not rest and ctype != "eraASTROM")
                     or name in self.func.doc.output  # no need to initialize outputs
+                    or any(
+                        name == arg.name
+                        for f in self.called_functions.values()
+                        for arg in f.ufunc_return
+                    )
                     or name == "iydmf"  # eraJdcalf test has a typo
                 ):
                     continue
@@ -661,7 +666,7 @@ class TestFunction:
                 shape = v.shape if v.signature_shape != "()" else "()"
                 dtype = "float" if v.dtype == "dt_double" else "erfa_ufunc." + v.dtype
                 defines.append(f"{name} = np.empty({shape}, {dtype})")
-                if ctype == "eraLDBODY":
+                if ctype in  ("eraASTROM", "eraLDBODY"):
                     # Special case, since this should be recarray for access similar
                     # to C struct.
                     defines[-1] += ".view(np.recarray)"
@@ -746,9 +751,6 @@ class TestFunction:
 
             # Input number setting.
             elif '=' in line:
-                # Hack to make astrom element assignment work.
-                if line.startswith('astrom'):
-                    out.append('astrom = np.zeros((), erfa_ufunc.dt_eraASTROM).view(np.recarray)')
                 # Change access to p and v elements for double[2][3] pv arrays
                 # that were not caught by the general replacement above (e.g.,
                 # with names not equal to 'pv')
