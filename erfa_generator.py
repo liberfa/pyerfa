@@ -715,23 +715,11 @@ class TestFunction:
             elif self.func.name in line:
                 # correct for LDBODY (complete hack!)
                 line = line.replace('3, b', 'b').replace('n, b', 'b')
-                name, arguments = _get_funcname_and_args(
-                    line, self.func.name, f"erfa_ufunc.{self.func.pyname}"
-                )
-                args = [
-                    str(int(arg, 8))  # convert any C octal integer literals
-                    if arg.startswith("0") and arg.isdigit()
-                    else arg.removeprefix("&")
-                    for arg in arguments
-                ]
-                out_args = args[len(self.func.in_args) :]
-                # If the call assigned something, that will have been the status.
-                # Prepend any arguments assigned in the call.
-                if " = " in name:
-                    status, name = name.split(" = ", 1)
-                    out_args.append(status)
+                in_args, out_args = _args_from_func_call(line, self.func)
+                if self.func.c_retval:
+                    out_args.append(line.split(" =", 1)[0])
                 line = _assemble_func_call(
-                    name, args[: len(self.func.py_args)], out_args
+                    f"erfa_ufunc.{self.func.pyname}", in_args, out_args
                 )
                 if 'astrom' in out_args:
                     out.append(line)
@@ -739,14 +727,11 @@ class TestFunction:
 
             # In some test functions, there are calls to other ERFA functions.
             elif called_func := self.called_functions.get(line.split("(", 1)[0]):
-                args = re.findall(r"&?(\w+)[,)]", line)
-                out_args = args[len(called_func.in_args) :]
+                in_args, out_args = _args_from_func_call(line, called_func)
                 if isinstance(called_func.c_retval, StatusCode):
                     out_args.append("j")
                 line = _assemble_func_call(
-                    f"erfa_ufunc.{called_func.pyname}",
-                    args[: len(called_func.py_args)],
-                    out_args,
+                    f"erfa_ufunc.{called_func.pyname}", in_args, out_args
                 )
 
             # Input number setting.
@@ -763,11 +748,17 @@ class TestFunction:
         return out
 
 
-def _get_funcname_and_args(
-    line: str, c_prefix: str, py_prefix: str
-) -> tuple[str, list[str]]:
-    funcname, args = line.replace(c_prefix, py_prefix).split("(", 1)
-    return funcname, [arg.strip() for arg in args.removesuffix(")").split(",")]
+def _args_from_func_call(line: str, func: Function) -> tuple[list[str], list[str]]:
+    args = [
+        arg.strip().removeprefix("&")
+        for arg in line.split("(", 1)[1].removesuffix(")").split(",")
+    ]
+    in_args = [
+        # convert any C octal integer literals       [
+        str(int(arg, 8)) if arg.startswith("0") and arg.isdigit() else arg
+        for arg in args[: len(func.py_args)]
+    ]
+    return in_args, args[len(func.in_args) :]
 
 
 def _assemble_func_call(
