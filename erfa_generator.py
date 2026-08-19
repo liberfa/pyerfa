@@ -712,8 +712,6 @@ class TestFunction:
 
             # Call of function that is being tested.
             elif self.func.name in line:
-                # correct for LDBODY (complete hack!)
-                line = line.replace('3, b', 'b').replace('n, b', 'b')
                 in_args, out_args = _args_from_func_call(line, self.func)
                 if self.func.c_retval:
                     out_args.append(line.split(" =", 1)[0])
@@ -743,6 +741,9 @@ def _args_from_func_call(line: str, func: Function) -> tuple[list[str], list[str
         arg.strip().removeprefix("&")
         for arg in line.split("(", 1)[1].removesuffix(")").split(",")
     ]
+    for i, elem in enumerate(func.c_args):
+        if elem.ctype == "eraLDBODY":
+            args.pop(i)  # pyerfa does not require array sizes as separate arguments.
     in_args = [
         # convert any C octal integer literals       [
         str(int(arg, 8)) if arg.startswith("0") and arg.isdigit() else arg
