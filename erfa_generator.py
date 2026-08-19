@@ -660,8 +660,9 @@ class TestFunction:
                     or name == "iydmf"  # eraJdcalf test has a typo
                 ):
                     continue
-                # Temporarily create an Argument, so we can use its attributes.
-                # This translates, e.g., double pv[2][3] to dtype dt_pv.
+                if name in self.dt_pv_vars:
+                    defines.append(f"{name} = np.void(None, erfa_ufunc.dt_pv)")
+                    continue
                 v = Argument(f"{ctype} {var}")
                 shape = v.shape if v.signature_shape != "()" else "()"
                 dtype = "float" if v.dtype == "dt_double" else "erfa_ufunc." + v.dtype
@@ -694,8 +695,6 @@ class TestFunction:
                     .replace('ERFA_', 'erfa.')
                     .replace('(void)', '')
                     .replace('(int)', '')
-                    .replace("pv[0]", "pv['p']")
-                    .replace("pv[1]", "pv['v']")
                     .replace("s, '-'", "s[0], b'-'")  # Rather hacky...
                     .replace("s, '+'", "s[0], b'+'")  # Rather hacky...
                     .strip())
@@ -733,15 +732,6 @@ class TestFunction:
                 line = _assemble_func_call(
                     f"erfa_ufunc.{called_func.pyname}", in_args, out_args
                 )
-
-            # Input number setting.
-            elif '=' in line:
-                # Change access to p and v elements for double[2][3] pv arrays
-                # that were not caught by the general replacement above (e.g.,
-                # with names not equal to 'pv')
-                name, _, rest = line.partition('[')
-                if name in self.dt_pv_vars and rest.startswith(("0", "1")):
-                    line = name + "[" + ("'p'" if rest[0] == "0" else "'v'") + rest[1:]
 
             out.append(line)
 
