@@ -287,7 +287,6 @@ class Function(ABC):
 
         self.py_args: Final = (*self.in_args, *self.inout_args)
         self.c_args: Final = (*self.py_args, *self.out_args)
-        self.inout_or_out_args: Final = (*self.inout_args, *self.out_args)
 
     @classmethod
     def from_c_code(cls, name: str, source_path: Path, templateloc: Path) -> "Function":
@@ -317,18 +316,18 @@ class Function(ABC):
     @functools.cached_property
     def py_return(self) -> Argument | Return | ResultTuple:
         returns: tuple[Argument | Return, ...] = (
-            (*self.inout_or_out_args, self.c_retval)
+            (*self.inout_args, *self.out_args, self.c_retval)
             if isinstance(self.c_retval, Return)
-            else self.inout_or_out_args
+            else (*self.inout_args, *self.out_args)
         )
         return returns[0] if len(returns) == 1 else ResultTuple(self.pyname, returns)
 
     @functools.cached_property
     def ufunc_return(self) -> tuple[Variable, ...]:
         return (
-            self.inout_or_out_args
+            (*self.inout_args, *self.out_args)
             if self.c_retval is None
-            else (*self.inout_or_out_args, self.c_retval)
+            else (*self.inout_args, *self.out_args, self.c_retval)
         )
 
     @property
@@ -550,11 +549,9 @@ class GUFunc(Function):
             for arg in self.in_args
             if arg.ctype == "eraLDBODY"
         ])
-        for arg in self.in_args:
-            lines.extend(arg.inner_loop_steps_and_copy())
-        for arg in self.inout_args:
-            lines.extend(arg.inner_loop_steps_and_copy("_in"))
-        for arg in self.inout_or_out_args:
+        for arg in self.c_args:
+            if arg in self.inout_args:
+                lines.extend(arg.inner_loop_steps_and_copy("_in"))
             lines.extend(arg.inner_loop_steps_and_copy())
         return lines
 
@@ -582,8 +579,8 @@ class GUFunc(Function):
                         "}",
                     ])
         lines.extend(super().ufunc_loop_inner_loop_body)
-        for arg in self.inout_or_out_args:
-            if arg.signature_shape != "()":
+        for arg in self.c_args:
+            if arg.signature_shape != "()" and arg not in self.in_args :
                 lines.extend([
                     f"if (copy_{arg.name}) {{",
                     f"    {arg.copy_elements('from')}",
