@@ -224,18 +224,18 @@ class StatusCode(Variable):
             raise RuntimeError(
                 f"cannot find status code description in {funcname} doc comment"
             )
-        self._statuscodes: Final = {
+        self.descriptons: Final = {
             "else" if code == "else" else int(code): " ".join(
                 line.strip() for line in description.splitlines()
             )
             for code, description in re.findall(
                 r"(-?\w+) = ((?:[^=]+$)+)", status.group(1), re.MULTILINE
             )
+            if code != "0"
         }
-        self.can_fail: Final = list(self._statuscodes) != [0]
 
     def to_python(self) -> list[str]:
-        return ["{", *[f'    {k!r}: "{v}",' for k, v in self._statuscodes.items()], "}"]
+        return ["{", *[f'    {k!r}: "{v}",' for k, v in self.descriptons.items()], "}"]
 
 
 class Return(Variable):
@@ -361,7 +361,7 @@ class Function(ABC):
                 out_args=[arg.name for arg in self.ufunc_return],
             )
         ]
-        if isinstance(self.c_retval, StatusCode) and self.c_retval.can_fail:
+        if isinstance(self.c_retval, StatusCode) and self.c_retval.descriptons:
             lines.append(f'check_errwarn({self.c_retval.name}, "{self.pyname}")')
         lines.extend(
             f"{arg.name} = {arg.name}.view(dt_bytes1)"
@@ -805,7 +805,7 @@ def main(srcdir: Path, templateloc: Path) -> None:
         status_code_entries=_indent([
             f'"{func.pyname}": {_indent(scode.to_python())},'
             for func in funcs_sorted_by_name.values()
-            if isinstance((scode := func.c_retval), StatusCode) and scode.can_fail
+            if isinstance((scode := func.c_retval), StatusCode) and scode.descriptons
         ]),
         constants="\n".join(constant.define for constant in constants),
         funcs="\n\n\n".join([func.to_python for func in funcs]),
