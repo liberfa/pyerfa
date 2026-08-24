@@ -517,6 +517,16 @@ class Function(ABC):
         lines.append(self.python_wrapper)
         return "\n\n\n".join(lines)
 
+    @functools.cached_property
+    def ufunc_signature(self) -> str:
+        param_types = ", ".join(f"{arg.name}: Any" for arg in self.py_args)
+        return_type = (
+            "Any"
+            if len(self.ufunc_return) == 1
+            else f"tuple[{', '.join('Any' for arg in self.ufunc_return)}]"
+        )
+        return f"def {self.pyname}({param_types}) -> {return_type}: ..."
+
 
 class UFunc(Function):
     @functools.cached_property
@@ -830,9 +840,14 @@ def main(srcdir: Path, templateloc: Path) -> None:
     _render_template(
         templateloc / "tests" / "test_ufunc.py.templ",
         test_functions="\n\n\n".join([
-            _indent([f"def test_{tfunc.func.pyname}():", *tfunc.to_python()])
+            _indent([f"def test_{tfunc.func.pyname}() -> None:", *tfunc.to_python()])
             for tfunc in map(create_test_funcs, funcs_sorted_by_name.values())
         ]),
+    )
+
+    _render_template(
+        templateloc / "ufunc.pyi.templ",
+        funcs="\n\n\n".join(func.ufunc_signature for func in funcs),
     )
 
 
