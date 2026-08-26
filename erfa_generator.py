@@ -519,13 +519,21 @@ class Function(ABC):
 
     @functools.cached_property
     def ufunc_signature(self) -> str:
-        param_types = ", ".join(f"{arg.name}: Any" for arg in self.py_args)
+        out_types = (
+            f"tuple[{', '.join('NDArray[Any] | None' for arg in self.ufunc_return)}]"
+        )
+        if len(self.ufunc_return) == 1:
+            out_types += " | NDArray[Any]"
+        param_types = [
+            *[f"{arg.name}: Any" for arg in self.py_args],
+            f"out: {out_types} | EllipsisType | None = None",
+        ]
         return_type = (
             "Any"
             if len(self.ufunc_return) == 1
             else f"tuple[{', '.join('Any' for arg in self.ufunc_return)}]"
         )
-        return f"def {self.pyname}({param_types}) -> {return_type}: ..."
+        return f"def {self.pyname}({', '.join(param_types)}) -> {return_type}: ..."
 
 
 class UFunc(Function):
