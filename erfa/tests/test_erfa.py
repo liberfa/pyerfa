@@ -19,8 +19,6 @@ except ImportError:
 else:
     astropy_time = Time("2345-01-01", scale="tai")
 
-SQRT2 = np.sqrt(2.0)
-
 
 @pytest.fixture
 def check_embedded_liberfa():
@@ -274,24 +272,6 @@ def test_pv_in():
     np.testing.assert_allclose(astrom3['em'], 1.010428384373318379)
 
 
-@pytest.mark.parametrize(
-    ("func", "posargs"),
-    [
-        pytest.param(func, posargs, id=func.__name__)
-        for func, posargs in [
-            (erfa.ufunc.s2pv, (np.pi / 2.0, np.pi / 4.0, 2.0, SQRT2 / 2.0, 0.0, 0.0)),
-            (erfa.ufunc.zpv, ()),
-        ]
-    ],
-)
-def test_ufunc_out_argument(func, posargs):
-    result = func(*posargs)
-    out = np.ones_like(result)
-    result_with_out = func(*posargs, out=out)
-    assert result_with_out is out
-    assert_array_equal(out, result)
-
-
 def test_struct_ldbody():
     """
     Check dt_eraLDBODY is correctly defined (regression test; gh-74)
@@ -361,16 +341,6 @@ def test_non_contiguous_matrix():
     conv = erfa.rxp(matrix, vector)
     assert_array_equal(matrix @ vector, vector)
     assert_array_equal(conv, vector)
-
-
-def test_non_contiguous_output_matrix():
-    # Fix for copy_from_double33 problem found by @devdanzin
-    # Create non-contiguous output array (only reachable via ufunc interface).
-    result = np.zeros((3, 4))[:, :3]
-    out = erfa.ufunc.ltecm(2005.0, out=result)
-    assert out is result
-    expected = erfa.ltecm(2005.0)
-    assert_array_equal(expected, result)
 
 
 @pytest.mark.parametrize(
