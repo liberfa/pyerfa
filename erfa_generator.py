@@ -502,20 +502,17 @@ class Function(ABC):
         return "\n".join(lines)
 
     @functools.cached_property
-    def python_wrapper(self) -> str:
-        return _indent([
+    def to_python(self) -> str:
+        wrapper = _indent([
             f"def {self.pyname}({', '.join(arg.name for arg in self.py_args)}):",
             *self.py_docstring.splitlines(),
             *self.generate_python_body(),
         ])
-
-    @functools.cached_property
-    def to_python(self) -> str:
-        lines = []
-        if isinstance(self.py_return, ResultTuple):
-            lines.append(self.py_return.define())
-        lines.append(self.python_wrapper)
-        return "\n\n\n".join(lines)
+        return (
+            f"{self.py_return.define()}\n\n\n{wrapper}"
+            if isinstance(self.py_return, ResultTuple)
+            else wrapper
+        )
 
     @functools.cached_property
     def ufunc_signature(self) -> str:
