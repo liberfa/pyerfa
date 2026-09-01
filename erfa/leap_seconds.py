@@ -33,8 +33,6 @@ import numpy as np
 from .core import ErfaWarning
 from .ufunc import dt_eraLEAPSECOND, get_leap_seconds, set_leap_seconds
 
-NUMPY_LT_2_0 = np.__version__.startswith("1.")
-
 
 def __getattr__(name):
     if name == "expires":
@@ -112,8 +110,7 @@ def validate(table):
     if hasattr(table, "__array__"):
         table = table.__array__()[list(dt_eraLEAPSECOND.names)]
 
-    table = np.array(table, dtype=dt_eraLEAPSECOND, ndmin=1,
-                     copy=False if NUMPY_LT_2_0 else None)
+    table = np.array(table, dtype=dt_eraLEAPSECOND, ndmin=1, copy=None)
 
     # Simple sanity checks.
     if table.ndim > 1:

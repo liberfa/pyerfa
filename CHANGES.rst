@@ -7,7 +7,7 @@
   unavoidable ``KeyError``. [gh-234]
 - ``erfa.cal2jd()`` no longer raises an unexpected ``TypeError`` instead of an
   ``ErfaError`` or ``ErfaWarning`` if all its inputs are scalars. [gh-235]
-- ``pyerfa`` now requires ``numpy`` 1.24 or later. [gh-250]
+- ``pyerfa`` now requires ``numpy`` 2.0 or later. [gh-329]
 
 2.0.1.6 (2025-01-27)
 ====================
