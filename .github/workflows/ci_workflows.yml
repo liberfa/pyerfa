@@ -98,7 +98,7 @@ jobs:
             python: '3.10'
             toxenv: test
             toxargs: -v
-            apt_packages: python3-venv python3-pip liberfa-dev python3-numpy
+            apt_packages: python3-venv python3-pip liberfa-dev
 
     steps:
     - name: Checkout code
