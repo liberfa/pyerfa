@@ -63,6 +63,10 @@ jobs:
         fetch-depth: 0
         submodules: true
         persist-credentials: false
+    - name: Fetch tags from upstream
+      # setuptools_scm needs the release tags to compute the version; forks
+      # don't carry tags added to liberfa/pyerfa after they were created.
+      run: git fetch --tags --no-recurse-submodules https://github.com/liberfa/pyerfa.git
     - name: Set up Python
       uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
       with:
@@ -106,6 +110,10 @@ jobs:
         fetch-depth: 0
         submodules: true
         persist-credentials: false
+    - name: Fetch tags from upstream
+      # setuptools_scm needs the release tags to compute the version; forks
+      # don't carry tags added to liberfa/pyerfa after they were created.
+      run: git fetch --tags --no-recurse-submodules https://github.com/liberfa/pyerfa.git
     - name: Set up Python
       uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
     - name: Install APT packages
