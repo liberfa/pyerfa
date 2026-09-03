@@ -45,13 +45,13 @@ jobs:
 
           - name: Test with development versions of our dependencies
             os: ubuntu-latest
-            python: '3.14'
+            python: '3.x'
             toxenv: test-devdeps
             toxargs: -v
 
           - name: Documentation build
-            os: ubuntu-latest
-            python: 3.x
+            os: ubuntu-22.04
+            python: '3.10'
             toxenv: build_docs
             toxargs: -v
             apt_packages: graphviz
@@ -95,7 +95,6 @@ jobs:
 
           - name: Tests with external liberfa
             os: ubuntu-latest
-            python: '3.10'
             toxenv: test
             toxargs: -v
             apt_packages: python3-venv python3-pip liberfa-dev
@@ -109,8 +108,6 @@ jobs:
         persist-credentials: false
     - name: Set up Python
       uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-      with:
-        python-version: ${{ matrix.python }}
     - name: Install APT packages
       if: matrix.apt_packages
       run: sudo apt-get install ${{ matrix.apt_packages }}
