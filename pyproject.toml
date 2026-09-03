@@ -112,3 +112,10 @@ files = [
 
 [tool.uv]
 prerelease = "allow"
+# Some dependencies don't yet publish riscv64 wheels to PyPI; fall back to
+# RISE's index, which does, instead of building from sdist.
+index-strategy = "unsafe-best-match"
+
+[[tool.uv.index]]
+name = "riseproject"
+url = "https://pypi.riseproject.dev/simple/"
