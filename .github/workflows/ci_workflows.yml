@@ -30,7 +30,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest, windows-11-arm]
+        os: [ubuntu-latest, macos-latest, windows-latest, windows-11-arm, ubuntu-24.04-riscv]
         python: ['3']
         toxenv: [test]
         toxargs: [-v]
