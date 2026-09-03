@@ -109,3 +109,6 @@ files = [
     "setup.py",
     "erfa/tests/test_ufunc.py"
 ]
+
+[tool.uv]
+prerelease = "allow"
