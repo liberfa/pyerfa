@@ -39,7 +39,7 @@ jobs:
 
           - name: Test with oldest supported versions of our dependencies
             os: ubuntu-22.04
-            python: '3.10'
+            python: '3.11'
             toxenv: test-oldestdeps
             toxargs: -v
 
@@ -51,7 +51,7 @@ jobs:
 
           - name: Documentation build
             os: ubuntu-22.04
-            python: '3.10'
+            python: '3.11'
             toxenv: build_docs
             toxargs: -v
             apt_packages: graphviz

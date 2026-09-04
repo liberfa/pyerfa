@@ -24,7 +24,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Physics",
 ]
 urls = {Homepage = "https://github.com/liberfa/pyerfa"}
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = ["numpy>=2.0.0"]
 dynamic = ["version"]
 
@@ -73,7 +73,6 @@ xfail_strict = true
 enable = ["pypy"]
 skip = [
     "cp314t-*",
-    "cp310-win_arm64",
 ]
 
 [tool.ruff.lint]

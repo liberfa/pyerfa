@@ -2,7 +2,7 @@
 ====================
 - Let multi-output functions now return a ``namedtuple`` so that
   the various results can be accessed by attribute. [gh-176]
-- ``pyerfa`` now requires Python 3.10 or later. [gh-185]
+- ``pyerfa`` now requires Python 3.11 or later. [gh-335]
 - The ``erfa.tpors()`` and ``erfa.tporv()`` functions no longer raise an
   unavoidable ``KeyError``. [gh-234]
 - ``erfa.cal2jd()`` no longer raises an unexpected ``TypeError`` instead of an

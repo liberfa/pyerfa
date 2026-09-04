@@ -26,8 +26,8 @@ USE_PY_LIMITED_API = not sysconfig.get_config_var("Py_GIL_DISABLED")
 define_macros: list[tuple[str, str | None]] = []
 options = {}
 if USE_PY_LIMITED_API:
-    define_macros.append(("Py_LIMITED_API", "0x30a00f0"))
-    options["bdist_wheel"] = {"py_limited_api": "cp310"}
+    define_macros.append(("Py_LIMITED_API", "0x30b00f0"))
+    options["bdist_wheel"] = {"py_limited_api": "cp311"}
 
 
 def get_liberfa_versions(
