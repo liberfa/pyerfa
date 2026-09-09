@@ -265,7 +265,7 @@ ensure_dtype_nbo(PyArray_Descr *type)
 {
     /* MHvK: changed from PyArray_ISNBO(type->byteorder) */
     if (PyDataType_ISNOTSWAPPED(type)) {
-        Py_INCREF(type);
+        Py_INCREF((PyObject*)(type));
         return type;
     }
     else {
@@ -293,7 +293,7 @@ set_ufunc_loop_data_types(PyUFuncObject *self, PyArrayObject **op,
     for (i = 0; i < nop; ++i) {
         if (dtypes != NULL) {
             out_dtypes[i] = dtypes[i];
-            Py_XINCREF(out_dtypes[i]);
+            Py_XINCREF((PyObject*)(out_dtypes[i]));
         /*
          * Copy the dtype from 'op' if the type_num matches,
          * to preserve metadata.
@@ -445,7 +445,7 @@ get_leap_seconds(PyObject *NPY_UNUSED(module), PyObject *NPY_UNUSED(args)) {
         return NULL;
     }
     /* Allocate an array to hold them */
-    Py_INCREF(dt_eraLEAPSECOND);
+    Py_INCREF((PyObject*)(dt_eraLEAPSECOND));
     array = (PyArrayObject *)PyArray_NewFromDescr(
         &PyArray_Type, dt_eraLEAPSECOND, 1, &count, NULL, NULL, 0, NULL);
     if (array == NULL) {
@@ -471,7 +471,7 @@ set_leap_seconds(PyObject *NPY_UNUSED(module), PyObject *args) {
          * Ensure a copy is made so one cannot change the data by changing
          * the input array.
          */
-        Py_INCREF(dt_eraLEAPSECOND);
+        Py_INCREF((PyObject*)(dt_eraLEAPSECOND));
         array = (PyArrayObject *)PyArray_FromAny(leap_seconds, dt_eraLEAPSECOND,
                     1, 1, (NPY_ARRAY_CARRAY | NPY_ARRAY_ENSURECOPY), NULL);
         if (array == NULL) {
@@ -718,20 +718,20 @@ fail:
     Py_XDECREF(dtype_def);
     Py_XDECREF(erfa_version);
     Py_XDECREF(sofa_version);
-    Py_XDECREF(ufunc);
+    Py_XDECREF((PyObject*)(ufunc));
 
 decref:
-    Py_XDECREF(dt_double);
-    Py_XDECREF(dt_int);
-    Py_XDECREF(dt_pv);
-    Py_XDECREF(dt_pvdpv);
-    Py_XDECREF(dt_ymdf);
-    Py_XDECREF(dt_hmsf);
-    Py_XDECREF(dt_dmsf);
-    Py_XDECREF(dt_sign);
-    Py_XDECREF(dt_type);
-    Py_XDECREF(dt_eraASTROM);
-    Py_XDECREF(dt_eraLDBODY);
-    Py_XDECREF(dt_eraLEAPSECOND);
+    Py_XDECREF((PyObject*)(dt_double));
+    Py_XDECREF((PyObject*)(dt_int));
+    Py_XDECREF((PyObject*)(dt_pv));
+    Py_XDECREF((PyObject*)(dt_pvdpv));
+    Py_XDECREF((PyObject*)(dt_ymdf));
+    Py_XDECREF((PyObject*)(dt_hmsf));
+    Py_XDECREF((PyObject*)(dt_dmsf));
+    Py_XDECREF((PyObject*)(dt_sign));
+    Py_XDECREF((PyObject*)(dt_type));
+    Py_XDECREF((PyObject*)(dt_eraASTROM));
+    Py_XDECREF((PyObject*)(dt_eraLDBODY));
+    Py_XDECREF((PyObject*)(dt_eraLEAPSECOND));
     return m;
 }
