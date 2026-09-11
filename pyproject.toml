@@ -24,7 +24,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Physics",
 ]
 urls = {Homepage = "https://github.com/liberfa/pyerfa"}
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = ["numpy>=2.0.0"]
 dynamic = ["version"]
 
@@ -70,7 +70,6 @@ addopts = "--doctest-rst"
 xfail_strict = true
 
 [tool.cibuildwheel]
-enable = ["pypy"]
 skip = [
     "cp314t-*",
 ]
