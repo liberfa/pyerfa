@@ -105,5 +105,6 @@ ignore = [
 files = [
     "erfa_generator.py",
     "setup.py",
-    "erfa/tests/test_ufunc.py"
+    "erfa/tests/test_ufunc.py",
+    "erfa/tests/test_ufunc_interface.py",
 ]
