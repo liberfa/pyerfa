@@ -11,6 +11,13 @@ from erfa import ufunc
 SQRT2: Final = np.sqrt(2.0)
 
 
+def test_erfa_parameters_are_positional_only() -> None:
+    with pytest.raises(
+        TypeError, match="takes from 2 to 3 positional arguments but 0 were given"
+    ):
+        ufunc.gmst82(dj1=2400000.5, dj2=53736.0)  # type: ignore[call-arg]
+
+
 def test_positional_out() -> None:
     pos_args = ([-0.763, -0.608, -0.216], [2.104e-5, -8.910e-5, -3.863e-5], 0.9998, 1)
     result = ufunc.ab(*pos_args)
