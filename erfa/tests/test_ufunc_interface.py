@@ -66,7 +66,7 @@ def test_out_ellipsis() -> None:
     assert_array_equal(ellipsis_result, none_result)
 
 
-def test_non_contiguous_output_matrix():
+def test_non_contiguous_output_matrix() -> None:
     # Fix for copy_from_double33 problem found by @devdanzin
     # Create non-contiguous output array (only reachable via ufunc interface).
     result = np.zeros((3, 4))[:, :3]

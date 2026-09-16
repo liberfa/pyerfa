@@ -108,3 +108,9 @@ files = [
     "erfa/tests/test_ufunc.py",
     "erfa/tests/test_ufunc_interface.py",
 ]
+follow_imports = "silent"
+strict = true
+
+[[tool.mypy.overrides]]
+module = ["erfa"]
+implicit_reexport = true
