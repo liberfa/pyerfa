@@ -521,10 +521,10 @@ class Function(ABC):
         )
         if len(self.ufunc_return) == 1:
             out_types += " | np.ndarray"
-        param_types = [
-            *[f"{arg.name}: Any" for arg in self.py_args],
-            f"out: {out_types} | EllipsisType | None = None",
-        ]
+        param_types = [f"{arg.name}: Any" for arg in self.py_args]
+        if param_types:
+            param_types.append("/")
+        param_types.append(f"out: {out_types} | EllipsisType | None = None")
         return_type = (
             "Any"
             if len(self.ufunc_return) == 1
