@@ -99,6 +99,11 @@ class Variable:
     def signature_shape(self) -> str:
         return "()"
 
+    @functools.cached_property
+    def py_type(self) -> str:
+        return "Any"
+
+
 class Argument(Variable):
     def __init__(self, definition: str) -> None:
         ctype, ptr_name_arr = definition.strip().rsplit(" ", 1)
@@ -236,6 +241,10 @@ class StatusCode(Variable):
 
     def to_python(self) -> list[str]:
         return ["{", *[f'    {k!r}: "{v}",' for k, v in self.descriptons.items()], "}"]
+
+    @functools.cached_property
+    def py_type(self) -> str:
+        return "np.intc | NDArray[np.intc]"
 
 
 class Return(Variable):
@@ -525,11 +534,14 @@ class Function(ABC):
         if param_types:
             param_types.append("/")
         param_types.append(f"out: {out_types} | EllipsisType | None = None")
+
+        return_types = [arg.py_type for arg in self.ufunc_return]
         return_type = (
-            "Any"
+            return_types[0]
             if len(self.ufunc_return) == 1
-            else f"tuple[{', '.join('Any' for arg in self.ufunc_return)}]"
+            else f"tuple[{', '.join(return_types)}]"
         )
+
         return f"def {self.pyname}({', '.join(param_types)}) -> {return_type}: ..."
 
 

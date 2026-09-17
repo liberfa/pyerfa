@@ -107,6 +107,7 @@ files = [
     "setup.py",
     "erfa/tests/test_ufunc.py",
     "erfa/tests/test_ufunc_interface.py",
+    "erfa/tests/test_ufunc_types.py",
 ]
 follow_imports = "silent"
 strict = true
