@@ -6,7 +6,7 @@
 # update it.
 
 from types import EllipsisType
-from typing import Any, Final
+from typing import Any, Final, Self, SupportsIndex, overload, type_check_only
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
@@ -16,16 +16,51 @@ sofa_version: Final[str]
 
 dt_dmsf: Final[np.dtypes.VoidDType]
 dt_eraASTROM: Final[np.dtypes.VoidDType]
-dt_eraLEAPSECOND: Final[np.dtypes.VoidDType]
 dt_eraLDBODY: Final[np.dtypes.VoidDType]
 dt_hmsf: Final[np.dtypes.VoidDType]
 dt_pv: Final[np.dtypes.VoidDType]
-dt_sign: Final[np.dtypes.VoidDType]
 dt_type: Final[np.dtypes.VoidDType]
 dt_ymdf: Final[np.dtypes.VoidDType]
 
 
-def get_leap_seconds() -> NDArray[Any]: ...
+@type_check_only
+class CustomVoidDType[T: np.generic](np.void):  # type: ignore[misc]
+    @overload  # type: ignore[override]
+    def __getitem__(self, key: tuple[()], /) -> Self: ...
+    @overload
+    def __getitem__(
+        self, key: EllipsisType | tuple[EllipsisType], /
+    ) -> np.ndarray[tuple[()], np.dtype[Self]]: ...
+    @overload
+    def __getitem__(
+        self, key: None | tuple[None], /
+    ) -> np.ndarray[tuple[int], np.dtype[Self]]: ...
+    @overload
+    def __getitem__(
+        self, key: tuple[None, None], /
+    ) -> np.ndarray[tuple[int, int], np.dtype[Self]]: ...
+    @overload
+    def __getitem__(
+        self, key: tuple[None, None, None], /
+    ) -> np.ndarray[tuple[int, int, int], np.dtype[Self]]: ...
+    @overload
+    def __getitem__(self, key: tuple[None, *tuple[None, ...]], /) -> NDArray[Self]: ...
+    @overload
+    def __getitem__(self, key: tuple[None, ...], /) -> Self | NDArray[Self]: ...
+    @overload
+    def __getitem__(self, key: str | SupportsIndex, /) -> T: ...
+    @overload
+    def __getitem__(self, key: list[str], /) -> Self: ...
+
+
+type LeapSecondDType = CustomVoidDType[np.intc | np.float64]
+dt_eraLEAPSECOND: Final[LeapSecondDType]
+
+type SignDType = CustomVoidDType[np.bytes_]
+dt_sign: Final[SignDType]
+
+
+def get_leap_seconds() -> np.ndarray[tuple[int], np.dtype[LeapSecondDType]]: ...
 
 
 def set_leap_seconds(leap_seconds: ArrayLike) -> None: ...
