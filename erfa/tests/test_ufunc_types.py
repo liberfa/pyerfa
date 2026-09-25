@@ -21,6 +21,14 @@ def test_status_codes_array() -> None:
     assert scode.dtype == np.intc
 
 
+def test_leap_seconds() -> None:
+    leap_seconds = ufunc.get_leap_seconds()
+    assert_type(leap_seconds, np.ndarray[tuple[int], np.dtype["ufunc.LeapSecondDType"]])
+    assert isinstance(leap_seconds, np.ndarray)
+    assert leap_seconds.ndim == 1
+    assert leap_seconds.dtype == ufunc.dt_eraLEAPSECOND
+
+
 def test_dt_sign_scalar() -> None:
     sign, _ = ufunc.a2af(4, 2.345)
     assert_type(sign, Union["ufunc.SignDType", NDArray["ufunc.SignDType"]])

@@ -16,7 +16,6 @@ sofa_version: Final[str]
 
 dt_dmsf: Final[np.dtypes.VoidDType]
 dt_eraASTROM: Final[np.dtypes.VoidDType]
-dt_eraLEAPSECOND: Final[np.dtypes.VoidDType]
 dt_eraLDBODY: Final[np.dtypes.VoidDType]
 dt_hmsf: Final[np.dtypes.VoidDType]
 dt_pv: Final[np.dtypes.VoidDType]
@@ -54,11 +53,14 @@ class CustomVoidDType[T: np.generic](np.void):  # type: ignore[misc]
     def __getitem__(self, key: list[str], /) -> Self: ...
 
 
+type LeapSecondDType = CustomVoidDType[np.intc | np.float64]
+dt_eraLEAPSECOND: Final[LeapSecondDType]
+
 type SignDType = CustomVoidDType[np.bytes_]
 dt_sign: Final[SignDType]
 
 
-def get_leap_seconds() -> NDArray[Any]: ...
+def get_leap_seconds() -> np.ndarray[tuple[int], np.dtype[LeapSecondDType]]: ...
 
 
 def set_leap_seconds(leap_seconds: ArrayLike) -> None: ...
