@@ -101,7 +101,11 @@ class Variable:
 
     @functools.cached_property
     def py_type(self) -> str:
-        return "Any"
+        match self.dtype:
+            case "dt_sign":
+                return "SignDType | NDArray[SignDType]"
+            case _:
+                return "Any"
 
 
 class Argument(Variable):
