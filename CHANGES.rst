@@ -8,6 +8,9 @@
 - ``erfa.cal2jd()`` no longer raises an unexpected ``TypeError`` instead of an
   ``ErfaError`` or ``ErfaWarning`` if all its inputs are scalars. [gh-235]
 - ``pyerfa`` now requires ``numpy`` 2.0 or later. [gh-329]
+- The field of the ``dt_dmsf`` dtype that contains degrees is now named ``"d"``
+  as expected, instead of ``"h"``. The dtype is used in the output of
+  ``erfa.a2af()`` and the corresponding ufunc. [gh-343]
 
 2.0.1.6 (2025-01-27)
 ====================
