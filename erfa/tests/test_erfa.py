@@ -372,6 +372,11 @@ def test_scalar_cal2jd_warning():
         erfa.cal2jd(2026, 11, 2026)
 
 
+def test_dt_dmsf_field_names():
+    # Regression test for #343 - the degrees field was named "h".
+    assert erfa.a2af(1, 3 / 4 * np.pi).idmsf["d"] == 135
+
+
 class TestAstromNotInplace:
     def setup_method(self):
         self.mjd_array = np.array(

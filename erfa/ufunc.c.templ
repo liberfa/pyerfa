@@ -616,7 +616,7 @@ PyMODINIT_FUNC PyInit_ufunc(void)
     }
     Py_DECREF(dtype_def);
     dtype_def = Py_BuildValue("[(s, s), (s, s), (s, s), (s, s)]",
-                              "h", "i4", "m", "i4", "s", "i4", "f", "i4");
+                              "d", "i4", "m", "i4", "s", "i4", "f", "i4");
     if (!(dtype_def && PyArray_DescrAlignConverter(dtype_def, &dt_dmsf))) {
         goto fail;
     }
