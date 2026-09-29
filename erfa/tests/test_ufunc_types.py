@@ -21,6 +21,53 @@ def test_status_codes_array() -> None:
     assert scode.dtype == np.intc
 
 
+def test_dt_dmsf_scalar() -> None:
+    _, idmsf = ufunc.a2af(4, 2.345)
+    assert_type(idmsf, Union["ufunc.DMSFDType", NDArray["ufunc.DMSFDType"]])
+    assert isinstance(idmsf, np.void)
+    assert idmsf.dtype == ufunc.dt_dmsf
+
+    assert_type(idmsf["d"], np.intc)
+    # Also a regression test for #343 - the degrees field was named "h".
+    assert idmsf["d"].dtype == np.intc
+    assert_type(idmsf["m"], np.intc)
+    assert idmsf["m"].dtype == np.intc
+    assert_type(idmsf["s"], np.intc)
+    assert idmsf["s"].dtype == np.intc
+    assert_type(idmsf["f"], np.intc)
+    assert idmsf["f"].dtype == np.intc
+
+
+def test_dt_dmsf_array() -> None:
+    _, idmsf = ufunc.a2af([4], 2.345)
+    assert_type(idmsf, Union["ufunc.DMSFDType", NDArray["ufunc.DMSFDType"]])
+    assert type(idmsf) is np.ndarray
+    assert idmsf.dtype == ufunc.dt_dmsf
+
+
+def test_dt_hmsf_scalar() -> None:
+    _, ihmsf = ufunc.d2tf(4, -0.987654321)
+    assert_type(ihmsf, Union["ufunc.HMSFDType", NDArray["ufunc.HMSFDType"]])
+    assert isinstance(ihmsf, np.void)
+    assert ihmsf.dtype == ufunc.dt_hmsf
+
+    assert_type(ihmsf["h"], np.intc)
+    assert ihmsf["h"].dtype == np.intc
+    assert_type(ihmsf["m"], np.intc)
+    assert ihmsf["m"].dtype == np.intc
+    assert_type(ihmsf["s"], np.intc)
+    assert ihmsf["s"].dtype == np.intc
+    assert_type(ihmsf["f"], np.intc)
+    assert ihmsf["f"].dtype == np.intc
+
+
+def test_dt_hmsf_array() -> None:
+    _, _, _, ihmsf, _ = ufunc.d2dtf("UTC", [5], 2400000.5, 49533.99999)
+    assert_type(ihmsf, Union["ufunc.HMSFDType", NDArray["ufunc.HMSFDType"]])
+    assert type(ihmsf) is np.ndarray
+    assert ihmsf.dtype == ufunc.dt_hmsf
+
+
 def test_leap_seconds() -> None:
     leap_seconds = ufunc.get_leap_seconds()
     assert_type(leap_seconds, np.ndarray[tuple[int], np.dtype["ufunc.LeapSecondDType"]])
@@ -74,3 +121,26 @@ def test_dt_sign_array() -> None:
     assert_type(sign, Union["ufunc.SignDType", NDArray["ufunc.SignDType"]])
     assert isinstance(sign, np.ndarray)
     assert sign.dtype == ufunc.dt_sign
+
+
+def test_dt_ymdf_scalar() -> None:
+    iydmf, _ = ufunc.jdcalf(4, 2400000.5, 50123.9999)
+    assert_type(iydmf, Union["ufunc.YMDFDType", NDArray["ufunc.YMDFDType"]])
+    assert isinstance(iydmf, np.void)
+    assert iydmf.dtype == ufunc.dt_ymdf
+
+    assert_type(iydmf["y"], np.intc)
+    assert iydmf["y"].dtype == np.intc
+    assert_type(iydmf["m"], np.intc)
+    assert iydmf["m"].dtype == np.intc
+    assert_type(iydmf["d"], np.intc)
+    assert iydmf["d"].dtype == np.intc
+    assert_type(iydmf["f"], np.intc)
+    assert iydmf["f"].dtype == np.intc
+
+
+def test_dt_ymdf_array() -> None:
+    iydmf, _ = ufunc.jdcalf(4, [2400000.5], 50123.9999)
+    assert_type(iydmf, Union["ufunc.YMDFDType", NDArray["ufunc.YMDFDType"]])
+    assert type(iydmf) is np.ndarray
+    assert iydmf.dtype == ufunc.dt_ymdf
