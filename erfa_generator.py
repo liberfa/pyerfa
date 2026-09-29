@@ -102,8 +102,16 @@ class Variable:
     @functools.cached_property
     def py_type(self) -> str:
         match self.dtype:
+            case "dt_dmsf":
+                return "DMSFDType | NDArray[DMSFDType]"
+            case "dt_hmsf":
+                return "HMSFDType | NDArray[HMSFDType]"
+            case "dt_pv":
+                return "PVDType | NDArray[PVDType]"
             case "dt_sign":
                 return "SignDType | NDArray[SignDType]"
+            case "dt_ymdf":
+                return "YMDFDType | NDArray[YMDFDType]"
             case _:
                 return "Any"
 
