@@ -76,6 +76,30 @@ def test_leap_seconds() -> None:
     assert leap_seconds.dtype == ufunc.dt_eraLEAPSECOND
 
 
+def test_dt_pv_scalar() -> None:
+    zpv = ufunc.zpv()
+    assert_type(zpv, Union["ufunc.PVDType", NDArray["ufunc.PVDType"]])
+    assert isinstance(zpv, np.void)
+    assert zpv.dtype == ufunc.dt_pv
+
+    assert_type(zpv["p"], np.ndarray[tuple[int], np.dtype[np.float64]])
+    assert type(zpv["p"]) is np.ndarray
+    assert zpv["p"].ndim == 1
+    assert zpv["p"].dtype == np.float64
+
+    assert_type(zpv["v"], np.ndarray[tuple[int], np.dtype[np.float64]])
+    assert type(zpv["v"]) is np.ndarray
+    assert zpv["v"].ndim == 1
+    assert zpv["v"].dtype == np.float64
+
+
+def test_dt_pv_array() -> None:
+    pv = ufunc.p2pv([[1, 2, 3]])
+    assert_type(pv, Union["ufunc.PVDType", NDArray["ufunc.PVDType"]])
+    assert isinstance(pv, np.ndarray)
+    assert pv.dtype == ufunc.dt_pv
+
+
 def test_dt_sign_scalar() -> None:
     sign, _ = ufunc.a2af(4, 2.345)
     assert_type(sign, Union["ufunc.SignDType", NDArray["ufunc.SignDType"]])

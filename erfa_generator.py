@@ -106,6 +106,8 @@ class Variable:
                 return "DMSFDType | NDArray[DMSFDType]"
             case "dt_hmsf":
                 return "HMSFDType | NDArray[HMSFDType]"
+            case "dt_pv":
+                return "PVDType | NDArray[PVDType]"
             case "dt_sign":
                 return "SignDType | NDArray[SignDType]"
             case "dt_ymdf":
