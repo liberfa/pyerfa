@@ -102,12 +102,10 @@ ignore = [
 "test_*.py" = ["S101"]
 
 [tool.mypy]
-files = [
-    "erfa_generator.py",
-    "setup.py",
-    "erfa/tests/test_ufunc.py",
-    "erfa/tests/test_ufunc_interface.py",
-    "erfa/tests/test_ufunc_types.py",
+packages = [
+    "erfa.tests.test_ufunc",
+    "erfa.tests.test_ufunc_interface",
+    "erfa.tests.test_ufunc_types",
 ]
 follow_imports = "silent"
 strict = true
