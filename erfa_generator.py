@@ -351,6 +351,14 @@ class Function(ABC):
             else (*self.inout_args, *self.out_args, self.c_retval)
         )
 
+    @functools.cached_property
+    def nin(self) -> int:
+        return len(self.py_args)
+
+    @functools.cached_property
+    def nout(self) -> int:
+        return len(self.ufunc_return)
+
     @property
     def user_dtype(self) -> str | None:
         """The non-standard dtype, if any, needed by this function's ufunc.
@@ -482,8 +490,8 @@ class Function(ABC):
         placeholders = {
             "name": self.name,
             "pyname": self.pyname,
-            "n_py_args": len(self.py_args),
-            "n_ufunc_return": len(self.ufunc_return),
+            "nin": str(self.nin),
+            "nout": str(self.nout),
             "signature": self.signature,
         }
         if self.user_dtype:
@@ -540,7 +548,7 @@ class Function(ABC):
         out_types = (
             f"tuple[{', '.join('np.ndarray | None' for arg in self.ufunc_return)}]"
         )
-        if len(self.ufunc_return) == 1:
+        if self.nout == 1:
             out_types += " | np.ndarray"
         param_types = [f"{arg.name}: Any" for arg in self.py_args]
         if param_types:
@@ -549,9 +557,7 @@ class Function(ABC):
 
         return_types = [arg.py_type for arg in self.ufunc_return]
         return_type = (
-            return_types[0]
-            if len(self.ufunc_return) == 1
-            else f"tuple[{', '.join(return_types)}]"
+            return_types[0] if self.nout == 1 else f"tuple[{', '.join(return_types)}]"
         )
 
         return f"def {self.pyname}({', '.join(param_types)}) -> {return_type}: ..."
@@ -783,7 +789,7 @@ def _args_from_func_call(line: str, func: Function) -> tuple[list[str], list[str
     in_args = [
         # convert any C octal integer literals       [
         str(int(arg, 8)) if arg.startswith("0") and arg.isdigit() else arg
-        for arg in args[: len(func.py_args)]
+        for arg in args[: func.nin]
     ]
     return in_args, args[len(func.in_args) :]
 
