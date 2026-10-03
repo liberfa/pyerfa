@@ -1,6 +1,6 @@
 ufunc = (PyUFuncObject *)PyUFunc_FromFuncAndDataAndSignature(
     NULL, NULL, NULL, 0,
-    $n_py_args, $n_ufunc_return, PyUFunc_None,
+    $nin, $nout, PyUFunc_None,
     "$pyname",
     "UFunc wrapper for $name",
     0, $signature);
