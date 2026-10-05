@@ -1,6 +1,6 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
-from typing import Union, assert_type
+from typing import Literal, Union, assert_type
 
 import numpy as np
 from numpy.typing import NDArray
@@ -78,7 +78,7 @@ def test_leap_seconds() -> None:
 
 def test_dt_pv_scalar() -> None:
     zpv = ufunc.zpv()
-    assert_type(zpv, Union["ufunc.PVDType", NDArray["ufunc.PVDType"]])
+    assert_type(zpv, "ufunc.PVDType")
     assert isinstance(zpv, np.void)
     assert zpv.dtype == ufunc.dt_pv
 
@@ -168,3 +168,18 @@ def test_dt_ymdf_array() -> None:
     assert_type(iydmf, Union["ufunc.YMDFDType", NDArray["ufunc.YMDFDType"]])
     assert type(iydmf) is np.ndarray
     assert iydmf.dtype == ufunc.dt_ymdf
+
+
+def test_ufunc_nin0_nout1_attributes() -> None:
+    assert_type(ufunc.zpv.identity, None)
+    assert ufunc.zpv.identity is None
+    assert_type(ufunc.zpv.nin, Literal[0])
+    assert ufunc.zpv.nin == 0
+    assert_type(ufunc.zpv.nout, Literal[1])
+    assert ufunc.zpv.nout == 1
+    assert_type(ufunc.zpv.nargs, Literal[1])
+    assert ufunc.zpv.nargs == 1
+    assert_type(ufunc.zpv.ntypes, Literal[0])
+    assert ufunc.zpv.ntypes == 0
+    assert_type(ufunc.zpv.signature, None)
+    assert ufunc.zpv.signature is None
