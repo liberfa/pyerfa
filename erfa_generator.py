@@ -103,15 +103,15 @@ class Variable:
     def py_type(self) -> str:
         match self.dtype:
             case "dt_dmsf":
-                return "DMSFDType | NDArray[DMSFDType]"
+                return "DMSFDType"
             case "dt_hmsf":
-                return "HMSFDType | NDArray[HMSFDType]"
+                return "HMSFDType"
             case "dt_pv":
-                return "PVDType | NDArray[PVDType]"
+                return "PVDType"
             case "dt_sign":
-                return "SignDType | NDArray[SignDType]"
+                return "SignDType"
             case "dt_ymdf":
-                return "YMDFDType | NDArray[YMDFDType]"
+                return "YMDFDType"
             case _:
                 return "Any"
 
@@ -256,7 +256,7 @@ class StatusCode(Variable):
 
     @functools.cached_property
     def py_type(self) -> str:
-        return "np.intc | NDArray[np.intc]"
+        return "np.intc"
 
 
 class Return(Variable):
@@ -555,7 +555,10 @@ class Function(ABC):
             param_types.append("/")
         param_types.append(f"out: {out_types} | EllipsisType | None = None")
 
-        return_types = [arg.py_type for arg in self.ufunc_return]
+        return_types = [
+            f"{arg.py_type} | NDArray[{arg.py_type}]" if arg.py_type != "Any" else "Any"
+            for arg in self.ufunc_return
+        ]
         return_type = (
             return_types[0] if self.nout == 1 else f"tuple[{', '.join(return_types)}]"
         )
@@ -567,6 +570,19 @@ class UFunc(Function):
     @functools.cached_property
     def signature(self) -> str:
         return "NULL"
+
+    @functools.cached_property
+    def ufunc_signature(self) -> str:
+        if self.nin > 0 or self.nout > 1:
+            return super().ufunc_signature
+        ufunc_type = f"Ufunc_Nin{self.nin}_Nout{self.nout}"
+        params = ", ".join(
+            [
+                *["Any" for arg in self.py_args],
+                *[arg.py_type for arg in self.ufunc_return],
+            ]
+        )
+        return f"{self.pyname}: Final[{ufunc_type}[{params}]]"
 
 
 class GUFunc(Function):
@@ -880,8 +896,20 @@ def main(srcdir: Path, templateloc: Path) -> None:
         ]),
     )
 
+    ufunc_no_methods_template = Template(
+        (templateloc / "ufunc_no_methods.templ").read_text()
+    )
+    generic_ufunc_types = []
+    for nin, nout in {(f.nin, f.nout) for f in funcs if f.signature == "NULL"}:
+        if nin <= 0 and nout <= 1:
+            generic_ufunc_types.append(
+                ufunc_no_methods_template.substitute(
+                    nin=nin, nout=nout, nargs=nin + nout
+                )
+            )
     _render_template(
         templateloc / "ufunc.pyi.templ",
+        generic_ufunc_types="\n".join(generic_ufunc_types),
         funcs="\n\n\n".join(func.ufunc_signature for func in funcs),
     )
 

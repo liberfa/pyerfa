@@ -6,7 +6,18 @@
 # update it.
 
 from types import EllipsisType
-from typing import Any, Final, Self, SupportsIndex, overload, type_check_only
+from typing import (
+    Any,
+    Final,
+    Literal,
+    Never,
+    NoReturn,
+    Self,
+    SupportsIndex,
+    overload,
+    override,
+    type_check_only,
+)
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
@@ -73,5 +84,7 @@ def get_leap_seconds() -> np.ndarray[tuple[int], np.dtype[LeapSecondDType]]: ...
 
 def set_leap_seconds(leap_seconds: ArrayLike) -> None: ...
 
+
+$generic_ufunc_types
 
 $funcs
