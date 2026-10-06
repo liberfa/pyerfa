@@ -578,6 +578,7 @@ class UFunc(Function):
         ufunc_type = f"Ufunc_Nin{self.nin}_Nout{self.nout}"
         params = ", ".join(
             [
+                f"Literal[{int(not self.user_dtype)}]",
                 *["Any" for arg in self.py_args],
                 *[arg.py_type for arg in self.ufunc_return],
             ]
