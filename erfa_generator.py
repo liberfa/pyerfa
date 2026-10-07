@@ -104,6 +104,8 @@ class Variable:
         match self.dtype:
             case "dt_dmsf":
                 return "DMSFDType"
+            case "dt_double":
+                return "np.float64"
             case "dt_hmsf":
                 return "HMSFDType"
             case "dt_pv":
@@ -555,10 +557,18 @@ class Function(ABC):
             param_types.append("/")
         param_types.append(f"out: {out_types} | EllipsisType | None = None")
 
-        return_types = [
-            f"{arg.py_type} | NDArray[{arg.py_type}]" if arg.py_type != "Any" else "Any"
-            for arg in self.ufunc_return
-        ]
+        return_types = []
+        for arg in self.ufunc_return:
+            if arg.py_type == "Any":
+                return_types.append("Any")
+            elif (
+                not arg.py_type.endswith("DType")
+                and isinstance(arg, Argument)
+                and arg.shape
+            ):
+                return_types.append(f"NDArray[{arg.py_type}]")
+            else:
+                return_types.append(f"{arg.py_type} | NDArray[{arg.py_type}]")
         return_type = (
             return_types[0] if self.nout == 1 else f"tuple[{', '.join(return_types)}]"
         )

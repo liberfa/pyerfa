@@ -45,6 +45,29 @@ def test_dt_dmsf_array() -> None:
     assert idmsf.dtype == ufunc.dt_dmsf
 
 
+def test_float64_scalar() -> None:
+    anp = ufunc.anp(1)
+    assert_type(anp, np.float64 | NDArray[np.float64])
+    assert isinstance(anp, np.float64)
+
+
+def test_float64_array() -> None:
+    anpm = ufunc.anpm([1])
+    assert_type(anpm, np.float64 | NDArray[np.float64])
+    assert isinstance(anpm, np.ndarray)
+    assert anpm.dtype == np.float64
+
+
+def test_float64_gufunc() -> None:
+    r5h, s5h = ufunc.fk5hip()
+    assert_type(r5h, NDArray[np.float64])
+    assert isinstance(r5h, np.ndarray)
+    assert r5h.dtype == np.float64
+    assert_type(s5h, NDArray[np.float64])
+    assert isinstance(s5h, np.ndarray)
+    assert s5h.dtype == np.float64
+
+
 def test_dt_hmsf_scalar() -> None:
     _, ihmsf = ufunc.d2tf(4, -0.987654321)
     assert_type(ihmsf, Union["ufunc.HMSFDType", NDArray["ufunc.HMSFDType"]])
