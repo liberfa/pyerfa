@@ -907,20 +907,8 @@ def main(srcdir: Path, templateloc: Path) -> None:
         ]),
     )
 
-    ufunc_no_methods_template = Template(
-        (templateloc / "ufunc_no_methods.templ").read_text()
-    )
-    generic_ufunc_types = []
-    for nin, nout in {(f.nin, f.nout) for f in funcs if f.signature == "NULL"}:
-        if nin <= 0 and nout <= 1:
-            generic_ufunc_types.append(
-                ufunc_no_methods_template.substitute(
-                    nin=nin, nout=nout, nargs=nin + nout
-                )
-            )
     _render_template(
         templateloc / "ufunc.pyi.templ",
-        generic_ufunc_types="\n".join(generic_ufunc_types),
         funcs="\n\n\n".join(func.ufunc_signature for func in funcs),
     )
 
