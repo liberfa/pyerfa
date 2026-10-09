@@ -787,9 +787,11 @@ class TestFunction:
                 line = _assemble_func_call(
                     f"erfa_ufunc.{self.func.pyname}", in_args, out_args
                 )
-                if 'astrom' in out_args:
-                    out.append(line)
-                    line = 'astrom = astrom.view(np.recarray)'
+                if out_args == ["astrom"]:
+                    line += ".view(np.recarray)"
+                elif "astrom" in out_args:
+                    out.append(line.replace("astrom", "astrom_raw", 1))
+                    line = "astrom = astrom_raw.view(np.recarray)"
 
             # In some test functions, there are calls to other ERFA functions.
             elif called_func := self.called_functions.get(line.split("(", 1)[0]):
