@@ -1,0 +1,67 @@
+@type_check_only
+class Ufunc_Nin2_Nout1[  # type: ignore[misc]
+    NTypes: Literal[0, 1],
+    P1: ArrayLike,
+    P2: ArrayLike,
+    R: np.generic
+](np.ufunc):
+    @property
+    @override
+    def identity(self) -> None: ...
+    @property
+    @override
+    def nin(self) -> Literal[2]: ...
+    @property
+    @override
+    def nout(self) -> Literal[1]: ...
+    @property
+    @override
+    def nargs(self) -> Literal[3]: ...
+    @property
+    @override
+    def ntypes(self) -> NTypes: ...
+    @property
+    @override
+    def signature(self) -> None: ...
+    @override
+    @overload
+    def __call__(self, x1: P1, x2: P2, /, out: tuple[None] | None = None) -> R | NDArray[R]: ...
+    @overload
+    def __call__(self, x1: P1, x2: P2, /, out: EllipsisType) -> NDArray[R]: ...
+    @overload
+    def __call__(self, x1: P1, x2: P2, /, out: NDArray[R] | tuple[NDArray[R]]) -> NDArray[R]: ...
+    @override
+    def at(self, a: ArrayLike, indices: ArrayLike, b: Any = None, /) -> None: ...
+    @override
+    def accumulate(
+        self,
+        array: ArrayLike,
+        /,
+        axis: SupportsIndex = 0,
+        dtype: DTypeLike | None = None,
+        out: NDArray[R] | EllipsisType | None = None
+    ) -> NDArray[R]: ...
+    @override
+    def reduce(
+        self,
+        array: ArrayLike,
+        /,
+        axis: SupportsIndex | Sequence[SupportsIndex] | None = 0,
+        dtype: DTypeLike | None = None,
+        out: NDArray[R] | EllipsisType | None = None,
+        *,
+        keepdims: bool = False,
+        **kwargs: Any,
+    ) -> R | NDArray[R]: ...
+    @override
+    def reduceat(
+        self,
+        array: ArrayLike,
+        /,
+        indices: Any,
+        axis: SupportsIndex = 0,
+        dtype: DTypeLike | None = None,
+        out: NDArray[R] | EllipsisType | None = None,
+    ) -> NDArray[R]: ...
+    @override
+    def outer(self, A: ArrayLike, B: ArrayLike, /, **kwargs: Any) -> NDArray[R]: ...

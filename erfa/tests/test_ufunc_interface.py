@@ -15,7 +15,7 @@ def test_erfa_parameters_are_positional_only() -> None:
     with pytest.raises(
         TypeError, match="takes from 2 to 3 positional arguments but 0 were given"
     ):
-        ufunc.gmst82(dj1=2400000.5, dj2=53736.0)  # type: ignore[call-arg]
+        ufunc.gmst82(dj1=2400000.5, dj2=53736.0)  # type: ignore[call-overload]
 
 
 def test_positional_out() -> None:
@@ -74,3 +74,35 @@ def test_non_contiguous_output_matrix() -> None:
     assert out is result
     expected = ufunc.ltecm(2005.0)
     assert_array_equal(expected, result)
+
+
+def test_at() -> None:
+    s = np.array([2400000.5])
+    ufunc.s00b.at(s, True, 52541.0)
+    assert s[0] == pytest.approx(-0.1340695782951026584e-7, abs=1e-18)
+
+
+def test_accumulate() -> None:
+    dj1, dj2 = 2450123, 0.1
+    era00 = ufunc.era00.accumulate([dj1, dj2])
+    assert era00[0] == pytest.approx(dj1)
+    assert era00[1] == pytest.approx(ufunc.era00(dj1, dj2))
+
+
+def test_reduce() -> None:
+    eect = ufunc.eect00.reduce([[2400000.5, 2400001], [0.5, 0]])
+    assert eect.shape == (2,)
+    assert eect == pytest.approx(-5.652677543542872e-09)
+
+
+def test_reduceat() -> None:
+    eqeq = ufunc.eqeq94.reduceat((2400000.5, 41234.0, 0), [0, 2])
+    assert eqeq.shape == (2,)
+    assert eqeq[0] == pytest.approx(0.5357758254609256894e-4, abs=1e-17)
+    assert eqeq[1] == 0
+
+
+def test_outer() -> None:
+    spv = ufunc.sxpv.outer([5], [ufunc.zpv()])
+    assert spv.shape == (1, 1)
+    assert spv[0, 0] == ufunc.zpv()

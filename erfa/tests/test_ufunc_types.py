@@ -206,3 +206,18 @@ def test_ufunc_nin0_nout1_attributes() -> None:
     assert ufunc.zpv.ntypes == 0
     assert_type(ufunc.zpv.signature, None)
     assert ufunc.zpv.signature is None
+
+
+def test_ufunc_nin2_nout1_attributes() -> None:
+    assert_type(ufunc.epb.identity, None)
+    assert ufunc.epb.identity is None
+    assert_type(ufunc.epj.nin, Literal[2])
+    assert ufunc.epj.nin == 2
+    assert_type(ufunc.apcg13.nout, Literal[1])
+    assert ufunc.apcg13.nout == 1
+    assert_type(ufunc.aper.nargs, Literal[3])
+    assert ufunc.aper.nargs == 3
+    assert_type(ufunc.moon98.ntypes, Literal[0])
+    assert ufunc.moon98.ntypes == 0
+    assert_type(ufunc.eo06a.signature, None)
+    assert ufunc.eo06a.signature is None
