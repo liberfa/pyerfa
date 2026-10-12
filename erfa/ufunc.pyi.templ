@@ -5,6 +5,7 @@
 # "ufunc.pyi.templ" and run erfa_generator.py from the source directory to
 # update it.
 
+from collections.abc import Sequence
 from types import EllipsisType
 from typing import (
     Any,
@@ -20,7 +21,7 @@ from typing import (
 )
 
 import numpy as np
-from numpy.typing import ArrayLike, NDArray
+from numpy.typing import ArrayLike, DTypeLike, NDArray
 
 erfa_version: Final[str]
 sofa_version: Final[str]
@@ -117,6 +118,8 @@ class Ufunc_Nin0_Nout1[NTypes: Literal[0, 1], ReturnT: np.generic](np.ufunc):  #
     @override
     def outer(self, A: Never, B: Never, /) -> NoReturn: ...  # type: ignore[override]
 
+
+$generic_ufunc_types
 
 def get_leap_seconds() -> np.ndarray[tuple[int], np.dtype[LeapSecondDType]]: ...
 
