@@ -583,7 +583,7 @@ class UFunc(Function):
 
     @functools.cached_property
     def ufunc_signature(self) -> str:
-        if self.nin == 1 or self.nin > 2 or self.nout > 1:
+        if self.nout > 1:
             return super().ufunc_signature
         ufunc_type = f"Ufunc_Nin{self.nin}_Nout{self.nout}"
         params = ", ".join(
@@ -910,13 +910,23 @@ def main(srcdir: Path, templateloc: Path) -> None:
     )
 
     ufunc_nin2_nout1 = Template((templateloc / "ufunc_nin2_nout1.templ").read_text())
+    ufunc_nout1 = Template((templateloc / "ufunc_nout1.templ").read_text())
     generic_ufunc_types = []
-    for nin, nout in {(f.nin, f.nout) for f in funcs if f.signature == "NULL"}:
+    for nin, nout in sorted({(f.nin, f.nout) for f in funcs if f.signature == "NULL"}):
         if nin == 2 and nout == 1:
             generic_ufunc_types.append(ufunc_nin2_nout1.substitute())
+        elif nin > 1 and nout == 1:
+            generic_ufunc_types.append(
+                ufunc_nout1.substitute(
+                    nin=nin,
+                    nargs=nin + 1,
+                    param_types=", ".join(f"P{i}: ArrayLike" for i in range(1, nin + 1)),
+                    params=", ".join(f"x{i}: P{i}" for i in range(1, nin + 1)),
+                )
+            )
     _render_template(
         templateloc / "ufunc.pyi.templ",
-        generic_ufunc_types="\n".join(generic_ufunc_types),
+        generic_ufunc_types="\n\n".join(generic_ufunc_types),
         funcs="\n\n\n".join(func.ufunc_signature for func in funcs),
     )
 

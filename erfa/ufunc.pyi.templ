@@ -119,6 +119,45 @@ class Ufunc_Nin0_Nout1[NTypes: Literal[0, 1], ReturnT: np.generic](np.ufunc):  #
     def outer(self, A: Never, B: Never, /) -> NoReturn: ...  # type: ignore[override]
 
 
+@type_check_only
+class Ufunc_Nin1_Nout1[NTypes: Literal[0, 1], P: ArrayLike, R: np.generic](np.ufunc):  # type: ignore[misc]
+    @property
+    @override
+    def identity(self) -> None: ...
+    @property
+    @override
+    def nin(self) -> Literal[1]: ...
+    @property
+    @override
+    def nout(self) -> Literal[1]: ...
+    @property
+    @override
+    def nargs(self) -> Literal[2]: ...
+    @property
+    @override
+    def ntypes(self) -> NTypes: ...
+    @property
+    @override
+    def signature(self) -> None: ...
+    @override
+    @overload
+    def __call__(self, x: P, /, out: tuple[None] | None = None) -> R | NDArray[R]: ...
+    @overload
+    def __call__(self, x: P, /, out: EllipsisType) -> NDArray[R]: ...
+    @overload
+    def __call__(self, x: P, /, out: NDArray[R] | tuple[NDArray[R]]) -> NDArray[R]: ...
+    @override
+    def at(self, a: ArrayLike, indices: ArrayLike, /) -> None: ...  # type: ignore[override]
+    @override
+    def accumulate(self, array: Never, /) -> NoReturn: ...  # type: ignore[override]
+    @override
+    def reduce(self, array: Never, /) -> NoReturn: ...  # type: ignore[override]
+    @override
+    def reduceat(self, array: Never, /, indices: Never) -> NoReturn: ...  # type: ignore[override]
+    @override
+    def outer(self, A: Never, B: Never, /) -> NoReturn: ...  # type: ignore[override]
+
+
 $generic_ufunc_types
 
 def get_leap_seconds() -> np.ndarray[tuple[int], np.dtype[LeapSecondDType]]: ...

@@ -76,7 +76,13 @@ def test_non_contiguous_output_matrix() -> None:
     assert_array_equal(expected, result)
 
 
-def test_at() -> None:
+def test_at_unary() -> None:
+    t = np.linspace(0, 1, 5)
+    ufunc.faur03.at(t, [0, 4])
+    assert t == pytest.approx([5.48129387, 0.25, 0.5, 0.75, 0.39308311])
+
+
+def test_at_binary() -> None:
     s = np.array([2400000.5])
     ufunc.s00b.at(s, True, 52541.0)
     assert s[0] == pytest.approx(-0.1340695782951026584e-7, abs=1e-18)
