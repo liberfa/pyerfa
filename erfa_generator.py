@@ -583,8 +583,6 @@ class UFunc(Function):
 
     @functools.cached_property
     def ufunc_signature(self) -> str:
-        if self.nout > 1:
-            return super().ufunc_signature
         ufunc_type = f"Ufunc_Nin{self.nin}_Nout{self.nout}"
         params = ", ".join(
             [
@@ -911,6 +909,8 @@ def main(srcdir: Path, templateloc: Path) -> None:
 
     ufunc_nin2_nout1 = Template((templateloc / "ufunc_nin2_nout1.templ").read_text())
     ufunc_nout1 = Template((templateloc / "ufunc_nout1.templ").read_text())
+    ufunc_nout_many = Template((templateloc / "ufunc_nout_many.templ").read_text())
+    ufunc_nin0 = Template((templateloc / "ufunc_nin0.templ").read_text())
     generic_ufunc_types = []
     for nin, nout in sorted({(f.nin, f.nout) for f in funcs if f.signature == "NULL"}):
         if nin == 2 and nout == 1:
@@ -922,6 +922,45 @@ def main(srcdir: Path, templateloc: Path) -> None:
                     nargs=nin + 1,
                     param_types=", ".join(f"P{i}: ArrayLike" for i in range(1, nin + 1)),
                     params=", ".join(f"x{i}: P{i}" for i in range(1, nin + 1)),
+                )
+            )
+        elif nin >= 1 and nout > 1:
+            generic_ufunc_types.append(
+                ufunc_nout_many.substitute(
+                    nin=nin,
+                    nout=nout,
+                    nargs=nin + nout,
+                    param_types=", ".join(
+                        f"P{i}: ArrayLike" for i in range(1, nin + 1)
+                    ),
+                    params=", ".join(f"x{i}: P{i}" for i in range(1, nin + 1)),
+                    return_types=", ".join(
+                        f"R{i}: np.generic" for i in range(1, nout + 1)
+                    ),
+                    return_tuple=", ".join(
+                        f"R{i} | NDArray[R{i}]" for i in range(1, nout + 1)
+                    ),
+                    arr_tuple=", ".join(f"NDArray[R{i}]" for i in range(1, nout + 1)),
+                    out_tuple=", ".join(
+                        f"NDArray[R{i}] | None" for i in range(1, nout + 1)
+                    ),
+                )
+            )
+        elif nin == 0 and nout > 1:
+            generic_ufunc_types.append(
+                ufunc_nin0.substitute(
+                    nout=nout,
+                    params=", ".join(f"x{i}: P{i}" for i in range(1, nin + 1)),
+                    return_types=", ".join(
+                        f"R{i}: np.generic" for i in range(1, nout + 1)
+                    ),
+                    return_tuple=", ".join(
+                        f"R{i} | NDArray[R{i}]" for i in range(1, nout + 1)
+                    ),
+                    arr_tuple=", ".join(f"NDArray[R{i}]" for i in range(1, nout + 1)),
+                    out_tuple=", ".join(
+                        f"NDArray[R{i}] | None" for i in range(1, nout + 1)
+                    ),
                 )
             )
     _render_template(

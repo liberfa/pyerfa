@@ -208,6 +208,21 @@ def test_ufunc_nin0_nout1_attributes() -> None:
     assert ufunc.zpv.signature is None
 
 
+def test_ufunc_nin0_attributes() -> None:
+    assert_type(ufunc.bi00.identity, None)
+    assert ufunc.bi00.identity is None
+    assert_type(ufunc.bi00.nin, Literal[0])
+    assert ufunc.bi00.nin == 0
+    assert_type(ufunc.bi00.nout, Literal[3])
+    assert ufunc.bi00.nout == 3
+    assert_type(ufunc.bi00.nargs, Literal[3])
+    assert ufunc.bi00.nargs == 3
+    assert_type(ufunc.bi00.ntypes, Literal[1])
+    assert ufunc.bi00.ntypes == 1
+    assert_type(ufunc.bi00.signature, None)
+    assert ufunc.bi00.signature is None
+
+
 def test_ufunc_nin1_nout1_attributes() -> None:
     assert_type(ufunc.fad03.identity, None)
     assert ufunc.fad03.identity is None
@@ -251,3 +266,18 @@ def test_ufunc_nout1_attributes() -> None:
     assert ufunc.pas.ntypes == 1
     assert_type(ufunc.s2xpv.signature, None)
     assert ufunc.s2xpv.signature is None
+
+
+def test_ufunc_attributes() -> None:
+    assert_type(ufunc.epb2jd.identity, None)
+    assert ufunc.epb2jd.identity is None
+    assert_type(ufunc.atci13.nin, Literal[8])
+    assert ufunc.atci13.nin == 8
+    assert_type(ufunc.refco.nout, Literal[2])
+    assert ufunc.refco.nout == 2
+    assert_type(ufunc.nut00a.nargs, Literal[4])
+    assert ufunc.nut00a.nargs == 4
+    assert_type(ufunc.pb06.ntypes, Literal[1])
+    assert ufunc.pb06.ntypes == 1
+    assert_type(ufunc.fk45z.signature, None)
+    assert ufunc.fk45z.signature is None
