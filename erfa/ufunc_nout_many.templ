@@ -1,0 +1,35 @@
+@type_check_only
+class Ufunc_Nin${nin}_Nout$nout[NTypes: Literal[0, 1], $param_types, $return_types](np.ufunc):  # type: ignore[misc]
+    @property
+    @override
+    def identity(self) -> None: ...
+    @property
+    @override
+    def nin(self) -> Literal[$nin]: ...
+    @property
+    @override
+    def nout(self) -> Literal[$nout]: ...
+    @property
+    @override
+    def nargs(self) -> Literal[$nargs]: ...
+    @property
+    @override
+    def ntypes(self) -> NTypes: ...
+    @property
+    @override
+    def signature(self) -> None: ...
+    @override
+    @overload
+    def __call__(self, $params, /, out: tuple[$out_tuple] | None = None) -> tuple[$return_tuple]: ...
+    @overload
+    def __call__(self, $params, /, out: EllipsisType) -> tuple[$arr_tuple]: ...
+    @override
+    def at(self, a: Never, indices: Never, /) -> NoReturn: ...  # type: ignore[override]
+    @override
+    def accumulate(self, array: Never, /) -> NoReturn: ...  # type: ignore[override]
+    @override
+    def reduce(self, array: Never, /) -> NoReturn: ...  # type: ignore[override]
+    @override
+    def reduceat(self, array: Never, /) -> NoReturn: ...  # type: ignore[override]
+    @override
+    def outer(self, A: Never, B: Never, /) -> NoReturn: ...  # type: ignore[override]
