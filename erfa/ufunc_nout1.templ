@@ -1,6 +1,6 @@
 @type_check_only
 class Ufunc_Nin${nin}_Nout1[NTypes: Literal[0, 1], ${param_types}, R: np.generic](  # type: ignore[misc]
-    UfuncProperties[Literal[$nin], Literal[1], Literal[$nargs], NTypes, None]
+    UfuncNoMethods[Literal[$nin], Literal[1], Literal[$nargs], NTypes, None]
 ):
     @override
     @overload
@@ -9,13 +9,3 @@ class Ufunc_Nin${nin}_Nout1[NTypes: Literal[0, 1], ${param_types}, R: np.generic
     def __call__(self, $params, /, out: EllipsisType) -> NDArray[R]: ...
     @overload
     def __call__(self, $params, /, out: NDArray[R] | tuple[NDArray[R]]) -> NDArray[R]: ...
-    @override
-    def at(self, a: Never, indices: Never, /) -> NoReturn: ...  # type: ignore[override]
-    @override
-    def accumulate(self, array: Never, /) -> NoReturn: ...  # type: ignore[override]
-    @override
-    def reduce(self, array: Never, /) -> NoReturn: ...  # type: ignore[override]
-    @override
-    def reduceat(self, array: Never, /) -> NoReturn: ...  # type: ignore[override]
-    @override
-    def outer(self, A: Never, B: Never, /) -> NoReturn: ...  # type: ignore[override]

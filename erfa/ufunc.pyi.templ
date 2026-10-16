@@ -105,16 +105,9 @@ class UfuncProperties[  # type: ignore[misc]
 
 
 @type_check_only
-class Ufunc_Nin0_Nout1[NTypes: Literal[0, 1], ReturnT: np.generic](  # type: ignore[misc]
-    UfuncProperties[Literal[0], Literal[1], Literal[1], NTypes, None]
-):
-    @override
-    @overload
-    def __call__(self, /, out: tuple[None] | None = None) -> ReturnT: ...
-    @overload
-    def __call__(self, /, out: EllipsisType) -> np.ndarray[tuple[()], np.dtype[ReturnT]]: ...
-    @overload
-    def __call__(self, /, out: NDArray[ReturnT] | tuple[NDArray[ReturnT]]) -> NDArray[ReturnT]: ...
+class UfuncNoMethods[  # type: ignore[misc]
+    Nin: int, Nout: int, Nargs: int, NTypes: Literal[0, 1], Signature: str | None
+](UfuncProperties[Nin, Nout, Nargs, NTypes, Signature]):
     @override
     def at(self, a: Never, indices: Never, /) -> NoReturn: ...  # type: ignore[override]
     @override
@@ -128,8 +121,21 @@ class Ufunc_Nin0_Nout1[NTypes: Literal[0, 1], ReturnT: np.generic](  # type: ign
 
 
 @type_check_only
+class Ufunc_Nin0_Nout1[NTypes: Literal[0, 1], ReturnT: np.generic](  # type: ignore[misc]
+    UfuncNoMethods[Literal[0], Literal[1], Literal[1], NTypes, None]
+):
+    @override
+    @overload
+    def __call__(self, /, out: tuple[None] | None = None) -> ReturnT: ...
+    @overload
+    def __call__(self, /, out: EllipsisType) -> np.ndarray[tuple[()], np.dtype[ReturnT]]: ...
+    @overload
+    def __call__(self, /, out: NDArray[ReturnT] | tuple[NDArray[ReturnT]]) -> NDArray[ReturnT]: ...
+
+
+@type_check_only
 class Ufunc_Nin1_Nout1[NTypes: Literal[0, 1], P: ArrayLike, R: np.generic](  # type: ignore[misc]
-    UfuncProperties[Literal[1], Literal[1], Literal[2], NTypes, None]
+    UfuncNoMethods[Literal[1], Literal[1], Literal[2], NTypes, None]
 ):
     @override
     @overload
@@ -140,14 +146,6 @@ class Ufunc_Nin1_Nout1[NTypes: Literal[0, 1], P: ArrayLike, R: np.generic](  # t
     def __call__(self, x: P, /, out: NDArray[R] | tuple[NDArray[R]]) -> NDArray[R]: ...
     @override
     def at(self, a: ArrayLike, indices: ArrayLike, /) -> None: ...  # type: ignore[override]
-    @override
-    def accumulate(self, array: Never, /) -> NoReturn: ...  # type: ignore[override]
-    @override
-    def reduce(self, array: Never, /) -> NoReturn: ...  # type: ignore[override]
-    @override
-    def reduceat(self, array: Never, /, indices: Never) -> NoReturn: ...  # type: ignore[override]
-    @override
-    def outer(self, A: Never, B: Never, /) -> NoReturn: ...  # type: ignore[override]
 
 
 $generic_ufunc_types

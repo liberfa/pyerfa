@@ -1,19 +1,9 @@
 @type_check_only
 class Ufunc_Nin0_Nout$nout[NTypes: Literal[0, 1], $return_types](  # type: ignore[misc]
-    UfuncProperties[Literal[0], Literal[$nout], Literal[$nout], NTypes, None]
+    UfuncNoMethods[Literal[0], Literal[$nout], Literal[$nout], NTypes, None]
 ):
     @override
     @overload
     def __call__(self, /, out: tuple[$out_tuple] | None = None) -> tuple[$return_tuple]: ...
     @overload
     def __call__(self, /, out: EllipsisType) -> tuple[$arr_tuple]: ...
-    @override
-    def at(self, a: Never, indices: Never, /) -> NoReturn: ...  # type: ignore[override]
-    @override
-    def accumulate(self, array: Never, /) -> NoReturn: ...  # type: ignore[override]
-    @override
-    def reduce(self, array: Never, /) -> NoReturn: ...  # type: ignore[override]
-    @override
-    def reduceat(self, array: Never, /) -> NoReturn: ...  # type: ignore[override]
-    @override
-    def outer(self, A: Never, B: Never, /) -> NoReturn: ...  # type: ignore[override]
