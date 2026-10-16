@@ -81,25 +81,33 @@ dt_ymdf: Final[YMDFDType]
 
 
 @type_check_only
-class Ufunc_Nin0_Nout1[NTypes: Literal[0, 1], ReturnT: np.generic](np.ufunc):  # type: ignore[misc]
+class UfuncProperties[  # type: ignore[misc]
+    Nin: int, Nout: int, Nargs: int, NTypes: Literal[0, 1], Signature: str | None
+](np.ufunc):
     @property
     @override
     def identity(self) -> None: ...
     @property
     @override
-    def nin(self) -> Literal[0]: ...
+    def nin(self) -> Nin: ...
     @property
     @override
-    def nout(self) -> Literal[1]: ...
+    def nout(self) -> Nout: ...
     @property
     @override
-    def nargs(self) -> Literal[1]: ...
+    def nargs(self) -> Nargs: ...
     @property
     @override
     def ntypes(self) -> NTypes: ...
     @property
     @override
-    def signature(self) -> None: ...
+    def signature(self) -> Signature: ...
+
+
+@type_check_only
+class Ufunc_Nin0_Nout1[NTypes: Literal[0, 1], ReturnT: np.generic](  # type: ignore[misc]
+    UfuncProperties[Literal[0], Literal[1], Literal[1], NTypes, None]
+):
     @override
     @overload
     def __call__(self, /, out: tuple[None] | None = None) -> ReturnT: ...
@@ -120,25 +128,9 @@ class Ufunc_Nin0_Nout1[NTypes: Literal[0, 1], ReturnT: np.generic](np.ufunc):  #
 
 
 @type_check_only
-class Ufunc_Nin1_Nout1[NTypes: Literal[0, 1], P: ArrayLike, R: np.generic](np.ufunc):  # type: ignore[misc]
-    @property
-    @override
-    def identity(self) -> None: ...
-    @property
-    @override
-    def nin(self) -> Literal[1]: ...
-    @property
-    @override
-    def nout(self) -> Literal[1]: ...
-    @property
-    @override
-    def nargs(self) -> Literal[2]: ...
-    @property
-    @override
-    def ntypes(self) -> NTypes: ...
-    @property
-    @override
-    def signature(self) -> None: ...
+class Ufunc_Nin1_Nout1[NTypes: Literal[0, 1], P: ArrayLike, R: np.generic](  # type: ignore[misc]
+    UfuncProperties[Literal[1], Literal[1], Literal[2], NTypes, None]
+):
     @override
     @overload
     def __call__(self, x: P, /, out: tuple[None] | None = None) -> R | NDArray[R]: ...

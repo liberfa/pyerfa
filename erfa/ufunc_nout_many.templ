@@ -1,23 +1,7 @@
 @type_check_only
-class Ufunc_Nin${nin}_Nout$nout[NTypes: Literal[0, 1], $param_types, $return_types](np.ufunc):  # type: ignore[misc]
-    @property
-    @override
-    def identity(self) -> None: ...
-    @property
-    @override
-    def nin(self) -> Literal[$nin]: ...
-    @property
-    @override
-    def nout(self) -> Literal[$nout]: ...
-    @property
-    @override
-    def nargs(self) -> Literal[$nargs]: ...
-    @property
-    @override
-    def ntypes(self) -> NTypes: ...
-    @property
-    @override
-    def signature(self) -> None: ...
+class Ufunc_Nin${nin}_Nout$nout[NTypes: Literal[0, 1], $param_types, $return_types](  # type: ignore[misc]
+    UfuncProperties[Literal[$nin], Literal[$nout], Literal[$nargs], NTypes, None]
+):
     @override
     @overload
     def __call__(self, $params, /, out: tuple[$out_tuple] | None = None) -> tuple[$return_tuple]: ...
