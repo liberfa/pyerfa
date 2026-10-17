@@ -16,8 +16,9 @@ One can also check expiration with two attributes:
         The expiration date of the current ERFA table.
 
         This is either a date inferred from the last table used to update or
-        set the leap-second array, or a number of days beyond the last leap
-        second.
+        set the leap-second array, or a number of days beyond the present.
+        Since leap seconds have been discontinued (CGPM 2026, Resolution 5),
+        the built-in table is final and therefore never expires.
 
 Note that usage of the module is similar to a ``ScienceState`` class,
 but it cannot be used as a context manager.
@@ -49,7 +50,7 @@ def __dir__():
 _expires = None
 """Explicit expiration date inferred from leap-second table."""
 _expiration_days = 180
-"""Number of days beyond last leap second at which table expires."""
+"""Number of days beyond the present at which a table without explicit expiration expires."""
 
 
 def get():
@@ -164,13 +165,12 @@ def _expires_property():
     """The expiration date of the current ERFA table.
 
     This is either a date inferred from the last table used to update or
-    set the leap-second array, or a number of days beyond the last leap
-    second.
+    set the leap-second array, or a number of days beyond the present.
+    Since leap seconds have been discontinued (CGPM 2026, Resolution 5),
+    the built-in table is final and therefore never expires.
     """
     if _expires is None:
-        last = get()[-1]
-        return (datetime(last["year"], last["month"], 1) +
-                timedelta(_expiration_days))
+        return datetime.now() + timedelta(_expiration_days)
     return _expires
 
 
