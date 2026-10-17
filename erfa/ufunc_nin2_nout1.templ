@@ -4,25 +4,7 @@ class Ufunc_Nin2_Nout1[  # type: ignore[misc]
     P1: ArrayLike,
     P2: ArrayLike,
     R: np.generic
-](np.ufunc):
-    @property
-    @override
-    def identity(self) -> None: ...
-    @property
-    @override
-    def nin(self) -> Literal[2]: ...
-    @property
-    @override
-    def nout(self) -> Literal[1]: ...
-    @property
-    @override
-    def nargs(self) -> Literal[3]: ...
-    @property
-    @override
-    def ntypes(self) -> NTypes: ...
-    @property
-    @override
-    def signature(self) -> None: ...
+](UfuncProperties[Literal[2], Literal[1], Literal[3], NTypes, None]):
     @override
     @overload
     def __call__(self, x1: P1, x2: P2, /, out: tuple[None] | None = None) -> R | NDArray[R]: ...

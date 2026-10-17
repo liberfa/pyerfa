@@ -81,32 +81,33 @@ dt_ymdf: Final[YMDFDType]
 
 
 @type_check_only
-class Ufunc_Nin0_Nout1[NTypes: Literal[0, 1], ReturnT: np.generic](np.ufunc):  # type: ignore[misc]
+class UfuncProperties[  # type: ignore[misc]
+    Nin: int, Nout: int, Nargs: int, NTypes: Literal[0, 1], Signature: str | None
+](np.ufunc):
     @property
     @override
     def identity(self) -> None: ...
     @property
     @override
-    def nin(self) -> Literal[0]: ...
+    def nin(self) -> Nin: ...
     @property
     @override
-    def nout(self) -> Literal[1]: ...
+    def nout(self) -> Nout: ...
     @property
     @override
-    def nargs(self) -> Literal[1]: ...
+    def nargs(self) -> Nargs: ...
     @property
     @override
     def ntypes(self) -> NTypes: ...
     @property
     @override
-    def signature(self) -> None: ...
-    @override
-    @overload
-    def __call__(self, /, out: tuple[None] | None = None) -> ReturnT: ...
-    @overload
-    def __call__(self, /, out: EllipsisType) -> np.ndarray[tuple[()], np.dtype[ReturnT]]: ...
-    @overload
-    def __call__(self, /, out: NDArray[ReturnT] | tuple[NDArray[ReturnT]]) -> NDArray[ReturnT]: ...
+    def signature(self) -> Signature: ...
+
+
+@type_check_only
+class UfuncNoMethods[  # type: ignore[misc]
+    Nin: int, Nout: int, Nargs: int, NTypes: Literal[0, 1], Signature: str | None
+](UfuncProperties[Nin, Nout, Nargs, NTypes, Signature]):
     @override
     def at(self, a: Never, indices: Never, /) -> NoReturn: ...  # type: ignore[override]
     @override
@@ -120,25 +121,22 @@ class Ufunc_Nin0_Nout1[NTypes: Literal[0, 1], ReturnT: np.generic](np.ufunc):  #
 
 
 @type_check_only
-class Ufunc_Nin1_Nout1[NTypes: Literal[0, 1], P: ArrayLike, R: np.generic](np.ufunc):  # type: ignore[misc]
-    @property
+class Ufunc_Nin0_Nout1[NTypes: Literal[0, 1], ReturnT: np.generic](  # type: ignore[misc]
+    UfuncNoMethods[Literal[0], Literal[1], Literal[1], NTypes, None]
+):
     @override
-    def identity(self) -> None: ...
-    @property
-    @override
-    def nin(self) -> Literal[1]: ...
-    @property
-    @override
-    def nout(self) -> Literal[1]: ...
-    @property
-    @override
-    def nargs(self) -> Literal[2]: ...
-    @property
-    @override
-    def ntypes(self) -> NTypes: ...
-    @property
-    @override
-    def signature(self) -> None: ...
+    @overload
+    def __call__(self, /, out: tuple[None] | None = None) -> ReturnT: ...
+    @overload
+    def __call__(self, /, out: EllipsisType) -> np.ndarray[tuple[()], np.dtype[ReturnT]]: ...
+    @overload
+    def __call__(self, /, out: NDArray[ReturnT] | tuple[NDArray[ReturnT]]) -> NDArray[ReturnT]: ...
+
+
+@type_check_only
+class Ufunc_Nin1_Nout1[NTypes: Literal[0, 1], P: ArrayLike, R: np.generic](  # type: ignore[misc]
+    UfuncNoMethods[Literal[1], Literal[1], Literal[2], NTypes, None]
+):
     @override
     @overload
     def __call__(self, x: P, /, out: tuple[None] | None = None) -> R | NDArray[R]: ...
@@ -148,14 +146,6 @@ class Ufunc_Nin1_Nout1[NTypes: Literal[0, 1], P: ArrayLike, R: np.generic](np.uf
     def __call__(self, x: P, /, out: NDArray[R] | tuple[NDArray[R]]) -> NDArray[R]: ...
     @override
     def at(self, a: ArrayLike, indices: ArrayLike, /) -> None: ...  # type: ignore[override]
-    @override
-    def accumulate(self, array: Never, /) -> NoReturn: ...  # type: ignore[override]
-    @override
-    def reduce(self, array: Never, /) -> NoReturn: ...  # type: ignore[override]
-    @override
-    def reduceat(self, array: Never, /, indices: Never) -> NoReturn: ...  # type: ignore[override]
-    @override
-    def outer(self, A: Never, B: Never, /) -> NoReturn: ...  # type: ignore[override]
 
 
 $generic_ufunc_types
