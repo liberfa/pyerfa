@@ -117,6 +117,10 @@ class Variable:
             case _:
                 return "Any"
 
+    @functools.cached_property
+    def py_arr_type(self) -> str | None:
+        return None
+
 
 class Argument(Variable):
     def __init__(self, definition: str) -> None:
@@ -201,6 +205,13 @@ class Argument(Variable):
             case "double", (3, 3):
                 return "(3, 3)"
         return super().signature_shape
+
+    @functools.cached_property
+    def py_arr_type(self) -> str | None:
+        arr_shape = f"tuple[{', '.join('int' for _ in range(self.ndim))}]"
+        return (
+            f"np.ndarray[{arr_shape}, np.dtype[{self.py_type}]]" if self.ndim else None
+        )
 
     def inner_loop_steps_and_copy(self, name_suffix: str = "") -> list[str]:
         if self.signature_shape == "()":
@@ -657,6 +668,22 @@ class GUFunc(Function):
                     "}",
                 ])
         return lines
+
+    @functools.cached_property
+    def ufunc_signature(self) -> str:
+        if self.nin > 0 or self.nout > 1:
+            return super().ufunc_signature
+        ufunc_type = f"GUfunc_Nin{self.nin}_Nout{self.nout}"
+        params = ", ".join(
+            [
+                f"Literal[{int(not self.user_dtype)}]",
+                f"Literal[{self.signature}]",
+                *["Any" for arg in self.py_args],
+                *[arg.py_type for arg in self.ufunc_return],
+                *[arg.py_arr_type or arg.py_type for arg in self.ufunc_return],
+            ]
+        )
+        return f"{self.pyname}: Final[{ufunc_type}[{params}]]"
 
 
 class Constant:

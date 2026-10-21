@@ -281,3 +281,18 @@ def test_ufunc_attributes() -> None:
     assert ufunc.pb06.ntypes == 1
     assert_type(ufunc.fk45z.signature, None)
     assert ufunc.fk45z.signature is None
+
+
+def test_gufunc_nin0_nout1_attributes() -> None:
+    assert_type(ufunc.ir.identity, None)
+    assert ufunc.ir.identity is None
+    assert_type(ufunc.zp.nin, Literal[0])
+    assert ufunc.zp.nin == 0
+    assert_type(ufunc.zr.nout, Literal[1])
+    assert ufunc.zr.nout == 1
+    assert_type(ufunc.ir.nargs, Literal[1])
+    assert ufunc.ir.nargs == 1
+    assert_type(ufunc.zp.ntypes, Literal[1])
+    assert ufunc.zp.ntypes == 1
+    assert_type(ufunc.zr.signature, Literal["->(3, 3)"])
+    assert ufunc.zr.signature == "->(3, 3)"
