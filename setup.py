@@ -40,21 +40,20 @@ def get_liberfa_versions(
         warn('unable to detect liberfa version')
         return []
 
-    version = packaging.version.parse(mobj.group('version'))
+    version = packaging.version.parse(mobj["version"])
 
     mobj = re.search(
         r'AC_DEFINE\(\[SOFA_VERSION\], \["(?P<version>\d{8}(_\w)?)"\],', s)
     if not mobj:
         warn('unable to detect SOFA version')
         return []
-    sofa_version = mobj.group('version')
 
     return [
         ('PACKAGE_VERSION', version.base_version),
         ('PACKAGE_VERSION_MAJOR', version.major),
         ('PACKAGE_VERSION_MINOR', version.minor),
         ('PACKAGE_VERSION_MICRO', version.micro),
-        ('SOFA_VERSION', sofa_version),
+        ('SOFA_VERSION', mobj["version"]),
     ]
 
 

@@ -53,9 +53,7 @@ class FunctionDoc:
             return set()
         doc_list: list[str] = []
         for name, c_type in re.findall(
-            rf"^{n_spaces * ' '}([\w\*,]+) +([\w\[\]\*]+) +.+?",
-            result.group(1),
-            re.MULTILINE,
+            rf"^{n_spaces * ' '}([\w\*,]+) +([\w\[\]\*]+) +.+?", result[1], re.MULTILINE
         ):
             if c_type.startswith("eraLDBODY"):
                 # Special-case LDBODY: for those, the previous argument
@@ -69,7 +67,7 @@ class FunctionDoc:
     @property
     def first_sentence(self) -> str:
         if m := re.search(r"[- ]+\n\n(.+?\.)\s", self.doc, re.DOTALL):
-            return m.group(1)
+            return m[1]
         raise RuntimeError(
             f"cannot find the first sentence of {self.pyname} doc comment"
         )
@@ -259,7 +257,7 @@ class StatusCode(Variable):
                 line.strip() for line in description.splitlines()
             )
             for code, description in re.findall(
-                r"(-?\w+) = ((?:[^=]+$)+)", status.group(1), re.MULTILINE
+                r"(-?\w+) = ((?:[^=]+$)+)", status[1], re.MULTILINE
             )
             if code != "0"
         }
@@ -332,10 +330,10 @@ class Function(ABC):
         if search is None:
             raise RuntimeError(f"cannot find {name}() definition in {file}")
 
-        doc = FunctionDoc(search.group(3), pyname)
-        args = [Argument(arg) for arg in re.findall("[^,]+", search.group(2))]
+        doc = FunctionDoc(search[3], pyname)
+        args = [Argument(arg) for arg in re.findall("[^,]+", search[2])]
         c_retval = None
-        if (ret := search.group(1)) != "void":
+        if (ret := search[1]) != "void":
             c_retval = (
                 StatusCode(ret, doc, name)
                 if ret == "int" and pyname not in ("tpors", "tporv")
@@ -717,10 +715,10 @@ class TestFunction:
             raise RuntimeError(f"cannot find the test for {func.name}")
         self.called_functions: Final[Mapping[str, Function]] = {
             name: erfa_funcs[name]
-            for name in re.findall(r"(\w+),?", search.group(1))
+            for name in re.findall(r"(\w+),?", search[1])
             if name not in (self.func.name, "and", "viv", "vvd")
         }
-        source = re.sub(r"\s\s+", " ", search.group(2))
+        source = re.sub(r"\s\s+", " ", search[2])
         self.definitions: Final = []
         self.lines: Final = []
         for line in re.findall(r" (.*?);", source):
@@ -794,15 +792,13 @@ class TestFunction:
                     .strip())
 
             if m := re.match(r"viv ?\( ?([\w\[\]]+), (.+?),", line):
-                line = f"assert {m.group(1)} == {m.group(2)}"
+                line = f"assert {m[1]} == {m[2]}"
 
             elif m := re.match(
                 r"vvd\( ?(.+) ?, ([\d\.e-]+), ?([\d\.e-]+), .+?, .+?, status\)", line
             ):
-                expr = m.group(1).replace(
-                    self.func.name, f"erfa_ufunc.{self.func.pyname}"
-                )
-                line = f"assert {expr} == pytest.approx({m.group(2)}, abs={m.group(3)})"
+                expr = m[1].replace(self.func.name, f"erfa_ufunc.{self.func.pyname}")
+                line = f"assert {expr} == pytest.approx({m[2]}, abs={m[3]})"
 
             # Call of function that is being tested.
             elif self.func.name in line:
