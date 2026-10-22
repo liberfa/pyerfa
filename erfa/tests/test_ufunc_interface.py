@@ -1,14 +1,10 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
-from typing import Final
-
 import numpy as np
 import pytest
 from numpy.testing import assert_array_equal
 
 from erfa import ufunc
-
-SQRT2: Final = np.sqrt(2.0)
 
 
 def test_erfa_parameters_are_positional_only() -> None:
@@ -18,26 +14,167 @@ def test_erfa_parameters_are_positional_only() -> None:
         ufunc.gmst82(dj1=2400000.5, dj2=53736.0)  # type: ignore[call-overload]
 
 
-def test_positional_out() -> None:
-    pos_args = ([-0.763, -0.608, -0.216], [2.104e-5, -8.910e-5, -3.863e-5], 0.9998, 1)
-    result = ufunc.ab(*pos_args)
-    arr = np.zeros_like(result)
-    result_with_out = ufunc.ab(*pos_args, arr)
-    assert result_with_out is arr
-    assert_array_equal(arr, result)
+def test_positional_out_none_ufunc_nin0() -> None:
+    result = ufunc.bi00()
+    result_with_out = ufunc.bi00(None)
+    assert_array_equal(result_with_out[0], result[0])
+    assert_array_equal(result_with_out[1], result[1])
+    assert_array_equal(result_with_out[2], result[2])
 
 
-def test_out_arr() -> None:
-    result = ufunc.s2pv(np.pi / 2.0, np.pi / 4.0, 2.0, SQRT2 / 2.0, 0.0, 0.0)
+def test_positional_out_none_ufunc_nin0_nout1() -> None:
+    assert_array_equal(ufunc.zpv(None), ufunc.zpv())
+
+
+def test_positional_out_none_ufunc_nin1_nout1() -> None:
+    t = 0.7
+    assert_array_equal(ufunc.faom03(t, None), ufunc.faom03(t))
+
+
+def test_positional_out_none_ufunc_nin2_nout1() -> None:
+    args = (2415019.8135, 30103.18648)
+    assert_array_equal(ufunc.epb(*args, None), ufunc.epb(*args))
+
+
+def test_positional_out_none_ufunc_nout1() -> None:
+    args = (2400000.5, 53736.0, 0.4090789763356509900, -0.9630909107115582393e-5)
+    assert_array_equal(ufunc.ee00(*args, None), ufunc.ee00(*args))
+
+
+def test_positional_out_none_ufunc_nout_many() -> None:
+    args = (800.0, 10.0, 0.9, 0.4)
+    result = ufunc.refco(*args)
+    result_with_out = ufunc.refco(*args, None)
+    assert_array_equal(result_with_out[0], result[0])
+    assert_array_equal(result_with_out[1], result[1])
+
+
+def test_positional_out_none_gufunc_nin0_nout1() -> None:
+    assert_array_equal(ufunc.zr(None), ufunc.zr())
+
+
+def test_keyword_out_none_ufunc_nin0_nout1() -> None:
+    assert_array_equal(ufunc.zpv(out=None), ufunc.zpv())
+
+
+def test_keyword_out_none_ufunc_nin1_nout1() -> None:
+    t = 0.7
+    assert_array_equal(ufunc.faf03(t, out=None), ufunc.faf03(t))
+
+
+def test_keyword_out_none_ufunc_nin2_nout1() -> None:
+    args = (2415019.8135, 30103.18648)
+    assert_array_equal(ufunc.epj(*args, out=None), ufunc.epj(*args))
+
+
+def test_keyword_out_none_ufunc_nout1() -> None:
+    args = (2400000.5, 53736.0, 2400000.5, 53736.0)
+    assert_array_equal(ufunc.gmst00(*args, out=None), ufunc.gmst00(*args))
+
+
+def test_keyword_out_none_gufunc_nin0_nout1() -> None:
+    assert_array_equal(ufunc.zp(out=None), ufunc.zp())
+
+
+def test_positional_out_arr_ufunc_nin0_nout1() -> None:
+    result = ufunc.zpv()
     out = np.ones_like(result)
-    result_with_out = ufunc.s2pv(
-        np.pi / 2.0, np.pi / 4.0, 2.0, SQRT2 / 2.0, 0.0, 0.0, out=out
-    )
+    result_with_out = ufunc.zpv(out)
     assert result_with_out is out
     assert_array_equal(out, result)
 
 
-def test_out_tuple_of_arr() -> None:
+def test_positional_out_arr_ufunc_nin1_nout1() -> None:
+    a = -4.0
+    result = ufunc.anpm(a)
+    out = np.zeros_like(result)
+    result_with_out = ufunc.anpm(a, out)
+    assert result_with_out is out
+    assert_array_equal(out, result)
+
+
+def test_positional_out_arr_ufunc_nin2_nout1() -> None:
+    args = (2400000.5, 54388.0)
+    result = ufunc.obl80(*args)
+    out = np.zeros_like(result)
+    result_with_out = ufunc.obl80(*args, out)
+    assert result_with_out is out
+    assert_array_equal(out, result)
+
+
+def test_positional_out_arr_ufunc_nout1() -> None:
+    args = (2400000.5, 53736.0, 0.5791308486706011000e-3, 0.4020579816732961219e-4)
+    result = ufunc.s06(*args)
+    out = np.zeros_like(result)
+    result_with_out = ufunc.s06(*args, out)
+    assert result_with_out is out
+    assert_array_equal(out, result)
+
+
+def test_positional_out_arr_gufunc_nin0_nout1() -> None:
+    result = ufunc.ir()
+    out = np.zeros_like(result)
+    result_with_out = ufunc.ir(out)
+    assert result_with_out is out
+    assert_array_equal(out, result)
+
+
+def test_keyword_out_arr_ufunc_nin0_nout1() -> None:
+    result = ufunc.zpv()
+    out = np.ones_like(result)
+    result_with_out = ufunc.zpv(out=out)
+    assert result_with_out is out
+    assert_array_equal(out, result)
+
+
+def test_keyword_out_arr_ufunc_nin1_nout1() -> None:
+    a = -4.0
+    result = ufunc.anp(a)
+    out = np.zeros_like(result)
+    result_with_out = ufunc.anp(a, out=out)
+    assert result_with_out is out
+    assert_array_equal(out, result)
+
+
+def test_keyword_out_arr_ufunc_nin2_nout1() -> None:
+    args = (2400000.5, 54388.0)
+    result = ufunc.obl06(*args)
+    out = np.zeros_like(result)
+    result_with_out = ufunc.obl06(*args, out=out)
+    assert result_with_out is out
+    assert_array_equal(out, result)
+
+
+def test_keyword_out_arr_ufunc_nout1() -> None:
+    args = (2400000.5, 53736.0, 0.5791308486706011000e-3, 0.4020579816732961219e-4)
+    result = ufunc.s00(*args)
+    out = np.zeros_like(result)
+    result_with_out = ufunc.s00(*args, out=out)
+    assert result_with_out is out
+    assert_array_equal(out, result)
+
+
+def test_keyword_out_arr_gufunc_nin0_nout1() -> None:
+    result = ufunc.zr()
+    out = np.ones_like(result)
+    result_with_out = ufunc.zr(out=out)
+    assert result_with_out is out
+    assert_array_equal(out, result)
+
+
+def test_keyword_out_tuple_of_arr_ufunc_nin0() -> None:
+    result = ufunc.bi00()
+    out = (np.zeros(2), np.zeros(2), np.zeros(2))
+    result_with_3_out = ufunc.bi00(out=out)
+    assert result_with_3_out[0] is out[0]
+    assert result_with_3_out[1] is out[1]
+    assert result_with_3_out[2] is out[2]
+    assert_array_equal(out[0], result[0])
+    assert_array_equal(out[1], result[1])
+    assert_array_equal(out[2], result[2])
+
+
+def test_keyword_out_tuple_of_arr_ufunc_nin0_nout1() -> None:
     result = ufunc.zpv()
     out = np.ones_like(result)
     result_with_out = ufunc.zpv(out=(out,))
@@ -45,25 +182,177 @@ def test_out_tuple_of_arr() -> None:
     assert_array_equal(out, result)
 
 
-def test_out_mixed_tuple() -> None:
-    pos_args = ([2012, 2013], 12, 12)
-    _, result, _ = ufunc.cal2jd(*pos_args)
-    mjd = np.zeros(2)
-    _, result_with_out, _ = ufunc.cal2jd(*pos_args, out=(None, mjd, None))
-    assert result_with_out is mjd
-    assert_array_equal(mjd, result)
+def test_keyword_out_tuple_of_arr_ufunc_nin1_nout1() -> None:
+    t = 0.8
+    result = ufunc.fama03(t)
+    out = np.zeros_like(result)
+    result_with_out = ufunc.fama03(t, out=(out,))
+    assert result_with_out is out
+    assert_array_equal(out, result)
 
 
-def test_out_ellipsis() -> None:
+def test_keyword_out_tuple_of_arr_ufunc_nin2_nout1() -> None:
+    args = (2400000.5, 54388.0)
+    result = ufunc.eect00(*args)
+    out = np.zeros_like(result)
+    result_with_out = ufunc.eect00(*args, out=(out,))
+    assert result_with_out is out
+    assert_array_equal(out, result)
+
+
+def test_keyword_out_tuple_of_arr_ufunc_nout1() -> None:
+    args = (1.1, 1.2, 0.3)
+    result = ufunc.hd2pa(*args)
+    out = np.zeros_like(result)
+    result_with_out = ufunc.hd2pa(*args, out=(out,))
+    assert result_with_out is out
+    assert_array_equal(out, result)
+
+
+def test_keyword_out_tuple_of_arr_ufunc_nout_many() -> None:
+    args = (2453750.5, 0.892482639)
+    result = ufunc.tttai(*args)
+    out = (np.zeros(2), np.zeros(2), np.zeros(2, dtype=np.int32))
+    result_with_out = ufunc.tttai(*args, out=out)
+    assert result_with_out[0] is out[0]
+    assert result_with_out[1] is out[1]
+    assert result_with_out[2] is out[2]
+    assert_array_equal(out[0], result[0])
+    assert_array_equal(out[1], result[1])
+    assert_array_equal(out[2], result[2])
+
+
+def test_keyword_out_tuple_of_arr_gufunc_nin0_nout1() -> None:
+    result = ufunc.zp()
+    out = np.ones_like(result)
+    result_with_out = ufunc.zp(out=(out,))
+    assert result_with_out is out
+    assert_array_equal(out, result)
+
+
+def test_keyword_out_tuple_with_none_ufunc_nin0() -> None:
+    result = ufunc.bi00()
+    out = (np.zeros(2), np.zeros(2), None)
+    result_with_out = ufunc.bi00(out=out)
+    assert result_with_out[0] is out[0]
+    assert_array_equal(out[0], result[0])
+    assert result_with_out[1] is out[1]
+    assert_array_equal(out[1], result[1])
+    assert_array_equal(result_with_out[2], result[2])
+
+
+def test_keyword_out_tuple_with_none_ufunc_nin0_nout1() -> None:
+    assert_array_equal(ufunc.zpv(out=(None,)), ufunc.zpv())
+
+
+def test_keyword_out_tuple_with_none_ufunc_nin1_nout1() -> None:
+    t = 0.8
+    assert_array_equal(ufunc.fasa03(t, out=(None,)), ufunc.fasa03(t))
+
+
+def test_keyword_out_tuple_with_none_ufunc_nin2_nout1() -> None:
+    args = (2400000.5, 54388.0)
+    assert_array_equal(ufunc.eqeq94(*args, out=(None,)), ufunc.eqeq94(*args))
+
+
+def test_keyword_out_tuple_with_none_ufunc_nout1() -> None:
+    args = (1.0, 0.1, 0.2, -1.0)
+    assert_array_equal(ufunc.pas(*args, out=(None,)), ufunc.pas(*args))
+
+
+def test_keyword_out_tuple_with_none_ufunc_nout_many() -> None:
+    args = (2453750.5, 0.892482639)
+    result = ufunc.taitt(*args)
+    out = (np.zeros(2), None, np.zeros(2, dtype=np.int32))
+    result_with_out = ufunc.taitt(*args, out=out)
+    assert result_with_out[0] is out[0]
+    assert_array_equal(out[0], result[0])
+    assert_array_equal(result_with_out[1], result[1])
+    assert result_with_out[2] is out[2]
+    assert_array_equal(out[2], result[2])
+
+
+def test_keyword_out_tuple_with_none_gufunc_nin0_nout1() -> None:
+    assert_array_equal(ufunc.ir(out=(None,)), ufunc.ir())
+
+
+def test_out_ellipsis_ufunc_nin0() -> None:
     pytest.importorskip(
         "numpy", minversion="2.3", reason="out=Ellipsis was implemented in numpy 2.3"
     )
-    pos_args = (2451540, -7342.5)
-    none_result = ufunc.epj(*pos_args, out=None)
-    assert type(none_result) is np.float64
-    ellipsis_result = ufunc.epj(*pos_args, out=...)
-    assert type(ellipsis_result) is np.ndarray
-    assert_array_equal(ellipsis_result, none_result)
+    result = ufunc.bi00()
+    result_with_out = ufunc.bi00(out=...)
+    assert type(result_with_out[0]) is np.ndarray
+    assert_array_equal(result_with_out[0], result[0])
+    assert type(result_with_out[1]) is np.ndarray
+    assert_array_equal(result_with_out[1], result[1])
+    assert type(result_with_out[2]) is np.ndarray
+    assert_array_equal(result_with_out[2], result[2])
+
+
+def test_out_ellipsis_ufunc_nin0_nout1() -> None:
+    pytest.importorskip(
+        "numpy", minversion="2.3", reason="out=Ellipsis was implemented in numpy 2.3"
+    )
+    result_with_out = ufunc.zpv(out=...)
+    assert type(result_with_out) is np.ndarray
+    assert_array_equal(result_with_out, ufunc.zpv())
+
+
+def test_out_ellipsis_ufunc_nin1_nout1() -> None:
+    pytest.importorskip(
+        "numpy", minversion="2.3", reason="out=Ellipsis was implemented in numpy 2.3"
+    )
+    t = 0.8
+    result_with_out = ufunc.fave03(t, out=...)
+    assert type(result_with_out) is np.ndarray
+    assert_array_equal(result_with_out, ufunc.fave03(t))
+
+
+def test_out_ellipsis_ufunc_nin2_nout1() -> None:
+    pytest.importorskip(
+        "numpy", minversion="2.3", reason="out=Ellipsis was implemented in numpy 2.3"
+    )
+    args = (2400000.5, 54388.0)
+    result_with_out = ufunc.gst00b(*args, out=...)
+    assert type(result_with_out) is np.ndarray
+    assert_array_equal(result_with_out, ufunc.gst00b(*args))
+
+
+def test_out_ellipsis_ufunc_nout1() -> None:
+    pytest.importorskip(
+        "numpy", minversion="2.3", reason="out=Ellipsis was implemented in numpy 2.3"
+    )
+    args = (1.0, 0.1, 0.2, -1.0)
+    result_with_out = ufunc.seps(*args, out=...)
+    assert type(result_with_out) is np.ndarray
+    assert_array_equal(result_with_out, ufunc.seps(*args))
+
+
+def test_out_ellipsis_ufunc_nout_many() -> None:
+    pytest.importorskip(
+        "numpy", minversion="2.3", reason="out=Ellipsis was implemented in numpy 2.3"
+    )
+    args = (2400000.5, 50123.9999)
+    result = ufunc.pfw06(*args)
+    result_with_out = ufunc.pfw06(*args, out=...)
+    assert type(result_with_out[0]) is np.ndarray
+    assert_array_equal(result_with_out[0], result[0])
+    assert type(result_with_out[1]) is np.ndarray
+    assert_array_equal(result_with_out[1], result[1])
+    assert type(result_with_out[2]) is np.ndarray
+    assert_array_equal(result_with_out[2], result[2])
+    assert type(result_with_out[3]) is np.ndarray
+    assert_array_equal(result_with_out[3], result[3])
+
+
+def test_out_ellipsis_gufunc_nin0_nout1() -> None:
+    pytest.importorskip(
+        "numpy", minversion="2.3", reason="out=Ellipsis was implemented in numpy 2.3"
+    )
+    result_with_out = ufunc.zp(out=...)
+    assert type(result_with_out) is np.ndarray
+    assert_array_equal(result_with_out, ufunc.zp())
 
 
 def test_non_contiguous_output_matrix() -> None:
