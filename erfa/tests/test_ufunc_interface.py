@@ -76,6 +76,26 @@ def test_keyword_out_none_gufunc_nin0_nout1() -> None:
     assert_array_equal(ufunc.zp(out=None), ufunc.zp())
 
 
+def test_positional_out_arr_ufunc_nin0() -> None:
+    result = ufunc.bi00()
+    out = (np.zeros(2), np.zeros(2), np.zeros(2))
+    result_with_1_out = ufunc.bi00(out[0])
+    assert result_with_1_out[0] is out[0]
+    assert_array_equal(out[0], result[0])
+    result_with_2_out = ufunc.bi00(out[0], out[1])
+    assert result_with_2_out[0] is out[0]
+    assert result_with_2_out[1] is out[1]
+    assert_array_equal(out[0], result[0])
+    assert_array_equal(out[1], result[1])
+    result_with_3_out = ufunc.bi00(*out)
+    assert result_with_3_out[0] is out[0]
+    assert result_with_3_out[1] is out[1]
+    assert result_with_3_out[2] is out[2]
+    assert_array_equal(out[0], result[0])
+    assert_array_equal(out[1], result[1])
+    assert_array_equal(out[2], result[2])
+
+
 def test_positional_out_arr_ufunc_nin0_nout1() -> None:
     result = ufunc.zpv()
     out = np.ones_like(result)
@@ -109,6 +129,20 @@ def test_positional_out_arr_ufunc_nout1() -> None:
     result_with_out = ufunc.s06(*args, out)
     assert result_with_out is out
     assert_array_equal(out, result)
+
+
+def test_positional_out_arr_ufunc_nout_many() -> None:
+    args = (5.5850536063818546461558105, -0.7853981633974483096156608)
+    result = ufunc.g2icrs(*args)
+    out = (np.zeros(2), np.zeros(2))
+    result_with_1_out = ufunc.g2icrs(*args, out[0])
+    assert result_with_1_out[0] is out[0]
+    assert_array_equal(out[0], result[0])
+    result_with_2_out = ufunc.g2icrs(*args, *out)
+    assert result_with_2_out[0] is out[0]
+    assert result_with_2_out[1] is out[1]
+    assert_array_equal(out[0], result[0])
+    assert_array_equal(out[1], result[1])
 
 
 def test_positional_out_arr_gufunc_nin0_nout1() -> None:
