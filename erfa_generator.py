@@ -964,6 +964,10 @@ def main(srcdir: Path, templateloc: Path) -> None:
                         f"R{i} | NDArray[R{i}]" for i in range(1, nout + 1)
                     ),
                     arr_tuple=", ".join(f"NDArray[R{i}]" for i in range(1, nout + 1)),
+                    out_args=", ".join(
+                        f"out{i}: NDArray[R{i}] | None = None"
+                        for i in range(1, nout + 1)
+                    ),
                     out_tuple=", ".join(
                         f"NDArray[R{i}] | None" for i in range(1, nout + 1)
                     ),
@@ -981,6 +985,10 @@ def main(srcdir: Path, templateloc: Path) -> None:
                         f"R{i} | NDArray[R{i}]" for i in range(1, nout + 1)
                     ),
                     arr_tuple=", ".join(f"NDArray[R{i}]" for i in range(1, nout + 1)),
+                    out_args=", ".join(
+                        f"out{i}: NDArray[R{i}] | None = None"
+                        for i in range(1, nout + 1)
+                    ),
                     out_tuple=", ".join(
                         f"NDArray[R{i}] | None" for i in range(1, nout + 1)
                     ),
