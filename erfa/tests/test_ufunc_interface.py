@@ -53,6 +53,11 @@ def test_positional_out_none_gufunc_nin0_nout1() -> None:
     assert_array_equal(ufunc.zr(None), ufunc.zr())
 
 
+def test_keyword_out_none_ufunc_nin0() -> None:
+    with pytest.raises(TypeError, match="'out' must be a tuple of arrays"):
+        ufunc.bi00(out=None)  # type: ignore[call-overload]
+
+
 def test_keyword_out_none_ufunc_nin0_nout1() -> None:
     assert_array_equal(ufunc.zpv(out=None), ufunc.zpv())
 
@@ -70,6 +75,11 @@ def test_keyword_out_none_ufunc_nin2_nout1() -> None:
 def test_keyword_out_none_ufunc_nout1() -> None:
     args = (2400000.5, 53736.0, 2400000.5, 53736.0)
     assert_array_equal(ufunc.gmst00(*args, out=None), ufunc.gmst00(*args))
+
+
+def test_keyword_out_none_ufunc_nout_many() -> None:
+    with pytest.raises(TypeError, match="'out' must be a tuple of arrays"):
+        ufunc.starpm(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, out=None)  # type: ignore[call-overload]
 
 
 def test_keyword_out_none_gufunc_nin0_nout1() -> None:
@@ -153,6 +163,11 @@ def test_positional_out_arr_gufunc_nin0_nout1() -> None:
     assert_array_equal(out, result)
 
 
+def test_keyword_out_arr_ufunc_nin0() -> None:
+    with pytest.raises(TypeError, match="'out' must be a tuple of arrays"):
+        ufunc.bi00(out=np.empty(1))  # type: ignore[call-overload]
+
+
 def test_keyword_out_arr_ufunc_nin0_nout1() -> None:
     result = ufunc.zpv()
     out = np.ones_like(result)
@@ -188,12 +203,53 @@ def test_keyword_out_arr_ufunc_nout1() -> None:
     assert_array_equal(out, result)
 
 
+def test_keyword_out_arr_ufunc_nout_many() -> None:
+    with pytest.raises(TypeError, match="'out' must be a tuple of arrays"):
+        ufunc.icrs2g(5.585053606, -0.78539816, out=np.empty((2, 3)))  # type: ignore[call-overload]
+
+
 def test_keyword_out_arr_gufunc_nin0_nout1() -> None:
     result = ufunc.zr()
     out = np.ones_like(result)
     result_with_out = ufunc.zr(out=out)
     assert result_with_out is out
     assert_array_equal(out, result)
+
+
+def test_positional_out_tuple_ufunc_nin0() -> None:
+    with pytest.raises(TypeError, match="return arrays must be of ArrayType"):
+        ufunc.bi00((np.empty(2), np.empty(2), np.empty(2)))  # type: ignore[call-overload]
+
+
+def test_positional_out_tuple_ufunc_nin0_nout1() -> None:
+    with pytest.raises(TypeError, match="return arrays must be of ArrayType"):
+        ufunc.zpv((np.empty(2),))  # type: ignore[call-overload]
+
+
+def test_positional_out_tuple_ufunc_nin1_nout1() -> None:
+    with pytest.raises(TypeError, match="return arrays must be of ArrayType"):
+        ufunc.falp03(0, (np.empty(2),))  # type: ignore[call-overload]
+
+
+def test_positional_out_tuple_ufunc_nin2_nout1() -> None:
+    with pytest.raises(TypeError, match="return arrays must be of ArrayType"):
+        ufunc.ee00b(0, 0, (np.empty(2),))  # type: ignore[call-overload]
+
+
+def test_positional_out_tuple_ufunc_nout1() -> None:
+    with pytest.raises(TypeError, match="return arrays must be of ArrayType"):
+        ufunc.dtdb(0, 0, 0, 0, 0, 0, (np.empty(2),))  # type: ignore[call-overload]
+
+
+def test_positional_out_tuple_ufunc_nout_many() -> None:
+    out = (np.empty(2), np.empty(2), np.empty(2), np.empty(2), np.empty(2), np.empty(2))
+    with pytest.raises(TypeError, match="return arrays must be of ArrayType"):
+        ufunc.fk425(0, 0, 0, 0, 0, 0, out)  # type: ignore[call-overload]
+
+
+def test_positional_out_tuple_gufunc_nin0_nout1() -> None:
+    with pytest.raises(TypeError, match="return arrays must be of ArrayType"):
+        ufunc.zr((np.empty(2),))  # type: ignore[call-overload]
 
 
 def test_keyword_out_tuple_of_arr_ufunc_nin0() -> None:
@@ -262,6 +318,43 @@ def test_keyword_out_tuple_of_arr_gufunc_nin0_nout1() -> None:
     result_with_out = ufunc.zp(out=(out,))
     assert result_with_out is out
     assert_array_equal(out, result)
+
+
+def test_positional_out_tuple_with_none_ufunc_nin0() -> None:
+    with pytest.raises(TypeError, match="return arrays must be of ArrayType"):
+        ufunc.bi00((None, np.empty(2), None))  # type: ignore[call-overload]
+
+
+def test_positional_out_tuple_with_none_ufunc_nin0_nout1() -> None:
+    with pytest.raises(TypeError, match="return arrays must be of ArrayType"):
+        ufunc.zpv((None,))  # type: ignore[call-overload]
+
+
+def test_positional_out_tuple_with_none_ufunc_nin1_nout1() -> None:
+    with pytest.raises(TypeError, match="return arrays must be of ArrayType"):
+        ufunc.fal03(0, (None,))  # type: ignore[call-overload]
+
+
+def test_positional_out_tuple_with_none_ufunc_nin2_nout1() -> None:
+    with pytest.raises(TypeError, match="return arrays must be of ArrayType"):
+        ufunc.ee06a(0, 0, (None,))  # type: ignore[call-overload]
+
+
+def test_positional_out_tuple_with_none_ufunc_nout1() -> None:
+    with pytest.raises(TypeError, match="return arrays must be of ArrayType"):
+        ufunc.gst00a(0, 0, 0, 0, (None,))  # type: ignore[call-overload]
+
+
+def test_positional_out_tuple_with_none_ufunc_nout_many() -> None:
+    with pytest.raises(TypeError, match="return arrays must be of ArrayType"):
+        ufunc.fk524(  # type: ignore[call-overload]
+            0, 0, 0, 0, 0, 0, (None, None, np.empty(3), None, np.empty(3), None)
+        )
+
+
+def test_positional_out_tuple_with_none_gufunc_nin0_nout1() -> None:
+    with pytest.raises(TypeError, match="return arrays must be of ArrayType"):
+        ufunc.zr((None,))  # type: ignore[call-overload]
 
 
 def test_keyword_out_tuple_with_none_ufunc_nin0() -> None:
@@ -387,6 +480,77 @@ def test_out_ellipsis_gufunc_nin0_nout1() -> None:
     result_with_out = ufunc.zp(out=...)
     assert type(result_with_out) is np.ndarray
     assert_array_equal(result_with_out, ufunc.zp())
+
+
+def test_keyword_out_ellipsis_ufunc_nin0() -> None:
+    pytest.importorskip(
+        "numpy", minversion="2.3", reason="out=Ellipsis was implemented in numpy 2.3"
+    )
+    with pytest.raises(
+        TypeError, match=r"out=... is only allowed as a keyword argument."
+    ):
+        ufunc.bi00(...)  # type: ignore[call-overload]
+
+
+def test_keyword_out_ellipsis_ufunc_nin0_nout1() -> None:
+    pytest.importorskip(
+        "numpy", minversion="2.3", reason="out=Ellipsis was implemented in numpy 2.3"
+    )
+
+    with pytest.raises(
+        TypeError, match=r"out=... is only allowed as a keyword argument."
+    ):
+        ufunc.zpv(...)  # type: ignore[call-overload]
+
+
+def test_keyword_out_ellipsis_ufunc_nin1_nout1() -> None:
+    pytest.importorskip(
+        "numpy", minversion="2.3", reason="out=Ellipsis was implemented in numpy 2.3"
+    )
+    with pytest.raises(
+        TypeError, match=r"out=... is only allowed as a keyword argument."
+    ):
+        ufunc.fad03(0.7, ...)  # type: ignore[call-overload]
+
+
+def test_keyword_out_ellipsis_ufunc_nin2_nout1() -> None:
+    pytest.importorskip(
+        "numpy", minversion="2.3", reason="out=Ellipsis was implemented in numpy 2.3"
+    )
+    with pytest.raises(
+        TypeError, match=r"out=... is only allowed as a keyword argument."
+    ):
+        ufunc.gst94(2400000.5, 54388.0, ...)  # type: ignore[call-overload]
+
+
+def test_keyword_out_ellipsis_ufunc_nout1() -> None:
+    pytest.importorskip(
+        "numpy", minversion="2.3", reason="out=Ellipsis was implemented in numpy 2.3"
+    )
+    with pytest.raises(
+        TypeError, match=r"out=... is only allowed as a keyword argument."
+    ):
+        ufunc.seps(1.0, 0.1, 0.2, -1.0, ...)  # type: ignore[call-overload]
+
+
+def test_keyword_out_ellipsis_ufunc_nout_many() -> None:
+    pytest.importorskip(
+        "numpy", minversion="2.3", reason="out=Ellipsis was implemented in numpy 2.3"
+    )
+    with pytest.raises(
+        TypeError, match=r"out=... is only allowed as a keyword argument."
+    ):
+        ufunc.pfw06(2400000.5, 50123.9999, ...)  # type: ignore[call-overload]
+
+
+def test_keyword_out_ellipsis_gufunc_nin0_nout1() -> None:
+    pytest.importorskip(
+        "numpy", minversion="2.3", reason="out=Ellipsis was implemented in numpy 2.3"
+    )
+    with pytest.raises(
+        TypeError, match=r"out=... is only allowed as a keyword argument."
+    ):
+        ufunc.zp(...)  # type: ignore[call-overload]
 
 
 def test_non_contiguous_output_matrix() -> None:
