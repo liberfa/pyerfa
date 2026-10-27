@@ -206,10 +206,7 @@ class Argument(Variable):
 
     @functools.cached_property
     def py_arr_type(self) -> str | None:
-        arr_shape = f"tuple[{', '.join('int' for _ in range(self.ndim))}]"
-        return (
-            f"np.ndarray[{arr_shape}, np.dtype[{self.py_type}]]" if self.ndim else None
-        )
+        return f"Array{self.ndim}D[{self.py_type}]" if self.ndim else None
 
     def inner_loop_steps_and_copy(self, name_suffix: str = "") -> list[str]:
         if self.signature_shape == "()":
