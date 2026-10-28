@@ -6,6 +6,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from erfa import ufunc
+from erfa._typing import Array0D, Array1D, Array2D
 
 
 def test_status_codes_scalar() -> None:
@@ -93,7 +94,7 @@ def test_dt_hmsf_array() -> None:
 
 def test_leap_seconds() -> None:
     leap_seconds = ufunc.get_leap_seconds()
-    assert_type(leap_seconds, np.ndarray[tuple[int], np.dtype["ufunc.LeapSecondDType"]])
+    assert_type(leap_seconds, Array1D["ufunc.LeapSecondDType"])
     assert isinstance(leap_seconds, np.ndarray)
     assert leap_seconds.ndim == 1
     assert leap_seconds.dtype == ufunc.dt_eraLEAPSECOND
@@ -105,12 +106,12 @@ def test_dt_pv_scalar() -> None:
     assert isinstance(zpv, np.void)
     assert zpv.dtype == ufunc.dt_pv
 
-    assert_type(zpv["p"], np.ndarray[tuple[int], np.dtype[np.float64]])
+    assert_type(zpv["p"], Array1D[np.float64])
     assert type(zpv["p"]) is np.ndarray
     assert zpv["p"].ndim == 1
     assert zpv["p"].dtype == np.float64
 
-    assert_type(zpv["v"], np.ndarray[tuple[int], np.dtype[np.float64]])
+    assert_type(zpv["v"], Array1D[np.float64])
     assert type(zpv["v"]) is np.ndarray
     assert zpv["v"].ndim == 1
     assert zpv["v"].dtype == np.float64
@@ -132,23 +133,21 @@ def test_dt_sign_scalar() -> None:
     assert_type(sign[()], "ufunc.SignDType")
     assert sign[()].dtype == ufunc.dt_sign
 
-    assert_type(sign[...], np.ndarray[tuple[()], np.dtype["ufunc.SignDType"]])
+    assert_type(sign[...], Array0D["ufunc.SignDType"])
     assert type(sign[...]) is np.ndarray
     assert sign[...].ndim == 0
     assert sign[...].dtype == ufunc.dt_sign
 
-    assert_type(sign[(...,)], np.ndarray[tuple[()], np.dtype["ufunc.SignDType"]])
+    assert_type(sign[(...,)], Array0D["ufunc.SignDType"])
     assert sign[(...,)].ndim == 0
     assert sign[...].dtype == ufunc.dt_sign
 
-    assert_type(sign[None], np.ndarray[tuple[int], np.dtype["ufunc.SignDType"]])
+    assert_type(sign[None], Array1D["ufunc.SignDType"])
     assert type(sign[None]) is np.ndarray
     assert sign[None].ndim == 1
     assert sign[None].dtype == ufunc.dt_sign
 
-    assert_type(
-        sign[(None, None)], np.ndarray[tuple[int, int], np.dtype["ufunc.SignDType"]]
-    )
+    assert_type(sign[(None, None)], Array2D["ufunc.SignDType"])
     assert type(sign[(None, None)]) is np.ndarray
     assert sign[(None, None)].ndim == 2
     assert sign[(None, None)].dtype == ufunc.dt_sign

@@ -23,6 +23,8 @@ from typing import (
 import numpy as np
 from numpy.typing import ArrayLike, DTypeLike, NDArray
 
+from ._typing import Array0D, Array1D, Array2D, Array3D
+
 erfa_version: Final[str]
 sofa_version: Final[str]
 
@@ -38,19 +40,13 @@ class CustomVoidDType[T: np.generic | np.ndarray](np.void):  # type: ignore[misc
     @overload
     def __getitem__(
         self, key: EllipsisType | tuple[EllipsisType], /
-    ) -> np.ndarray[tuple[()], np.dtype[Self]]: ...
+    ) -> Array0D[Self]: ...
     @overload
-    def __getitem__(
-        self, key: None | tuple[None], /
-    ) -> np.ndarray[tuple[int], np.dtype[Self]]: ...
+    def __getitem__(self, key: None | tuple[None], /) -> Array1D[Self]: ...
     @overload
-    def __getitem__(
-        self, key: tuple[None, None], /
-    ) -> np.ndarray[tuple[int, int], np.dtype[Self]]: ...
+    def __getitem__(self, key: tuple[None, None], /) -> Array2D[Self]: ...
     @overload
-    def __getitem__(
-        self, key: tuple[None, None, None], /
-    ) -> np.ndarray[tuple[int, int, int], np.dtype[Self]]: ...
+    def __getitem__(self, key: tuple[None, None, None], /) -> Array3D[Self]: ...
     @overload
     def __getitem__(self, key: tuple[None, *tuple[None, ...]], /) -> NDArray[Self]: ...
     @overload
@@ -70,7 +66,7 @@ dt_hmsf: Final[HMSFDType]
 type LeapSecondDType = CustomVoidDType[np.intc | np.float64]
 dt_eraLEAPSECOND: Final[LeapSecondDType]
 
-type PVDType = CustomVoidDType[np.ndarray[tuple[int], np.dtype[np.float64]]]
+type PVDType = CustomVoidDType[Array1D[np.float64]]
 dt_pv: Final[PVDType]
 
 type SignDType = CustomVoidDType[np.bytes_]
@@ -130,7 +126,7 @@ class Ufunc_Nin0_Nout1[NTypes: Literal[0, 1], ReturnT: np.generic](  # type: ign
     @overload
     def __call__(self, /, *, out: tuple[None]) -> ReturnT: ...
     @overload
-    def __call__(self, /, *, out: EllipsisType) -> np.ndarray[tuple[()], np.dtype[ReturnT]]: ...
+    def __call__(self, /, *, out: EllipsisType) -> Array0D[ReturnT]: ...
     @overload
     def __call__(self, out: NDArray[ReturnT], /) -> NDArray[ReturnT]: ...
     @overload
@@ -175,7 +171,7 @@ class GUfunc_Nin0_Nout1[  # type: ignore[misc]
     ) -> NDArray[RDType]: ...
 
 
-def get_leap_seconds() -> np.ndarray[tuple[int], np.dtype[LeapSecondDType]]: ...
+def get_leap_seconds() -> Array1D[LeapSecondDType]: ...
 
 
 def set_leap_seconds(leap_seconds: ArrayLike) -> None: ...
