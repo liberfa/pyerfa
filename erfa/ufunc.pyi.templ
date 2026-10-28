@@ -171,6 +171,27 @@ class GUfunc_Nin0_Nout1[  # type: ignore[misc]
     ) -> NDArray[RDType]: ...
 
 
+@type_check_only
+class GUfunc_Nin1_Nout1[  # type: ignore[misc]
+    NTypes: Literal[0, 1],
+    Signature: str,
+    PT: ArrayLike,
+    RDType: np.generic,
+    RT: np.generic | np.ndarray
+](UfuncNoMethods[Literal[1], Literal[1], Literal[2], NTypes, Signature]):
+    @override
+    @overload
+    def __call__(self, x: PT, /, out: None = None) -> RT | NDArray[RDType]: ...
+    @overload
+    def __call__(self, x: PT, /, *, out: tuple[None]) -> RT | NDArray[RDType]: ...
+    @overload
+    def __call__(self, x: PT, out: NDArray[RDType], /) -> NDArray[RDType]: ...
+    @overload
+    def __call__(
+        self, x: PT, /, *, out: NDArray[RDType] | tuple[NDArray[RDType]] | EllipsisType
+    ) -> NDArray[RDType]: ...
+
+
 def get_leap_seconds() -> Array1D[LeapSecondDType]: ...
 
 

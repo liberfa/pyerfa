@@ -206,7 +206,11 @@ class Argument(Variable):
 
     @functools.cached_property
     def py_arr_type(self) -> str | None:
-        return f"Array{self.ndim}D[{self.py_type}]" if self.ndim else None
+        return (
+            None
+            if self.signature_shape == "()"
+            else f"Array{self.ndim}D[{self.py_type}]"
+        )
 
     def inner_loop_steps_and_copy(self, name_suffix: str = "") -> list[str]:
         if self.signature_shape == "()":
@@ -666,7 +670,7 @@ class GUFunc(Function):
 
     @functools.cached_property
     def ufunc_signature(self) -> str:
-        if self.nin > 0 or self.nout > 1:
+        if self.nin > 1 or self.nout > 1:
             return super().ufunc_signature
         ufunc_type = f"GUfunc_Nin{self.nin}_Nout{self.nout}"
         params = ", ".join(
