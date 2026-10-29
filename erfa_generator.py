@@ -938,63 +938,33 @@ def main(srcdir: Path, templateloc: Path) -> None:
     generic_ufunc_types = []
     for nin, nout in sorted({(f.nin, f.nout) for f in funcs if f.signature == "NULL"}):
         if nin == 2 and nout == 1:
-            generic_ufunc_types.append(ufunc_nin2_nout1.substitute())
+            stub_template = ufunc_nin2_nout1
         elif nin > 1 and nout == 1:
-            generic_ufunc_types.append(
-                ufunc_nout1.substitute(
-                    nin=nin,
-                    nargs=nin + 1,
-                    param_types=", ".join(f"P{i}: ArrayLike" for i in range(1, nin + 1)),
-                    params=", ".join(f"x{i}: P{i}" for i in range(1, nin + 1)),
-                )
-            )
+            stub_template = ufunc_nout1
         elif nin >= 1 and nout > 1:
-            generic_ufunc_types.append(
-                ufunc_nout_many.substitute(
-                    nin=nin,
-                    nout=nout,
-                    nargs=nin + nout,
-                    param_types=", ".join(
-                        f"P{i}: ArrayLike" for i in range(1, nin + 1)
-                    ),
-                    params=", ".join(f"x{i}: P{i}" for i in range(1, nin + 1)),
-                    return_types=", ".join(
-                        f"R{i}: np.generic" for i in range(1, nout + 1)
-                    ),
-                    return_tuple=", ".join(
-                        f"R{i} | NDArray[R{i}]" for i in range(1, nout + 1)
-                    ),
-                    arr_tuple=", ".join(f"NDArray[R{i}]" for i in range(1, nout + 1)),
-                    out_args=", ".join(
-                        f"out{i}: NDArray[R{i}] | None = None"
-                        for i in range(1, nout + 1)
-                    ),
-                    out_tuple=", ".join(
-                        f"NDArray[R{i}] | None" for i in range(1, nout + 1)
-                    ),
-                )
-            )
+            stub_template = ufunc_nout_many
         elif nin == 0 and nout > 1:
-            generic_ufunc_types.append(
-                ufunc_nin0.substitute(
-                    nout=nout,
-                    params=", ".join(f"x{i}: P{i}" for i in range(1, nin + 1)),
-                    return_types=", ".join(
-                        f"R{i}: np.generic" for i in range(1, nout + 1)
-                    ),
-                    return_tuple=", ".join(
-                        f"R{i} | NDArray[R{i}]" for i in range(1, nout + 1)
-                    ),
-                    arr_tuple=", ".join(f"NDArray[R{i}]" for i in range(1, nout + 1)),
-                    out_args=", ".join(
-                        f"out{i}: NDArray[R{i}] | None = None"
-                        for i in range(1, nout + 1)
-                    ),
-                    out_tuple=", ".join(
-                        f"NDArray[R{i}] | None" for i in range(1, nout + 1)
-                    ),
-                )
+            stub_template = ufunc_nin0
+        else:
+            continue
+        in_range = range(1, nin + 1)
+        out_range = range(1, nout + 1)
+        generic_ufunc_types.append(
+            stub_template.substitute(
+                nin=nin,
+                nout=nout,
+                nargs=nin + nout,
+                param_types=", ".join(f"P{i}: ArrayLike" for i in in_range),
+                params=", ".join(f"x{i}: P{i}" for i in in_range),
+                return_types=", ".join(f"R{i}: np.generic" for i in out_range),
+                return_tuple=", ".join(f"R{i} | NDArray[R{i}]" for i in out_range),
+                arr_tuple=", ".join(f"NDArray[R{i}]" for i in out_range),
+                out_args=", ".join(
+                    f"out{i}: NDArray[R{i}] | None = None" for i in out_range
+                ),
+                out_tuple=", ".join(f"NDArray[R{i}] | None" for i in out_range),
             )
+        )
     _render_template(
         templateloc / "ufunc.pyi.templ",
         generic_ufunc_types="\n\n".join(generic_ufunc_types),
