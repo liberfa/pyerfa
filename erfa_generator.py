@@ -443,8 +443,8 @@ class Function(ABC):
         return lines
 
     @functools.cached_property
-    def ufunc_loop_template(self) -> Template:
-        return Template((self.templateloc / "ufunc_loop.templ").read_text().strip())
+    def ufunc_loop_template(self) -> str:
+        return "ufunc_loop.templ"
 
     @functools.cached_property
     def ufunc_loop(self) -> str:
@@ -452,11 +452,15 @@ class Function(ABC):
             [f"{arg.name} += s_{arg.name}" for arg in self.in_args + self.ufunc_return]
             + [f"{arg.name}_in += s_{arg.name}_in" for arg in self.inout_args],
         )
-        return self.ufunc_loop_template.substitute(
-            pyname=self.pyname,
-            init_ufunc_loop_local_vars=_indent(self.init_ufunc_loop_local_vars),
-            increment_arg_pointers=arg_pointer_incrementation,
-            ufunc_inner_loop_body=_indent(self.ufunc_loop_inner_loop_body, 2),
+        return (
+            _read_template(self.templateloc / self.ufunc_loop_template)
+            .substitute(
+                pyname=self.pyname,
+                init_ufunc_loop_local_vars=_indent(self.init_ufunc_loop_local_vars),
+                increment_arg_pointers=arg_pointer_incrementation,
+                ufunc_inner_loop_body=_indent(self.ufunc_loop_inner_loop_body, 2),
+            )
+            .strip()
         )
 
     @property
@@ -515,7 +519,7 @@ class Function(ABC):
             file = "define_ufunc_user_dtype.templ"
         else:
             file = "define_ufunc.templ"
-        return Template((self.templateloc / file).read_text()).substitute(placeholders)
+        return _read_template(self.templateloc / file).substitute(placeholders)
 
     @functools.cached_property
     def py_docstring(self) -> str:
@@ -613,13 +617,12 @@ class GUFunc(Function):
         )
 
     @functools.cached_property
-    def ufunc_loop_template(self) -> Template:
-        template_file = (
+    def ufunc_loop_template(self) -> str:
+        return (
             "eraLDBODY_ufunc_loop.templ"
             if self.user_dtype == "dt_eraLDBODY"
             else "ufunc_loop.templ"
         )
-        return Template((self.templateloc / template_file).read_text().strip())
 
     @property
     def init_ufunc_loop_local_vars(self) -> list[str]:
@@ -863,10 +866,13 @@ def _docstring_section_title(title: str) -> tuple[str, str, str]:
     return ("", title, len(title) * "-")
 
 
+@functools.cache
+def _read_template(path: Path) -> Template:
+    return Template(path.read_text())
+
+
 def _render_template(template: Path, /, **kwargs: str) -> None:
-    template.with_suffix("").write_text(
-        Template(template.read_text()).substitute(**kwargs)
-    )
+    template.with_suffix("").write_text(_read_template(template).substitute(kwargs))
 
 
 def main(srcdir: Path, templateloc: Path) -> None:
@@ -931,70 +937,36 @@ def main(srcdir: Path, templateloc: Path) -> None:
         ]),
     )
 
-    ufunc_nin2_nout1 = Template((templateloc / "ufunc_nin2_nout1.templ").read_text())
-    ufunc_nout1 = Template((templateloc / "ufunc_nout1.templ").read_text())
-    ufunc_nout_many = Template((templateloc / "ufunc_nout_many.templ").read_text())
-    ufunc_nin0 = Template((templateloc / "ufunc_nin0.templ").read_text())
     generic_ufunc_types = []
     for nin, nout in sorted({(f.nin, f.nout) for f in funcs if f.signature == "NULL"}):
         if nin == 2 and nout == 1:
-            generic_ufunc_types.append(ufunc_nin2_nout1.substitute())
+            stub_template = "ufunc_nin2_nout1.templ"
         elif nin > 1 and nout == 1:
-            generic_ufunc_types.append(
-                ufunc_nout1.substitute(
-                    nin=nin,
-                    nargs=nin + 1,
-                    param_types=", ".join(f"P{i}: ArrayLike" for i in range(1, nin + 1)),
-                    params=", ".join(f"x{i}: P{i}" for i in range(1, nin + 1)),
-                )
-            )
+            stub_template = "ufunc_nout1.templ"
         elif nin >= 1 and nout > 1:
-            generic_ufunc_types.append(
-                ufunc_nout_many.substitute(
-                    nin=nin,
-                    nout=nout,
-                    nargs=nin + nout,
-                    param_types=", ".join(
-                        f"P{i}: ArrayLike" for i in range(1, nin + 1)
-                    ),
-                    params=", ".join(f"x{i}: P{i}" for i in range(1, nin + 1)),
-                    return_types=", ".join(
-                        f"R{i}: np.generic" for i in range(1, nout + 1)
-                    ),
-                    return_tuple=", ".join(
-                        f"R{i} | NDArray[R{i}]" for i in range(1, nout + 1)
-                    ),
-                    arr_tuple=", ".join(f"NDArray[R{i}]" for i in range(1, nout + 1)),
-                    out_args=", ".join(
-                        f"out{i}: NDArray[R{i}] | None = None"
-                        for i in range(1, nout + 1)
-                    ),
-                    out_tuple=", ".join(
-                        f"NDArray[R{i}] | None" for i in range(1, nout + 1)
-                    ),
-                )
-            )
+            stub_template = "ufunc_nout_many.templ"
         elif nin == 0 and nout > 1:
-            generic_ufunc_types.append(
-                ufunc_nin0.substitute(
-                    nout=nout,
-                    params=", ".join(f"x{i}: P{i}" for i in range(1, nin + 1)),
-                    return_types=", ".join(
-                        f"R{i}: np.generic" for i in range(1, nout + 1)
-                    ),
-                    return_tuple=", ".join(
-                        f"R{i} | NDArray[R{i}]" for i in range(1, nout + 1)
-                    ),
-                    arr_tuple=", ".join(f"NDArray[R{i}]" for i in range(1, nout + 1)),
-                    out_args=", ".join(
-                        f"out{i}: NDArray[R{i}] | None = None"
-                        for i in range(1, nout + 1)
-                    ),
-                    out_tuple=", ".join(
-                        f"NDArray[R{i}] | None" for i in range(1, nout + 1)
-                    ),
-                )
+            stub_template = "ufunc_nin0.templ"
+        else:
+            continue
+        in_range = range(1, nin + 1)
+        out_range = range(1, nout + 1)
+        generic_ufunc_types.append(
+            _read_template(templateloc / stub_template).substitute(
+                nin=nin,
+                nout=nout,
+                nargs=nin + nout,
+                param_types=", ".join(f"P{i}: ArrayLike" for i in in_range),
+                params=", ".join(f"x{i}: P{i}" for i in in_range),
+                return_types=", ".join(f"R{i}: np.generic" for i in out_range),
+                return_tuple=", ".join(f"R{i} | NDArray[R{i}]" for i in out_range),
+                arr_tuple=", ".join(f"NDArray[R{i}]" for i in out_range),
+                out_args=", ".join(
+                    f"out{i}: NDArray[R{i}] | None = None" for i in out_range
+                ),
+                out_tuple=", ".join(f"NDArray[R{i}] | None" for i in out_range),
             )
+        )
     _render_template(
         templateloc / "ufunc.pyi.templ",
         generic_ufunc_types="\n\n".join(generic_ufunc_types),
