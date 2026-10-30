@@ -673,7 +673,7 @@ class GUFunc(Function):
 
     @functools.cached_property
     def ufunc_signature(self) -> str:
-        if self.nin > 1 or self.nout > 1:
+        if self.nout > 1:
             return super().ufunc_signature
         ufunc_type = f"GUfunc_Nin{self.nin}_Nout{self.nout}"
         params = ", ".join(
@@ -937,21 +937,24 @@ def main(srcdir: Path, templateloc: Path) -> None:
         ]),
     )
 
-    generic_ufunc_types = []
-    for nin, nout in sorted({(f.nin, f.nout) for f in funcs if f.signature == "NULL"}):
-        if nin == 2 and nout == 1:
+    generic_ufunc_types: list[str] = []
+    generic_gufunc_types: list[str] = []
+    for nin, nout, is_gufunc in sorted({(f.nin, f.nout, f.signature != "NULL") for f in funcs}):
+        if nin == 2 and nout == 1 and not is_gufunc:
             stub_template = "ufunc_nin2_nout1.templ"
-        elif nin > 1 and nout == 1:
+        elif nin > 1 and nout == 1 and not is_gufunc:
             stub_template = "ufunc_nout1.templ"
-        elif nin >= 1 and nout > 1:
+        elif nin and nout > 1 and not is_gufunc:
             stub_template = "ufunc_nout_many.templ"
-        elif nin == 0 and nout > 1:
+        elif nin == 0 and nout > 1 and not is_gufunc:
             stub_template = "ufunc_nin0.templ"
+        elif nin > 1 and nout == 1 and is_gufunc:
+            stub_template = "gufunc_nout1.templ"
         else:
             continue
         in_range = range(1, nin + 1)
         out_range = range(1, nout + 1)
-        generic_ufunc_types.append(
+        (generic_gufunc_types if is_gufunc else generic_ufunc_types).append(
             _read_template(templateloc / stub_template).substitute(
                 nin=nin,
                 nout=nout,
@@ -970,6 +973,7 @@ def main(srcdir: Path, templateloc: Path) -> None:
     _render_template(
         templateloc / "ufunc.pyi.templ",
         generic_ufunc_types="\n\n".join(generic_ufunc_types),
+        generic_gufunc_types="\n\n".join(generic_gufunc_types),
         funcs="\n\n\n".join(func.ufunc_signature for func in funcs),
     )
 

@@ -1,0 +1,23 @@
+@type_check_only
+class GUfunc_Nin${nin}_Nout1[  # type: ignore[misc]
+    NTypes: Literal[0, 1],
+    Signature: str,
+    $param_types,
+    RDType: np.generic,
+    RT: np.generic | np.ndarray
+](
+    UfuncNoMethods[Literal[$nin], Literal[1], Literal[$nargs], NTypes, Signature]
+):
+    @override
+    @overload
+    def __call__(self, $params, /, out: None = None) -> RT | NDArray[RDType]: ...
+    @overload
+    def __call__(self, $params, /, *, out: tuple[None]) -> RT | NDArray[RDType]: ...
+    @overload
+    def __call__(self, $params, /, *, out: EllipsisType) -> NDArray[RDType]: ...
+    @overload
+    def __call__(self, $params, out: NDArray[RDType], /) -> NDArray[RDType]: ...
+    @overload
+    def __call__(
+        self, $params, /, *, out: NDArray[RDType] | tuple[NDArray[RDType]]
+    ) -> NDArray[RDType]: ...
