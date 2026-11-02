@@ -297,6 +297,21 @@ def test_gufunc_nin0_nout1_attributes() -> None:
     assert ufunc.zr.signature == "->(3, 3)"
 
 
+def test_gufunc_nin0_attributes() -> None:
+    assert_type(ufunc.fk5hip.identity, None)
+    assert ufunc.fk5hip.identity is None
+    assert_type(ufunc.fk5hip.nin, Literal[0])
+    assert ufunc.fk5hip.nin == 0
+    assert_type(ufunc.fk5hip.nout, Literal[2])
+    assert ufunc.fk5hip.nout == 2
+    assert_type(ufunc.fk5hip.nargs, Literal[2])
+    assert ufunc.fk5hip.nargs == 2
+    assert_type(ufunc.fk5hip.ntypes, Literal[1])
+    assert ufunc.fk5hip.ntypes == 1
+    assert_type(ufunc.fk5hip.signature, Literal["->(3, 3),(3)"])
+    assert ufunc.fk5hip.signature == "->(3, 3),(3)"
+
+
 def test_gufunc_nin1_nout1_attributes() -> None:
     assert_type(ufunc.ltp.identity, None)
     assert ufunc.ltp.identity is None
