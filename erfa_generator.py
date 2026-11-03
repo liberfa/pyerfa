@@ -673,7 +673,7 @@ class GUFunc(Function):
 
     @functools.cached_property
     def ufunc_signature(self) -> str:
-        if self.nout > 1:
+        if self.nin and self.nout > 1:
             return super().ufunc_signature
         ufunc_type = f"GUfunc_Nin{self.nin}_Nout{self.nout}"
         params = ", ".join(
@@ -950,6 +950,8 @@ def main(srcdir: Path, templateloc: Path) -> None:
             stub_template = "ufunc_nin0.templ"
         elif nin > 1 and nout == 1 and is_gufunc:
             stub_template = "gufunc_nout1.templ"
+        elif nin == 0 and nout > 1 and is_gufunc:
+            stub_template = "gufunc_nin0.templ"
         else:
             continue
         in_range = range(1, nin + 1)
@@ -962,7 +964,11 @@ def main(srcdir: Path, templateloc: Path) -> None:
                 param_types=", ".join(f"P{i}: ArrayLike" for i in in_range),
                 params=", ".join(f"x{i}: P{i}" for i in in_range),
                 return_types=", ".join(f"R{i}: np.generic" for i in out_range),
+                return_arrs=", ".join(
+                    f"RT{i}: np.generic | np.ndarray" for i in out_range
+                ),
                 return_tuple=", ".join(f"R{i} | NDArray[R{i}]" for i in out_range),
+                return_arr_tuple=", ".join(f"RT{i} | NDArray[R{i}]" for i in out_range),
                 arr_tuple=", ".join(f"NDArray[R{i}]" for i in out_range),
                 out_args=", ".join(
                     f"out{i}: NDArray[R{i}] | None = None" for i in out_range

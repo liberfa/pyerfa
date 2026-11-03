@@ -1,0 +1,16 @@
+@type_check_only
+class GUfunc_Nin0_Nout$nout[  # type: ignore[misc]
+    NTypes: Literal[0, 1],
+    Signature: str,
+    $return_types,
+    $return_arrs,
+](
+    UfuncNoMethods[Literal[0], Literal[$nout], Literal[$nout], NTypes, Signature]
+):
+    @override
+    @overload
+    def __call__(self, $out_args, /) -> tuple[$return_arr_tuple]: ...
+    @overload
+    def __call__(self, /, *, out: tuple[$out_tuple]) -> tuple[$return_arr_tuple]: ...
+    @overload
+    def __call__(self, /, *, out: EllipsisType) -> tuple[$arr_tuple]: ...
