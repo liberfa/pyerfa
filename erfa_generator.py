@@ -559,35 +559,9 @@ class Function(ABC):
             else wrapper
         )
 
-    @functools.cached_property
+    @abstractproperty
     def ufunc_signature(self) -> str:
-        out_types = (
-            f"tuple[{', '.join('np.ndarray | None' for arg in self.ufunc_return)}]"
-        )
-        if self.nout == 1:
-            out_types += " | np.ndarray"
-        param_types = [f"{arg.name}: Any" for arg in self.py_args]
-        if param_types:
-            param_types.append("/")
-        param_types.append(f"out: {out_types} | EllipsisType | None = None")
-
-        return_types = []
-        for arg in self.ufunc_return:
-            if arg.py_type == "Any":
-                return_types.append("Any")
-            elif (
-                not arg.py_type.endswith("DType")
-                and isinstance(arg, Argument)
-                and arg.shape
-            ):
-                return_types.append(f"NDArray[{arg.py_type}]")
-            else:
-                return_types.append(f"{arg.py_type} | NDArray[{arg.py_type}]")
-        return_type = (
-            return_types[0] if self.nout == 1 else f"tuple[{', '.join(return_types)}]"
-        )
-
-        return f"def {self.pyname}({', '.join(param_types)}) -> {return_type}: ..."
+        pass
 
 
 class UFunc(Function):
@@ -673,8 +647,6 @@ class GUFunc(Function):
 
     @functools.cached_property
     def ufunc_signature(self) -> str:
-        if self.nin and self.nout > 1:
-            return super().ufunc_signature
         ufunc_type = f"GUfunc_Nin{self.nin}_Nout{self.nout}"
         params = ", ".join(
             [
@@ -950,6 +922,8 @@ def main(srcdir: Path, templateloc: Path) -> None:
             stub_template = "ufunc_nin0.templ"
         elif nin > 1 and nout == 1 and is_gufunc:
             stub_template = "gufunc_nout1.templ"
+        elif nin and nout > 1 and is_gufunc:
+            stub_template = "gufunc_nout_many.templ"
         elif nin == 0 and nout > 1 and is_gufunc:
             stub_template = "gufunc_nin0.templ"
         else:
@@ -980,7 +954,7 @@ def main(srcdir: Path, templateloc: Path) -> None:
         templateloc / "ufunc.pyi.templ",
         generic_ufunc_types="\n\n".join(generic_ufunc_types),
         generic_gufunc_types="\n\n".join(generic_gufunc_types),
-        funcs="\n\n\n".join(func.ufunc_signature for func in funcs),
+        funcs="\n".join(func.ufunc_signature for func in funcs),
     )
 
 

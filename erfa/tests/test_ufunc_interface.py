@@ -74,6 +74,20 @@ def test_positional_out_none_gufunc_nout1() -> None:
     assert_array_equal(ufunc.ldsun(*args, None), ufunc.ldsun(*args))
 
 
+def test_positional_out_none_gufunc_nout_many() -> None:
+    args = (2400000.5, 53736.0)
+    result = ufunc.pn00a(*args)
+    result_with_out = ufunc.pn00a(*args, None)
+    assert_array_equal(result_with_out[0], result[0])
+    assert_array_equal(result_with_out[1], result[1])
+    assert_array_equal(result_with_out[2], result[2])
+    assert_array_equal(result_with_out[3], result[3])
+    assert_array_equal(result_with_out[4], result[4])
+    assert_array_equal(result_with_out[5], result[5])
+    assert_array_equal(result_with_out[6], result[6])
+    assert_array_equal(result_with_out[7], result[7])
+
+
 def test_keyword_out_none_ufunc_nin0() -> None:
     with pytest.raises(TypeError, match="'out' must be a tuple of arrays"):
         ufunc.bi00(out=None)  # type: ignore[call-overload]
@@ -120,6 +134,11 @@ def test_keyword_out_none_gufunc_nin1_nout1() -> None:
 def test_keyword_out_none_gufunc_nout1() -> None:
     args = (1.234, 0.789, 1e-5, -2e-5, 1e-2, 10.0, 8.75, np.array([0.9, 0.4, 0.1]))
     assert_array_equal(ufunc.pmpx(*args, out=None), ufunc.pmpx(*args))
+
+
+def test_keyword_out_none_gufunc_nout_many() -> None:
+    with pytest.raises(TypeError, match="'out' must be a tuple of arrays"):
+        ufunc.pn00b(2400000.5, 53736.0, out=None)  # type: ignore[call-overload]
 
 
 def test_positional_out_arr_ufunc_nin0() -> None:
@@ -232,6 +251,20 @@ def test_positional_out_arr_gufunc_nout1() -> None:
     assert_array_equal(out, result)
 
 
+def test_positional_out_arr_gufunc_nout_many() -> None:
+    args = (2400000.5, 53736.0, -0.9632552291149335877e-5, 0.4063197106621141414e-4)
+    result = ufunc.pn06(*args)
+    out = (np.zeros(1), None, None, None, None, np.zeros((3, 3)))
+    result_with_1_out = ufunc.pn06(*args, out[0])
+    assert result_with_1_out[0] is out[0]
+    assert_array_equal(out[0], result[0])
+    result_with_2_out = ufunc.pn06(*args, *out)
+    assert result_with_2_out[0] is out[0]
+    assert result_with_2_out[-1] is out[-1]
+    assert_array_equal(out[0], result[0])
+    assert_array_equal(out[-1], result[-1])
+
+
 def test_keyword_out_arr_ufunc_nin0() -> None:
     with pytest.raises(TypeError, match="'out' must be a tuple of arrays"):
         ufunc.bi00(out=np.empty(1))  # type: ignore[call-overload]
@@ -316,6 +349,11 @@ def test_keyword_out_arr_gufunc_nout1() -> None:
     assert_array_equal(out, result)
 
 
+def test_keyword_out_arr_gufunc_nout_many() -> None:
+    with pytest.raises(TypeError, match="'out' must be a tuple of arrays"):
+        ufunc.pn06a(2400000.5, 53736.0, out=np.empty((2, 3)))  # type: ignore[call-overload]
+
+
 def test_positional_out_tuple_ufunc_nin0() -> None:
     with pytest.raises(TypeError, match="return arrays must be of ArrayType"):
         ufunc.bi00((np.empty(2), np.empty(2), np.empty(2)))  # type: ignore[call-overload]
@@ -365,6 +403,12 @@ def test_positional_out_tuple_gufunc_nin1_nout1() -> None:
 def test_positional_out_tuple_gufunc_nout1() -> None:
     with pytest.raises(TypeError, match="return arrays must be of ArrayType"):
         ufunc.c2t00a(0, 0, 0, 0, 0, 0, (np.empty(2),))  # type: ignore[call-overload]
+
+
+def test_positional_out_tuple_gufunc_nout_many() -> None:
+    out = (np.empty(2), np.empty(2), np.empty(2), np.empty(2))
+    with pytest.raises(TypeError, match="return arrays must be of ArrayType"):
+        ufunc.gc2gd(0, 0, 0, 0, out)  # type: ignore[call-overload]
 
 
 def test_keyword_out_tuple_of_arr_ufunc_nin0() -> None:
@@ -463,6 +507,20 @@ def test_keyword_out_tuple_of_arr_gufunc_nout1() -> None:
     assert_array_equal(out, result)
 
 
+def test_keyword_out_tuple_of_arr_gufunc_nout_many() -> None:
+    args = (6378136.0, 0.0033528, np.array([2e6, 3e6, 5.244e6]))
+    result = ufunc.gc2gde(*args)
+    out = (np.zeros(2), np.zeros(2), None, np.zeros(2, dtype=np.int32))
+    result_with_out = ufunc.gc2gde(*args, out=out)
+    assert result_with_out[0] is out[0]
+    assert result_with_out[1] is out[1]
+    assert result_with_out[3] is out[3]
+    assert_array_equal(out[0], result[0])
+    assert_array_equal(out[1], result[1])
+    assert_array_equal(result_with_out[2], result[2])
+    assert_array_equal(out[3], result[3])
+
+
 def test_positional_out_tuple_with_none_ufunc_nin0() -> None:
     with pytest.raises(TypeError, match="return arrays must be of ArrayType"):
         ufunc.bi00((None, np.empty(2), None))  # type: ignore[call-overload]
@@ -513,6 +571,13 @@ def test_positional_out_tuple_with_none_gufunc_nin1_nout1() -> None:
 def test_positional_out_tuple_with_none_gufunc_nout1() -> None:
     with pytest.raises(TypeError, match="return arrays must be of ArrayType"):
         ufunc.c2tpe(0, 0, 0, 0, 0, 0, 0, 0, (None,))  # type: ignore[call-overload]
+
+
+def test_positional_out_tuple_with_none_gufunc_nout_many() -> None:
+    with pytest.raises(TypeError, match="return arrays must be of ArrayType"):
+        ufunc.gd2gc(  # type: ignore[call-overload]
+            0, 3.1, -0.5, 2500.0, (None, np.empty(3, dtype=np.intc))
+        )
 
 
 def test_keyword_out_tuple_with_none_ufunc_nin0() -> None:
@@ -585,6 +650,16 @@ def test_keyword_out_tuple_with_none_gufunc_nout1() -> None:
         -0.1220040848472271978e-7,
     )
     assert_array_equal(ufunc.eors(*args, out=(None,)), ufunc.eors(*args))
+
+
+def test_keyword_out_tuple_with_none_gufunc_nout_many() -> None:
+    args = (6378136.0, 0.0033528, 3.1, -0.5, 2500.0)
+    result = ufunc.gd2gce(*args)
+    out = (None, np.zeros((), dtype=np.intc))
+    result_with_out = ufunc.gd2gce(*args, out=out)
+    assert_array_equal(result_with_out[0], result[0])
+    assert result_with_out[1] is out[1]
+    assert_array_equal(out[1], result[1])
 
 
 def test_out_ellipsis_ufunc_nin0() -> None:
@@ -698,6 +773,21 @@ def test_out_ellipsis_gufunc_nout1() -> None:
     assert_array_equal(result_with_out, ufunc.num00b(*args))
 
 
+def test_out_ellipsis_gufunc_nout_many() -> None:
+    pytest.importorskip(
+        "numpy", minversion="2.3", reason="out=Ellipsis was implemented in numpy 2.3"
+    )
+    args = (-0.03, 0.07, np.array([0.01892212, 0.26682874, 0.96355819]))
+    result = ufunc.tporv(*args)
+    result_with_out = ufunc.tporv(*args, out=...)
+    assert type(result_with_out[0]) is np.ndarray
+    assert_array_equal(result_with_out[0], result[0])
+    assert type(result_with_out[1]) is np.ndarray
+    assert_array_equal(result_with_out[1], result[1])
+    assert type(result_with_out[2]) is np.ndarray
+    assert_array_equal(result_with_out[2], result[2])
+
+
 def test_keyword_out_ellipsis_ufunc_nin0() -> None:
     pytest.importorskip(
         "numpy", minversion="2.3", reason="out=Ellipsis was implemented in numpy 2.3"
@@ -797,6 +887,20 @@ def test_keyword_out_ellipsis_gufunc_nout1() -> None:
         TypeError, match=r"out=... is only allowed as a keyword argument."
     ):
         ufunc.pxp((0, 1, 2), [3, 2, 1], ...)  # type: ignore[call-overload]
+
+
+def test_keyword_out_ellipsis_gufunc_nout_many() -> None:
+    pytest.importorskip(
+        "numpy", minversion="2.3", reason="out=Ellipsis was implemented in numpy 2.3"
+    )
+    with pytest.raises(
+        TypeError, match=r"out=... is only allowed as a keyword argument."
+    ):
+        ufunc.tpxev(  # type: ignore[call-overload]
+            [-0.19105357, 0.14272128, 0.97114838],
+            [0.01892212, 0.26682874, 0.96355819],
+            ...,
+        )
 
 
 def test_non_contiguous_output_matrix() -> None:
