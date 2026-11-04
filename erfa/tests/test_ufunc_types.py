@@ -117,6 +117,33 @@ def test_dt_pv_scalar() -> None:
     assert zpv["v"].dtype == np.float64
 
 
+def test_dt_pv_scalar_recarray_view() -> None:
+    zpv_recarray = ufunc.zpv().view(np.recarray)
+    assert_type(zpv_recarray, "ufunc.PVRecord")
+    assert isinstance(zpv_recarray, np.record)
+    assert zpv_recarray.dtype == ufunc.dt_pv
+
+    assert_type(zpv_recarray.p, Array1D[np.float64])
+    assert isinstance(zpv_recarray.p, np.ndarray)
+    assert zpv_recarray.p.ndim == 1
+    assert zpv_recarray.p.dtype == np.float64
+
+    assert_type(zpv_recarray.v,  Array1D[np.float64])
+    assert isinstance(zpv_recarray.v, np.ndarray)
+    assert zpv_recarray.v.ndim == 1
+    assert zpv_recarray.v.dtype == np.float64
+
+    assert_type(zpv_recarray["p"], Array1D[np.float64])
+    assert isinstance(zpv_recarray["p"], np.ndarray)
+    assert zpv_recarray["p"].ndim == 1
+    assert zpv_recarray["p"].dtype == np.float64
+
+    assert_type(zpv_recarray["v"], Array1D[np.float64])
+    assert isinstance(zpv_recarray["v"], np.ndarray)
+    assert zpv_recarray["v"].ndim == 1
+    assert zpv_recarray["v"].dtype == np.float64
+
+
 def test_dt_pv_array() -> None:
     pv = ufunc.p2pv([[1, 2, 3]])
     assert_type(pv, Union["ufunc.PVDType", NDArray["ufunc.PVDType"]])
