@@ -22,8 +22,9 @@ from typing import (
 
 import numpy as np
 from numpy.typing import ArrayLike, DTypeLike, NDArray
+from _typeshed import Incomplete
 
-from ._typing import Array0D, Array1D, Array2D, Array3D
+from ._typing import Array0D, Array1D, Array2D, Array3D, _DTypeLike
 
 erfa_version: Final[str]
 sofa_version: Final[str]
@@ -66,7 +67,32 @@ dt_hmsf: Final[HMSFDType]
 type LeapSecondDType = CustomVoidDType[np.intc | np.float64]
 dt_eraLEAPSECOND: Final[LeapSecondDType]
 
-type PVDType = CustomVoidDType[Array1D[np.float64]]
+
+class PVDType(CustomVoidDType[Array1D[np.float64]]):  # type: ignore[misc]
+    @overload  # type: ignore[override]
+    def view(self, type: type[np.recarray] = ...) -> PVRecord: ...
+    @overload
+    def view(self, type: type[np.ndarray] = ...) -> Self: ...
+    @overload
+    def view[ScalarT: np.generic](
+        self, /, dtype: _DTypeLike[ScalarT], type: type[np.ndarray] = ...
+    ) -> ScalarT: ...
+    @overload
+    def view(self, /, dtype: DTypeLike, type: type[np.ndarray] = ...) -> Incomplete: ...
+
+
+@type_check_only
+class PVRecord(PVDType, np.record):  # type: ignore[misc]
+    @property
+    def p(self) -> Array1D[np.float64]: ...
+    @p.setter
+    def p(self, val: ArrayLike, /) -> None: ...
+    @property
+    def v(self) -> Array1D[np.float64]: ...
+    @v.setter
+    def v(self, val: ArrayLike, /) -> None: ...
+
+
 dt_pv: Final[PVDType]
 
 type SignDType = CustomVoidDType[np.bytes_]
