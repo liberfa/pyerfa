@@ -15,6 +15,7 @@ __pycache__
 MANIFEST
 erfa/core.py
 erfa/tests/test_ufunc.py
+erfa/ufunc.pyi
 erfa/_version.py
 
 # Sphinx
