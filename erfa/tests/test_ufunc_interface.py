@@ -643,7 +643,7 @@ def test_keyword_out_tuple_with_none_gufunc_nin1_nout1() -> None:
 def test_keyword_out_tuple_with_none_gufunc_nout1() -> None:
     args = (
         (
-            np.array([0.9999989, -0.13328817e-2, -0.5790767e-3]),
+            [0.9999989, -0.13328817e-2, -0.5790767e-3],
             [0.1332858e-2, 0.9999991, -0.4097782e-4],
             (0.5791308e-3, 0.4020595e-4, 0.99999983),
         ),
