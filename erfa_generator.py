@@ -575,7 +575,7 @@ class UFunc(Function):
         params = ", ".join(
             [
                 f"Literal[{int(not self.user_dtype)}]",
-                *["Any" for arg in self.py_args],
+                *["ArrayLike" for arg in self.py_args],
                 *[arg.py_type for arg in self.ufunc_return],
             ]
         )
@@ -652,7 +652,7 @@ class GUFunc(Function):
             [
                 f"Literal[{int(not self.user_dtype)}]",
                 f"Literal[{self.signature}]",
-                *["Any" for arg in self.py_args],
+                *["ArrayLike" for arg in self.py_args],
                 *[arg.py_type for arg in self.ufunc_return],
                 *[arg.py_arr_type or arg.py_type for arg in self.ufunc_return],
             ]
