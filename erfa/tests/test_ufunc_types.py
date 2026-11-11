@@ -6,7 +6,9 @@ import numpy as np
 from numpy.typing import NDArray
 
 from erfa import ufunc
-from erfa._typing import Array0D, Array1D, Array2D
+from erfa._typing import Array0D
+
+from .utils import assert_0d_array, assert_1d_array, assert_2d_array, assert_scalar
 
 
 def test_status_codes_scalar() -> None:
@@ -28,15 +30,12 @@ def test_dt_dmsf_scalar() -> None:
     assert isinstance(idmsf, np.void)
     assert idmsf.dtype == ufunc.dt_dmsf
 
-    assert_type(idmsf["d"], np.intc)
     # Also a regression test for #343 - the degrees field was named "h".
-    assert idmsf["d"].dtype == np.intc
-    assert_type(idmsf["m"], np.intc)
-    assert idmsf["m"].dtype == np.intc
-    assert_type(idmsf["s"], np.intc)
-    assert idmsf["s"].dtype == np.intc
-    assert_type(idmsf["f"], np.intc)
-    assert idmsf["f"].dtype == np.intc
+    assert_scalar(idmsf["d"], np.intc)
+
+    assert_scalar(idmsf["m"], np.intc)
+    assert_scalar(idmsf["s"], np.intc)
+    assert_scalar(idmsf["f"], np.intc)
 
 
 def test_dt_dmsf_array() -> None:
@@ -75,14 +74,10 @@ def test_dt_hmsf_scalar() -> None:
     assert isinstance(ihmsf, np.void)
     assert ihmsf.dtype == ufunc.dt_hmsf
 
-    assert_type(ihmsf["h"], np.intc)
-    assert ihmsf["h"].dtype == np.intc
-    assert_type(ihmsf["m"], np.intc)
-    assert ihmsf["m"].dtype == np.intc
-    assert_type(ihmsf["s"], np.intc)
-    assert ihmsf["s"].dtype == np.intc
-    assert_type(ihmsf["f"], np.intc)
-    assert ihmsf["f"].dtype == np.intc
+    assert_scalar(ihmsf["h"], np.intc)
+    assert_scalar(ihmsf["m"], np.intc)
+    assert_scalar(ihmsf["s"], np.intc)
+    assert_scalar(ihmsf["f"], np.intc)
 
 
 def test_dt_hmsf_array() -> None:
@@ -93,28 +88,14 @@ def test_dt_hmsf_array() -> None:
 
 
 def test_leap_seconds() -> None:
-    leap_seconds = ufunc.get_leap_seconds()
-    assert_type(leap_seconds, Array1D["ufunc.LeapSecondDType"])
-    assert isinstance(leap_seconds, np.ndarray)
-    assert leap_seconds.ndim == 1
-    assert leap_seconds.dtype == ufunc.dt_eraLEAPSECOND
+    assert_1d_array(ufunc.get_leap_seconds(), "ufunc.LeapSecondDType")
 
 
 def test_dt_pv_scalar() -> None:
     zpv = ufunc.zpv()
-    assert_type(zpv, "ufunc.PVDType")
-    assert isinstance(zpv, np.void)
-    assert zpv.dtype == ufunc.dt_pv
-
-    assert_type(zpv["p"], Array1D[np.float64])
-    assert type(zpv["p"]) is np.ndarray
-    assert zpv["p"].ndim == 1
-    assert zpv["p"].dtype == np.float64
-
-    assert_type(zpv["v"], Array1D[np.float64])
-    assert type(zpv["v"]) is np.ndarray
-    assert zpv["v"].ndim == 1
-    assert zpv["v"].dtype == np.float64
+    assert_scalar(zpv, "ufunc.PVDType")
+    assert_1d_array(zpv["p"], np.float64)
+    assert_1d_array(zpv["v"], np.float64)
 
 
 def test_dt_pv_scalar_recarray_view() -> None:
@@ -123,25 +104,10 @@ def test_dt_pv_scalar_recarray_view() -> None:
     assert isinstance(zpv_recarray, np.record)
     assert zpv_recarray.dtype == ufunc.dt_pv
 
-    assert_type(zpv_recarray.p, Array1D[np.float64])
-    assert isinstance(zpv_recarray.p, np.ndarray)
-    assert zpv_recarray.p.ndim == 1
-    assert zpv_recarray.p.dtype == np.float64
-
-    assert_type(zpv_recarray.v,  Array1D[np.float64])
-    assert isinstance(zpv_recarray.v, np.ndarray)
-    assert zpv_recarray.v.ndim == 1
-    assert zpv_recarray.v.dtype == np.float64
-
-    assert_type(zpv_recarray["p"], Array1D[np.float64])
-    assert isinstance(zpv_recarray["p"], np.ndarray)
-    assert zpv_recarray["p"].ndim == 1
-    assert zpv_recarray["p"].dtype == np.float64
-
-    assert_type(zpv_recarray["v"], Array1D[np.float64])
-    assert isinstance(zpv_recarray["v"], np.ndarray)
-    assert zpv_recarray["v"].ndim == 1
-    assert zpv_recarray["v"].dtype == np.float64
+    assert_1d_array(zpv_recarray.p, np.float64)
+    assert_1d_array(zpv_recarray.v, np.float64)
+    assert_1d_array(zpv_recarray["p"], np.float64)
+    assert_1d_array(zpv_recarray["v"], np.float64)
 
 
 def test_dt_pv_array() -> None:
@@ -157,36 +123,20 @@ def test_dt_sign_scalar() -> None:
     assert isinstance(sign, np.void)
     assert sign.dtype == ufunc.dt_sign
 
-    assert_type(sign[()], "ufunc.SignDType")
-    assert sign[()].dtype == ufunc.dt_sign
+    assert_scalar(sign[()], "ufunc.SignDType")
+    assert_0d_array(sign[...], "ufunc.SignDType")
 
-    assert_type(sign[...], Array0D["ufunc.SignDType"])
-    assert type(sign[...]) is np.ndarray
-    assert sign[...].ndim == 0
-    assert sign[...].dtype == ufunc.dt_sign
-
+    # Not using assert_0d_array here because of a bug in numpy < 2.6
+    # (https://github.com/numpy/numpy/pull/32744)
     assert_type(sign[(...,)], Array0D["ufunc.SignDType"])
     assert sign[(...,)].ndim == 0
-    assert sign[...].dtype == ufunc.dt_sign
+    assert sign[(...,)].dtype == ufunc.dt_sign
 
-    assert_type(sign[None], Array1D["ufunc.SignDType"])
-    assert type(sign[None]) is np.ndarray
-    assert sign[None].ndim == 1
-    assert sign[None].dtype == ufunc.dt_sign
-
-    assert_type(sign[(None, None)], Array2D["ufunc.SignDType"])
-    assert type(sign[(None, None)]) is np.ndarray
-    assert sign[(None, None)].ndim == 2
-    assert sign[(None, None)].dtype == ufunc.dt_sign
-
-    assert_type(sign["sign"], np.bytes_)
-    assert type(sign["sign"]) is np.bytes_
-
-    assert_type(sign[0], np.bytes_)
-    assert type(sign[0]) is np.bytes_
-
-    assert_type(sign[["sign"]], "ufunc.SignDType")
-    assert sign[["sign"]].dtype == ufunc.dt_sign
+    assert_1d_array(sign[None], "ufunc.SignDType")
+    assert_2d_array(sign[(None, None)], "ufunc.SignDType")
+    assert_scalar(sign["sign"], np.bytes_)
+    assert_scalar(sign[0], np.bytes_)
+    assert_scalar(sign[["sign"]], "ufunc.SignDType")
 
 
 def test_dt_sign_array() -> None:
@@ -202,14 +152,10 @@ def test_dt_ymdf_scalar() -> None:
     assert isinstance(iydmf, np.void)
     assert iydmf.dtype == ufunc.dt_ymdf
 
-    assert_type(iydmf["y"], np.intc)
-    assert iydmf["y"].dtype == np.intc
-    assert_type(iydmf["m"], np.intc)
-    assert iydmf["m"].dtype == np.intc
-    assert_type(iydmf["d"], np.intc)
-    assert iydmf["d"].dtype == np.intc
-    assert_type(iydmf["f"], np.intc)
-    assert iydmf["f"].dtype == np.intc
+    assert_scalar(iydmf["y"], np.intc)
+    assert_scalar(iydmf["m"], np.intc)
+    assert_scalar(iydmf["d"], np.intc)
+    assert_scalar(iydmf["f"], np.intc)
 
 
 def test_dt_ymdf_array() -> None:
