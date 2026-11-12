@@ -1,6 +1,6 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
-from typing import Literal, Union, assert_type
+from typing import Union, assert_type
 
 import numpy as np
 from numpy.typing import NDArray
@@ -12,6 +12,7 @@ from .utils import (
     assert_0d_array,
     assert_1d_array,
     assert_2d_array,
+    assert_literal,
     assert_none,
     assert_scalar,
 )
@@ -173,150 +174,100 @@ def test_dt_ymdf_array() -> None:
 
 def test_ufunc_nin0_nout1_attributes() -> None:
     assert_none(ufunc.zpv.identity)
-    assert_type(ufunc.zpv.nin, Literal[0])
-    assert ufunc.zpv.nin == 0
-    assert_type(ufunc.zpv.nout, Literal[1])
-    assert ufunc.zpv.nout == 1
-    assert_type(ufunc.zpv.nargs, Literal[1])
-    assert ufunc.zpv.nargs == 1
-    assert_type(ufunc.zpv.ntypes, Literal[0])
-    assert ufunc.zpv.ntypes == 0
+    assert_literal(ufunc.zpv.nin, 0)
+    assert_literal(ufunc.zpv.nout, 1)
+    assert_literal(ufunc.zpv.nargs, 1)
+    assert_literal(ufunc.zpv.ntypes, 0)
     assert_none(ufunc.zpv.signature)
 
 
 def test_ufunc_nin0_attributes() -> None:
     assert_none(ufunc.bi00.identity)
-    assert_type(ufunc.bi00.nin, Literal[0])
-    assert ufunc.bi00.nin == 0
-    assert_type(ufunc.bi00.nout, Literal[3])
-    assert ufunc.bi00.nout == 3
-    assert_type(ufunc.bi00.nargs, Literal[3])
-    assert ufunc.bi00.nargs == 3
-    assert_type(ufunc.bi00.ntypes, Literal[1])
-    assert ufunc.bi00.ntypes == 1
+    assert_literal(ufunc.bi00.nin, 0)
+    assert_literal(ufunc.bi00.nout, 3)
+    assert_literal(ufunc.bi00.nargs, 3)
+    assert_literal(ufunc.bi00.ntypes, 1)
     assert_none(ufunc.bi00.signature)
 
 
 def test_ufunc_nin1_nout1_attributes() -> None:
     assert_none(ufunc.fad03.identity)
-    assert_type(ufunc.fae03.nin, Literal[1])
-    assert ufunc.fae03.nin == 1
-    assert_type(ufunc.faf03.nout, Literal[1])
-    assert ufunc.faf03.nout == 1
-    assert_type(ufunc.faju03.nargs, Literal[2])
-    assert ufunc.faju03.nargs == 2
-    assert_type(ufunc.falp03.ntypes, Literal[1])
-    assert ufunc.falp03.ntypes == 1
+    assert_literal(ufunc.fae03.nin, 1)
+    assert_literal(ufunc.faf03.nout, 1)
+    assert_literal(ufunc.faju03.nargs, 2)
+    assert_literal(ufunc.falp03.ntypes, 1)
     assert_none(ufunc.fama03.signature)
 
 
 def test_ufunc_nin2_nout1_attributes() -> None:
     assert_none(ufunc.epb.identity)
-    assert_type(ufunc.epj.nin, Literal[2])
-    assert ufunc.epj.nin == 2
-    assert_type(ufunc.apcg13.nout, Literal[1])
-    assert ufunc.apcg13.nout == 1
-    assert_type(ufunc.aper.nargs, Literal[3])
-    assert ufunc.aper.nargs == 3
-    assert_type(ufunc.moon98.ntypes, Literal[0])
-    assert ufunc.moon98.ntypes == 0
+    assert_literal(ufunc.epj.nin, 2)
+    assert_literal(ufunc.apcg13.nout, 1)
+    assert_literal(ufunc.aper.nargs, 3)
+    assert_literal(ufunc.moon98.ntypes, 0)
     assert_none(ufunc.eo06a.signature)
 
 
 def test_ufunc_nout1_attributes() -> None:
     assert_none(ufunc.apcs13.identity)
-    assert_type(ufunc.s00.nin, Literal[4])
-    assert ufunc.s00.nin == 4
-    assert_type(ufunc.gmst06.nout, Literal[1])
-    assert ufunc.gmst06.nout == 1
-    assert_type(ufunc.hd2pa.nargs, Literal[4])
-    assert ufunc.hd2pa.nargs == 4
-    assert_type(ufunc.pas.ntypes, Literal[1])
-    assert ufunc.pas.ntypes == 1
+    assert_literal(ufunc.s00.nin, 4)
+    assert_literal(ufunc.gmst06.nout, 1)
+    assert_literal(ufunc.hd2pa.nargs, 4)
+    assert_literal(ufunc.pas.ntypes, 1)
     assert_none(ufunc.s2xpv.signature)
 
 
 def test_ufunc_attributes() -> None:
     assert_none(ufunc.epb2jd.identity)
-    assert_type(ufunc.atci13.nin, Literal[8])
-    assert ufunc.atci13.nin == 8
-    assert_type(ufunc.refco.nout, Literal[2])
-    assert ufunc.refco.nout == 2
-    assert_type(ufunc.nut00a.nargs, Literal[4])
-    assert ufunc.nut00a.nargs == 4
-    assert_type(ufunc.pb06.ntypes, Literal[1])
-    assert ufunc.pb06.ntypes == 1
+    assert_literal(ufunc.atci13.nin, 8)
+    assert_literal(ufunc.refco.nout, 2)
+    assert_literal(ufunc.nut00a.nargs, 4)
+    assert_literal(ufunc.pb06.ntypes, 1)
     assert_none(ufunc.fk45z.signature)
 
 
 def test_gufunc_nin0_nout1_attributes() -> None:
     assert_none(ufunc.ir.identity)
-    assert_type(ufunc.zp.nin, Literal[0])
-    assert ufunc.zp.nin == 0
-    assert_type(ufunc.zr.nout, Literal[1])
-    assert ufunc.zr.nout == 1
-    assert_type(ufunc.ir.nargs, Literal[1])
-    assert ufunc.ir.nargs == 1
-    assert_type(ufunc.zp.ntypes, Literal[1])
-    assert ufunc.zp.ntypes == 1
-    assert_type(ufunc.zr.signature, Literal["->(3, 3)"])
-    assert ufunc.zr.signature == "->(3, 3)"
+    assert_literal(ufunc.zp.nin, 0)
+    assert_literal(ufunc.zr.nout, 1)
+    assert_literal(ufunc.ir.nargs, 1)
+    assert_literal(ufunc.zp.ntypes, 1)
+    assert_literal(ufunc.zr.signature, "->(3, 3)")
 
 
 def test_gufunc_nin0_attributes() -> None:
     assert_none(ufunc.fk5hip.identity)
-    assert_type(ufunc.fk5hip.nin, Literal[0])
-    assert ufunc.fk5hip.nin == 0
-    assert_type(ufunc.fk5hip.nout, Literal[2])
-    assert ufunc.fk5hip.nout == 2
-    assert_type(ufunc.fk5hip.nargs, Literal[2])
-    assert ufunc.fk5hip.nargs == 2
-    assert_type(ufunc.fk5hip.ntypes, Literal[1])
-    assert ufunc.fk5hip.ntypes == 1
-    assert_type(ufunc.fk5hip.signature, Literal["->(3, 3),(3)"])
-    assert ufunc.fk5hip.signature == "->(3, 3),(3)"
+    assert_literal(ufunc.fk5hip.nin, 0)
+    assert_literal(ufunc.fk5hip.nout, 2)
+    assert_literal(ufunc.fk5hip.nargs, 2)
+    assert_literal(ufunc.fk5hip.ntypes, 1)
+    assert_literal(ufunc.fk5hip.signature, "->(3, 3),(3)")
 
 
 def test_gufunc_nin1_nout1_attributes() -> None:
     assert_none(ufunc.ltp.identity)
-    assert_type(ufunc.ltpb.nin, Literal[1])
-    assert ufunc.ltpb.nin == 1
-    assert_type(ufunc.ltpecl.nout, Literal[1])
-    assert ufunc.ltpecl.nout == 1
-    assert_type(ufunc.ltpequ.nargs, Literal[2])
-    assert ufunc.ltpequ.nargs == 2
-    assert_type(ufunc.ltecm.ntypes, Literal[1])
-    assert ufunc.ltecm.ntypes == 1
-    assert_type(ufunc.cp.signature, Literal["(3)->(3)"])
-    assert ufunc.cp.signature == "(3)->(3)"
+    assert_literal(ufunc.ltpb.nin, 1)
+    assert_literal(ufunc.ltpecl.nout, 1)
+    assert_literal(ufunc.ltpequ.nargs, 2)
+    assert_literal(ufunc.ltecm.ntypes, 1)
+    assert_literal(ufunc.cp.signature, "(3)->(3)")
 
 
 def test_gufunc_nout1_attributes() -> None:
     assert_none(ufunc.ab.identity)
-    assert_type(ufunc.apcg.nin, Literal[4])
-    assert ufunc.apcg.nin == 4
-    assert_type(ufunc.apci.nout, Literal[1])
-    assert ufunc.apci.nout == 1
-    assert_type(ufunc.apco.nargs, Literal[17])
-    assert ufunc.apco.nargs == 17
-    assert_type(ufunc.apcs.ntypes, Literal[0])
-    assert ufunc.apcs.ntypes == 0
-    assert_type(ufunc.ld.signature, Literal["(),(3),(3),(3),(),()->(3)"])
-    assert ufunc.ld.signature == "(),(3),(3),(3),(),()->(3)"
+    assert_literal(ufunc.apcg.nin, 4)
+    assert_literal(ufunc.apci.nout, 1)
+    assert_literal(ufunc.apco.nargs, 17)
+    assert_literal(ufunc.apcs.ntypes, 0)
+    assert_literal(ufunc.ld.signature, "(),(3),(3),(3),(),()->(3)")
 
 
 def test_gufunc_attributes() -> None:
     assert_none(ufunc.atciqn.identity)
-    assert_type(ufunc.aticqn.nin, Literal[4])
-    assert ufunc.aticqn.nin == 4
-    assert_type(ufunc.bp00.nout, Literal[3])
-    assert ufunc.bp00.nout == 3
-    assert_type(ufunc.bp06.nargs, Literal[5])
-    assert ufunc.bp06.nargs == 5
-    assert_type(ufunc.bpn2xy.ntypes, Literal[1])
-    assert ufunc.bpn2xy.ntypes == 1
-    assert_type(
-        ufunc.pn00.signature,
-        Literal["(),(),(),()->(),(3, 3),(3, 3),(3, 3),(3, 3),(3, 3)"],
+    assert_literal(ufunc.aticqn.nin, 4)
+    assert_literal(ufunc.bp00.nout, 3)
+    assert_literal(ufunc.bp06.nargs, 5)
+    assert_literal(ufunc.bpn2xy.ntypes, 1)
+    assert_literal(
+        ufunc.pn00.signature, "(),(),(),()->(),(3, 3),(3, 3),(3, 3),(3, 3),(3, 3)"
     )
-    assert ufunc.pn00.signature == "(),(),(),()->(),(3, 3),(3, 3),(3, 3),(3, 3),(3, 3)"
