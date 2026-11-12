@@ -160,3 +160,9 @@ def assert_scalar(
         pytest.fail(f"{scalar = } is not a scalar")
     if scalar.dtype != DTYPES[dtype]:
         pytest.fail(f"{scalar.dtype = }, expected {dtype}")
+
+
+def assert_none(none: None) -> None:
+    __tracebackhide__ = True
+    if none is not None:
+        pytest.fail(f"{none!r} is not 'None'")
