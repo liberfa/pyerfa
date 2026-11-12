@@ -1,7 +1,7 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
 from collections.abc import Mapping
-from typing import Final, Literal, Union, overload
+from typing import Final, Literal, LiteralString, Union, overload
 
 import numpy as np
 import pytest
@@ -160,3 +160,53 @@ def assert_scalar(
         pytest.fail(f"{scalar = } is not a scalar")
     if scalar.dtype != DTYPES[dtype]:
         pytest.fail(f"{scalar.dtype = }, expected {dtype}")
+
+
+@overload
+def assert_literal(actual: Literal[0], expected: Literal[0]) -> None: ...
+@overload
+def assert_literal(actual: Literal[1], expected: Literal[1]) -> None: ...
+@overload
+def assert_literal(actual: Literal[2], expected: Literal[2]) -> None: ...
+@overload
+def assert_literal(actual: Literal[3], expected: Literal[3]) -> None: ...
+@overload
+def assert_literal(actual: Literal[4], expected: Literal[4]) -> None: ...
+@overload
+def assert_literal(actual: Literal[5], expected: Literal[5]) -> None: ...
+@overload
+def assert_literal(actual: Literal[8], expected: Literal[8]) -> None: ...
+@overload
+def assert_literal(actual: Literal[17], expected: Literal[17]) -> None: ...
+@overload
+def assert_literal(
+    actual: Literal["(),(),(),()->(),(3, 3),(3, 3),(3, 3),(3, 3),(3, 3)"],
+    expected: Literal["(),(),(),()->(),(3, 3),(3, 3),(3, 3),(3, 3),(3, 3)"],
+) -> None: ...
+@overload
+def assert_literal(
+    actual: Literal["(),(3),(3),(3),(),()->(3)"],
+    expected: Literal["(),(3),(3),(3),(),()->(3)"],
+) -> None: ...
+@overload
+def assert_literal(
+    actual: Literal["(3)->(3)"], expected: Literal["(3)->(3)"]
+) -> None: ...
+@overload
+def assert_literal(
+    actual: Literal["->(3, 3)"], expected: Literal["->(3, 3)"]
+) -> None: ...
+@overload
+def assert_literal(
+    actual: Literal["->(3, 3),(3)"], expected: Literal["->(3, 3),(3)"]
+) -> None: ...
+def assert_literal(actual: int | LiteralString, expected: int | LiteralString) -> None:
+    __tracebackhide__ = True
+    if actual != expected:
+        pytest.fail(f"{actual} != {expected}")
+
+
+def assert_none(none: None) -> None:
+    __tracebackhide__ = True
+    if none is not None:
+        pytest.fail(f"{none!r} is not 'None'")
