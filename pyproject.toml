@@ -106,6 +106,7 @@ packages = [
     "erfa._typing",
     "erfa.tests.test_ufunc",
     "erfa.tests.test_ufunc_interface",
+    "erfa.tests.test_ufunc_shapes",
     "erfa.tests.test_ufunc_types",
     "erfa.tests.utils",
 ]
