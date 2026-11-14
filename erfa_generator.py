@@ -98,7 +98,16 @@ class Variable:
         return "()"
 
     @functools.cached_property
-    def py_type(self) -> str:
+    def py_scalar_param_type(self) -> str:
+        match self.dtype:
+            case "dt_double":
+                return "SupportsFloat | SupportsIndex"
+            case "dt_pv":
+                return "PVDType"
+        raise ValueError(f"scalar parameter annotation not known for {self.dtype}")
+
+    @functools.cached_property
+    def py_return_type(self) -> str:
         match self.dtype:
             case "dt_dmsf":
                 return "DMSFDType"
@@ -209,7 +218,7 @@ class Argument(Variable):
         return (
             None
             if self.signature_shape == "()"
-            else f"Array{self.ndim}D[{self.py_type}]"
+            else f"Array{self.ndim}D[{self.py_return_type}]"
         )
 
     def inner_loop_steps_and_copy(self, name_suffix: str = "") -> list[str]:
@@ -267,7 +276,7 @@ class StatusCode(Variable):
         return ["{", *[f'    {k!r}: "{v}",' for k, v in self.descriptons.items()], "}"]
 
     @functools.cached_property
-    def py_type(self) -> str:
+    def py_return_type(self) -> str:
         return "np.intc"
 
 
@@ -572,14 +581,14 @@ class UFunc(Function):
     @functools.cached_property
     def ufunc_signature(self) -> str:
         ufunc_type = f"Ufunc_Nin{self.nin}_Nout{self.nout}"
-        params = ", ".join(
-            [
-                f"Literal[{int(not self.user_dtype)}]",
+        params = [f"Literal[{int(not self.user_dtype)}]"]
+        if self.nin == 1 and self.nout == 1:
+            params.extend(arg.py_scalar_param_type for arg in self.py_args)
+        params.extend([
                 *["ArrayLike" for arg in self.py_args],
-                *[arg.py_type for arg in self.ufunc_return],
-            ]
-        )
-        return f"{self.pyname}: Final[{ufunc_type}[{params}]]"
+                *[arg.py_return_type for arg in self.ufunc_return],
+        ])
+        return f"{self.pyname}: Final[{ufunc_type}[{', '.join(params)}]]"
 
 
 class GUFunc(Function):
@@ -653,8 +662,8 @@ class GUFunc(Function):
                 f"Literal[{int(not self.user_dtype)}]",
                 f"Literal[{self.signature}]",
                 *["ArrayLike" for arg in self.py_args],
-                *[arg.py_type for arg in self.ufunc_return],
-                *[arg.py_arr_type or arg.py_type for arg in self.ufunc_return],
+                *[arg.py_return_type for arg in self.ufunc_return],
+                *[arg.py_arr_type or arg.py_return_type for arg in self.ufunc_return],
             ]
         )
         return f"{self.pyname}: Final[{ufunc_type}[{params}]]"

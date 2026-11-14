@@ -14,6 +14,7 @@ from typing import (
     Never,
     NoReturn,
     Self,
+    SupportsFloat,
     SupportsIndex,
     overload,
     override,
@@ -160,20 +161,29 @@ class Ufunc_Nin0_Nout1[NTypes: Literal[0, 1], ReturnT: np.generic](  # type: ign
 
 
 @type_check_only
-class Ufunc_Nin1_Nout1[NTypes: Literal[0, 1], P: ArrayLike, R: np.generic](  # type: ignore[misc]
-    UfuncNoMethods[Literal[1], Literal[1], Literal[2], NTypes, None]
-):
+class Ufunc_Nin1_Nout1[  # type: ignore[misc]
+    NTypes: Literal[0, 1],
+    ScalarP,
+    ArrayP: ArrayLike,
+    R: np.generic
+](UfuncNoMethods[Literal[1], Literal[1], Literal[2], NTypes, None]):
     @override
     @overload
-    def __call__(self, x: P, /, out: None = None) -> R | NDArray[R]: ...
+    def __call__(self, x: ScalarP, /, out: None = None) -> R: ...
     @overload
-    def __call__(self, x: P, /, *, out: tuple[None]) -> R | NDArray[R]: ...
+    def __call__(self, x: ArrayP, /, out: None = None) -> NDArray[R]: ...
     @overload
-    def __call__(self, x: P, /, *, out: EllipsisType) -> NDArray[R]: ...
+    def __call__(self, x: ScalarP, /, *, out: tuple[None]) -> R: ...
     @overload
-    def __call__(self, x: P, out: NDArray[R], /) -> NDArray[R]: ...
+    def __call__(self, x: ArrayP, /, *, out: tuple[None]) -> NDArray[R]: ...
     @overload
-    def __call__(self, x: P, /, *, out: NDArray[R] | tuple[NDArray[R]]) -> NDArray[R]: ...
+    def __call__(self, x: ScalarP, /, *, out: EllipsisType) -> Array0D[R]: ...
+    @overload
+    def __call__(self, x: ArrayP, /, *, out: EllipsisType) -> NDArray[R]: ...
+    @overload
+    def __call__(self, x: ScalarP | ArrayP, out: NDArray[R], /) -> NDArray[R]: ...
+    @overload
+    def __call__(self, x: ScalarP | ArrayP, /, *, out: NDArray[R] | tuple[NDArray[R]]) -> NDArray[R]: ...
     @override
     def at(self, a: ArrayLike, indices: ArrayLike, /) -> None: ...  # type: ignore[override]
 
