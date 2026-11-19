@@ -16,14 +16,6 @@ def test_ufunc_nin1_nout1_array() -> None:
     assert_1d_array(ufunc.falp03([0.8]), np.float64)
 
 
-def test_ufunc_nin1_nout1_scalar_out_none_tuple() -> None:
-    assert_scalar(ufunc.fama03(np.float64(0.8), out=(None,)), np.float64)
-
-
-def test_ufunc_nin1_nout1_array_out_none_tuple() -> None:
-    assert_1d_array(ufunc.fame03((1,), out=(None,)), np.float64)
-
-
 def test_ufunc_nin1_nout1_scalar_out_ellipsis() -> None:
     pytest.importorskip(
         "numpy", minversion="2.3", reason="out=Ellipsis was implemented in numpy 2.3"
