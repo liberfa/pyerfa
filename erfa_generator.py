@@ -101,7 +101,7 @@ class Variable:
     def py_scalar_param_type(self) -> str:
         match self.dtype:
             case "dt_double":
-                return "SupportsFloat | SupportsIndex"
+                return "float | np.floating | np.integer"
             case "dt_pv":
                 return "PVDType"
         raise ValueError(f"scalar parameter annotation not known for {self.dtype}")

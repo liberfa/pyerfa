@@ -12,8 +12,16 @@ def test_ufunc_nin1_nout1_scalar() -> None:
     assert_scalar(ufunc.fal03(0.8), np.float64)
 
 
-def test_ufunc_nin1_nout1_array() -> None:
+def test_ufunc_nin1_nout1_0d_array() -> None:
+    assert_scalar(ufunc.fal03(np.float32(0.8)[...]), np.float64)
+
+
+def test_ufunc_nin1_nout1_array_like() -> None:
     assert_1d_array(ufunc.falp03([0.8]), np.float64)
+
+
+def test_ufunc_nin1_nout1_array() -> None:
+    assert_1d_array(ufunc.falp03(np.ones(1)), np.float64)
 
 
 def test_ufunc_nin1_nout1_scalar_out_ellipsis() -> None:
@@ -21,6 +29,13 @@ def test_ufunc_nin1_nout1_scalar_out_ellipsis() -> None:
         "numpy", minversion="2.3", reason="out=Ellipsis was implemented in numpy 2.3"
     )
     assert_0d_array(ufunc.fane03(1, out=...), np.float64)
+
+
+def test_ufunc_nin1_nout1_array_like_out_ellipsis() -> None:
+    pytest.importorskip(
+        "numpy", minversion="2.3", reason="out=Ellipsis was implemented in numpy 2.3"
+    )
+    assert_1d_array(ufunc.cpv([ufunc.zpv()], out=...), "ufunc.PVDType")
 
 
 def test_ufunc_nin1_nout1_array_out_ellipsis() -> None:
