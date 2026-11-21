@@ -14,7 +14,6 @@ from typing import (
     Never,
     NoReturn,
     Self,
-    SupportsFloat,
     SupportsIndex,
     overload,
     override,
@@ -167,9 +166,19 @@ class Ufunc_Nin1_Nout1[  # type: ignore[misc]
     @overload
     def __call__(self, x: ScalarP, /, out: None = None) -> R: ...
     @overload
+    def __call__(self, x: Array0D[Any], /, out: None = None) -> R: ...  # type: ignore[overload-overlap]
+    @overload
+    def __call__[S: tuple[int, ...]](
+        self, x: np.ndarray[S, Any], /, out: None = None
+    ) -> np.ndarray[S, np.dtype[R]]: ...
+    @overload
     def __call__(self, x: ArrayP, /, out: None = None) -> NDArray[R]: ...
     @overload
     def __call__(self, x: ScalarP, /, *, out: EllipsisType) -> Array0D[R]: ...
+    @overload
+    def __call__[S: tuple[int, ...]](
+        self, x: np.ndarray[S, Any], /, *, out: EllipsisType
+    ) -> np.ndarray[S, np.dtype[R]]: ...
     @overload
     def __call__(self, x: ArrayP, /, *, out: EllipsisType) -> NDArray[R]: ...
     @overload
