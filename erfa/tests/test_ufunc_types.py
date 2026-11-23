@@ -111,6 +111,36 @@ def test_dt_pv_array() -> None:
     assert pv.dtype == ufunc.dt_pv
 
 
+def test_dt_pvdpv_scalar() -> None:
+    pvdpv = ufunc.pvdpv(ufunc.zpv(), ufunc.zpv())
+    assert_type(pvdpv, Union["ufunc.PVDPVDType", NDArray["ufunc.PVDPVDType"]])
+    assert isinstance(pvdpv, np.void)
+    assert pvdpv.dtype == ufunc.dt_pvdpv
+
+    assert_scalar(pvdpv[()], "ufunc.PVDPVDType")
+    assert_0d_array(pvdpv[...], "ufunc.PVDPVDType")
+
+    # Not using assert_0d_array here because of a bug in numpy < 2.6
+    # (https://github.com/numpy/numpy/pull/32744)
+    assert_type(pvdpv[(...,)], Array0D["ufunc.PVDPVDType"])
+    assert pvdpv[(...,)].ndim == 0
+    assert pvdpv[(...,)].dtype == ufunc.dt_pvdpv
+
+    assert_1d_array(pvdpv[None], "ufunc.PVDPVDType")
+    assert_2d_array(pvdpv[(None, None)], "ufunc.PVDPVDType")
+    assert_scalar(pvdpv["pdp"], np.float64)
+    assert_scalar(pvdpv["pdv"], np.float64)
+    assert_scalar(pvdpv[0], np.float64)
+    assert_scalar(pvdpv[1], np.float64)
+
+
+def test_dt_pvdpv_array() -> None:
+    pvdpv = ufunc.pvdpv(ufunc.zpv()[None], ufunc.zpv())
+    assert_type(pvdpv, Union["ufunc.PVDPVDType", NDArray["ufunc.PVDPVDType"]])
+    assert isinstance(pvdpv, np.ndarray)
+    assert pvdpv.dtype == ufunc.dt_pvdpv
+
+
 def test_dt_sign_scalar() -> None:
     sign, _ = ufunc.a2af(4, 2.345)
     assert_type(sign, Union["ufunc.SignDType", NDArray["ufunc.SignDType"]])
@@ -130,7 +160,6 @@ def test_dt_sign_scalar() -> None:
     assert_2d_array(sign[(None, None)], "ufunc.SignDType")
     assert_scalar(sign["sign"], np.bytes_)
     assert_scalar(sign[0], np.bytes_)
-    assert_scalar(sign[["sign"]], "ufunc.SignDType")
 
 
 def test_dt_sign_array() -> None:

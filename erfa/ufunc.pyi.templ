@@ -55,7 +55,7 @@ class CustomVoidDType[T: np.generic | np.ndarray](np.void):  # type: ignore[misc
     @overload
     def __getitem__(self, key: str | SupportsIndex, /) -> T: ...
     @overload
-    def __getitem__(self, key: list[str], /) -> Self: ...
+    def __getitem__(self, key: list[str], /) -> np.void: ...
 
 
 type DMSFDType = CustomVoidDType[np.intc]
@@ -94,6 +94,9 @@ class PVRecord(PVDType, np.record):  # type: ignore[misc]
 
 
 dt_pv: Final[PVDType]
+
+type PVDPVDType = CustomVoidDType[np.float64]
+dt_pvdpv: Final[PVDPVDType]
 
 type SignDType = CustomVoidDType[np.bytes_]
 dt_sign: Final[SignDType]

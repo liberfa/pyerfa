@@ -117,6 +117,8 @@ class Variable:
                 return "HMSFDType"
             case "dt_pv":
                 return "PVDType"
+            case "dt_pvdpv":
+                return "PVDPVDType"
             case "dt_sign":
                 return "SignDType"
             case "dt_ymdf":

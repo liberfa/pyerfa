@@ -11,13 +11,16 @@ from erfa import ufunc
 from erfa._typing import Array0D, Array1D, Array2D
 
 type DTypes = (
-    Literal["ufunc.LeapSecondDType", "ufunc.PVDType", "ufunc.SignDType"]
+    Literal[
+        "ufunc.LeapSecondDType", "ufunc.PVDType", "ufunc.PVDPVDType", "ufunc.SignDType"
+    ]
     | type[np.bytes_ | np.float64 | np.intc]
 )
 
 DTYPES: Final[Mapping[DTypes, DTypeLike]] = {
     "ufunc.LeapSecondDType": ufunc.dt_eraLEAPSECOND,
     "ufunc.PVDType": ufunc.dt_pv,
+    "ufunc.PVDPVDType": ufunc.dt_pvdpv,
     "ufunc.SignDType": ufunc.dt_sign,
     np.bytes_: "S1",
     np.float64: np.float64,
@@ -45,6 +48,10 @@ def assert_0d_array(
 ) -> None: ...
 @overload
 def assert_0d_array(
+    arr: Array0D["ufunc.PVDPVDType"], dtype: Literal["ufunc.PVDPVDType"]
+) -> None: ...
+@overload
+def assert_0d_array(
     arr: Array0D["ufunc.SignDType"], dtype: Literal["ufunc.SignDType"]
 ) -> None: ...
 @overload
@@ -56,6 +63,7 @@ def assert_0d_array(arr: Array0D[np.intc], dtype: type[np.intc]) -> None: ...
 def assert_0d_array(
     arr: Array0D["ufunc.LeapSecondDType"]
     | Array0D["ufunc.PVDType"]
+    | Array0D["ufunc.PVDPVDType"]
     | Array0D["ufunc.SignDType"]
     | Array0D[np.bytes_]
     | Array0D[np.float64]
@@ -76,6 +84,10 @@ def assert_1d_array(
 ) -> None: ...
 @overload
 def assert_1d_array(
+    arr: Array1D["ufunc.PVDPVDType"], dtype: Literal["ufunc.PVDPVDType"]
+) -> None: ...
+@overload
+def assert_1d_array(
     arr: Array1D["ufunc.SignDType"], dtype: Literal["ufunc.SignDType"]
 ) -> None: ...
 @overload
@@ -87,6 +99,7 @@ def assert_1d_array(arr: Array1D[np.intc], dtype: type[np.intc]) -> None: ...
 def assert_1d_array(
     arr: Array1D["ufunc.LeapSecondDType"]
     | Array1D["ufunc.PVDType"]
+    | Array1D["ufunc.PVDPVDType"]
     | Array1D["ufunc.SignDType"]
     | Array1D[np.bytes_]
     | Array1D[np.float64]
@@ -107,6 +120,10 @@ def assert_2d_array(
 ) -> None: ...
 @overload
 def assert_2d_array(
+    arr: Array2D["ufunc.PVDPVDType"], dtype: Literal["ufunc.PVDPVDType"]
+) -> None: ...
+@overload
+def assert_2d_array(
     arr: Array2D["ufunc.SignDType"], dtype: Literal["ufunc.SignDType"]
 ) -> None: ...
 @overload
@@ -118,6 +135,7 @@ def assert_2d_array(arr: Array2D[np.intc], dtype: type[np.intc]) -> None: ...
 def assert_2d_array(
     arr: Array2D["ufunc.LeapSecondDType"]
     | Array2D["ufunc.PVDType"]
+    | Array2D["ufunc.PVDPVDType"]
     | Array2D["ufunc.SignDType"]
     | Array2D[np.bytes_]
     | Array2D[np.float64]
@@ -136,6 +154,10 @@ def assert_scalar(
 def assert_scalar(scalar: "ufunc.PVDType", dtype: Literal["ufunc.PVDType"]) -> None: ...
 @overload
 def assert_scalar(
+    scalar: "ufunc.PVDPVDType", dtype: Literal["ufunc.PVDPVDType"]
+) -> None: ...
+@overload
+def assert_scalar(
     scalar: "ufunc.SignDType", dtype: Literal["ufunc.SignDType"]
 ) -> None: ...
 @overload
@@ -148,6 +170,7 @@ def assert_scalar(
     scalar: Union[
         "ufunc.LeapSecondDType",
         "ufunc.PVDType",
+        "ufunc.PVDPVDType",
         "ufunc.SignDType",
         np.bytes_,
         np.float64,
