@@ -100,6 +100,8 @@ class Variable:
     @functools.cached_property
     def py_scalar_param_type(self) -> str:
         match self.dtype:
+            case "dt_eraASTROM":
+                return "Any"
             case "dt_double":
                 return "float | np.floating | np.integer"
             case "dt_pv":
@@ -584,7 +586,7 @@ class UFunc(Function):
     def ufunc_signature(self) -> str:
         ufunc_type = f"Ufunc_Nin{self.nin}_Nout{self.nout}"
         params = [f"Literal[{int(not self.user_dtype)}]"]
-        if self.nin == 1 and self.nout == 1:
+        if self.nin <= 2 and self.nout == 1:
             params.extend(arg.py_scalar_param_type for arg in self.py_args)
         params.extend([
                 *["ArrayLike" for arg in self.py_args],
