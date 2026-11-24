@@ -113,10 +113,7 @@ def test_dt_pv_array() -> None:
 
 def test_dt_pvdpv_scalar() -> None:
     pvdpv = ufunc.pvdpv(ufunc.zpv(), ufunc.zpv())
-    assert_type(pvdpv, Union["ufunc.PVDPVDType", NDArray["ufunc.PVDPVDType"]])
-    assert isinstance(pvdpv, np.void)
-    assert pvdpv.dtype == ufunc.dt_pvdpv
-
+    assert_scalar(pvdpv, "ufunc.PVDPVDType")
     assert_scalar(pvdpv[()], "ufunc.PVDPVDType")
     assert_0d_array(pvdpv[...], "ufunc.PVDPVDType")
 
@@ -135,10 +132,7 @@ def test_dt_pvdpv_scalar() -> None:
 
 
 def test_dt_pvdpv_array() -> None:
-    pvdpv = ufunc.pvdpv(ufunc.zpv()[None], ufunc.zpv())
-    assert_type(pvdpv, Union["ufunc.PVDPVDType", NDArray["ufunc.PVDPVDType"]])
-    assert isinstance(pvdpv, np.ndarray)
-    assert pvdpv.dtype == ufunc.dt_pvdpv
+    assert_1d_array(ufunc.pvdpv(ufunc.zpv()[None], ufunc.zpv()), "ufunc.PVDPVDType")
 
 
 def test_dt_sign_scalar() -> None:

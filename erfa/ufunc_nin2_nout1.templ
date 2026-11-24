@@ -1,17 +1,37 @@
 @type_check_only
 class Ufunc_Nin2_Nout1[  # type: ignore[misc]
     NTypes: Literal[0, 1],
-    P1: ArrayLike,
-    P2: ArrayLike,
+    ScalarP1,
+    ScalarP2,
+    ArrayP1: ArrayLike,
+    ArrayP2: ArrayLike,
     R: np.generic
 ](UfuncProperties[Literal[2], Literal[1], Literal[3], NTypes, None]):
     @override
     @overload
-    def __call__(self, x1: P1, x2: P2, /, out: None = None) -> R | NDArray[R]: ...
+    def __call__(
+        self,
+        x1: ScalarP1 | Array0D[Any],
+        x2: ScalarP2 | Array0D[Any],
+        /,
+        out: None = None
+    ) -> R: ...
     @overload
-    def __call__(self, x1: P1, x2: P2, /, *, out: EllipsisType) -> NDArray[R]: ...
+    def __call__(
+        self, x1: ScalarP1 | Array0D[Any], x2: ArrayP2, /, out: None = None
+    ) -> NDArray[R]: ...
     @overload
-    def __call__(self, x1: P1, x2: P2, /, out: NDArray[R]) -> NDArray[R]: ...
+    def __call__(
+        self, x1: ArrayP1, x2: ScalarP2 | ArrayP2, /, out: None = None
+    ) -> NDArray[R]: ...
+    @overload
+    def __call__(
+        self, x1: ScalarP1 | ArrayP1, x2: ScalarP2 | ArrayP2, /, *, out: EllipsisType
+    ) -> NDArray[R]: ...
+    @overload
+    def __call__(
+        self, x1: ScalarP1 | ArrayP1, x2: ScalarP2 | ArrayP2, /, out: NDArray[R]
+    ) -> NDArray[R]: ...
 
     @override
     def at(self, a: ArrayLike, indices: ArrayLike, b: Any = None, /) -> None: ...
