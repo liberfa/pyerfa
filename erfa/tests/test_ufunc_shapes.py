@@ -5,7 +5,13 @@ import pytest
 
 from erfa import ufunc
 
-from .utils import assert_0d_array, assert_1d_array, assert_2d_array, assert_scalar
+from .utils import (
+    assert_0d_array,
+    assert_0d_array_is_scalar_at_runtime,
+    assert_1d_array,
+    assert_2d_array,
+    assert_scalar,
+)
 
 
 def test_ufunc_nin1_nout1_scalar() -> None:
@@ -13,7 +19,7 @@ def test_ufunc_nin1_nout1_scalar() -> None:
 
 
 def test_ufunc_nin1_nout1_0d_array() -> None:
-    assert_scalar(ufunc.fal03(np.float32(0.8)[...]), np.float64)
+    assert_0d_array_is_scalar_at_runtime(ufunc.fal03(np.float32(0.8)[...]), np.float64)
 
 
 def test_ufunc_nin1_nout1_array_like() -> None:
@@ -61,7 +67,9 @@ def test_ufunc_nin2_nout1_0d_array() -> None:
     pytest.importorskip(
         "numpy", minversion="2.3", reason="out=Ellipsis was implemented in numpy 2.3"
     )
-    assert_scalar(ufunc.pvxpv(ufunc.zpv(out=...), ufunc.zpv()), "ufunc.PVDType")
+    assert_0d_array_is_scalar_at_runtime(
+        ufunc.pvxpv(ufunc.zpv(out=...), ufunc.zpv()), "ufunc.PVDType"
+    )
 
 
 def test_ufunc_nin2_nout1_array() -> None:
