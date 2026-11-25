@@ -9,16 +9,10 @@ class Ufunc_Nin2_Nout1[  # type: ignore[misc]
 ](UfuncProperties[Literal[2], Literal[1], Literal[3], NTypes, None]):
     @override
     @overload
-    def __call__(
-        self,
-        x1: ScalarP1 | Array0D[Any],
-        x2: ScalarP2 | Array0D[Any],
-        /,
-        out: None = None
-    ) -> R: ...
+    def __call__(self, x1: ScalarP1, x2: ScalarP2, /, out: None = None) -> R: ...
     @overload
     def __call__(
-        self, x1: ScalarP1 | Array0D[Any], x2: ArrayP2, /, out: None = None
+        self, x1: ScalarP1, x2: ArrayP2, /, out: None = None
     ) -> NDArray[R]: ...
     @overload
     def __call__(

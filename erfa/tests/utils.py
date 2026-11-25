@@ -233,3 +233,30 @@ def assert_none(none: None) -> None:
     __tracebackhide__ = True
     if none is not None:
         pytest.fail(f"{none!r} is not 'None'")
+
+
+@overload
+def assert_0d_array_is_scalar_at_runtime(
+    arr: Array0D["ufunc.PVDType"], dtype: Literal["ufunc.PVDType"]
+) -> None: ...
+@overload
+def assert_0d_array_is_scalar_at_runtime(
+    arr: Array0D[np.float64], dtype: type[np.float64]
+) -> None: ...
+def assert_0d_array_is_scalar_at_runtime(
+    arr: Array0D["ufunc.PVDType"] | Array0D[np.float64], dtype: DTypes
+) -> None:
+    # Ufuncs convert 0-D ndarray instances to scalars, but they might not convert
+    # 0-D ndarray subclass instances. This makes it very difficult to provide
+    # annotations to 0-D array arguments that exactly match runtime behavior. It is much
+    # simpler to write annotations where some return types are inferred to be 0-D arrays
+    # when they are scalars at runtime. Numpy makes the same simplifications in its own
+    # annotations (see https://github.com/numpy/numpy/issues/33363). Numpy scalars
+    # implement many of the methods and attributes arrays do, so the simpler annotations
+    # might not cause big problems even in code that does use 0-D arrays, and in
+    # practice such code might not be very common.
+    __tracebackhide__ = True
+    if not isinstance(arr, np.generic):
+        pytest.fail(f"{arr = } is not a scalar at runtime")
+    if arr.dtype != DTYPES[dtype]:
+        pytest.fail(f"{arr.dtype = }, expected {dtype}")

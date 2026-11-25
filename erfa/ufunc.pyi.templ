@@ -169,8 +169,6 @@ class Ufunc_Nin1_Nout1[  # type: ignore[misc]
     @overload
     def __call__(self, x: ScalarP, /, out: None = None) -> R: ...
     @overload
-    def __call__(self, x: Array0D[Any], /, out: None = None) -> R: ...  # type: ignore[overload-overlap]
-    @overload
     def __call__[S: tuple[int, ...]](
         self, x: np.ndarray[S, Any], /, out: None = None
     ) -> np.ndarray[S, np.dtype[R]]: ...
