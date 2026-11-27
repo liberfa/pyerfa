@@ -16,10 +16,12 @@ type DTypes = (
     ]
     | type[np.bytes_ | np.float64 | np.intc]
 )
+type RecordTypes = Literal["ufunc.PVRecord"]
 
-DTYPES: Final[Mapping[DTypes, DTypeLike]] = {
+DTYPES: Final[Mapping[DTypes | RecordTypes, DTypeLike]] = {
     "ufunc.LeapSecondDType": ufunc.dt_eraLEAPSECOND,
     "ufunc.PVDType": ufunc.dt_pv,
+    "ufunc.PVRecord": ufunc.dt_pv,
     "ufunc.PVDPVDType": ufunc.dt_pvdpv,
     "ufunc.SignDType": ufunc.dt_sign,
     np.bytes_: "S1",
@@ -183,6 +185,14 @@ def assert_scalar(
         pytest.fail(f"{scalar = } is not a scalar")
     if scalar.dtype != DTYPES[dtype]:
         pytest.fail(f"{scalar.dtype = }, expected {dtype}")
+
+
+def assert_record(record: "ufunc.PVRecord", dtype: RecordTypes) -> None:
+    __tracebackhide__ = True
+    if not isinstance(record, np.record):
+        pytest.fail(f"{record = } is not a record")
+    if record.dtype != DTYPES[dtype]:
+        pytest.fail(f"{record.dtype = }, expected {dtype}")
 
 
 @overload
