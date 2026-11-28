@@ -14,6 +14,7 @@ from .utils import (
     assert_2d_array,
     assert_literal,
     assert_none,
+    assert_record,
     assert_scalar,
 )
 
@@ -92,16 +93,13 @@ def test_dt_pv_scalar() -> None:
     assert_1d_array(zpv["v"], np.float64)
 
 
-def test_dt_pv_scalar_recarray_view() -> None:
-    zpv_recarray = ufunc.zpv().view(np.recarray)
-    assert_type(zpv_recarray, "ufunc.PVRecord")
-    assert isinstance(zpv_recarray, np.record)
-    assert zpv_recarray.dtype == ufunc.dt_pv
-
-    assert_1d_array(zpv_recarray.p, np.float64)
-    assert_1d_array(zpv_recarray.v, np.float64)
-    assert_1d_array(zpv_recarray["p"], np.float64)
-    assert_1d_array(zpv_recarray["v"], np.float64)
+def test_dt_pv_record() -> None:
+    zpv_record = ufunc.zpv().view(np.recarray)
+    assert_record(zpv_record, "ufunc.PVRecord")
+    assert_1d_array(zpv_record.p, np.float64)
+    assert_1d_array(zpv_record.v, np.float64)
+    assert_1d_array(zpv_record["p"], np.float64)
+    assert_1d_array(zpv_record["v"], np.float64)
 
 
 def test_dt_pv_array() -> None:
