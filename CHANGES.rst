@@ -11,6 +11,11 @@
 - The field of the ``dt_dmsf`` dtype that contains degrees is now named ``"d"``
   as expected, instead of ``"h"``. The dtype is used in the output of
   ``erfa.a2af()`` and the corresponding ufunc. [gh-343]
+- Leap seconds have been discontinued (CGPM 2026, Resolution 5), so the
+  built-in leap-second table is final. If no explicit expiration date was set,
+  ``erfa.leap_seconds.expires`` is now 180 days beyond the present instead of
+  180 days beyond the last leap second, so ``erfa.leap_seconds.expired`` is
+  no longer ``True`` for the built-in table.
 
 2.0.1.6 (2025-01-27)
 ====================

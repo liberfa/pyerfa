@@ -437,9 +437,9 @@ class TestLeapSecondsBasics:
     def test_leap_seconds_expires(self):
         expires = erfa.leap_seconds.expires
         assert isinstance(expires, datetime)
-        last_ls = erfa.leap_seconds.get()[-1]
-        dt_last = datetime(last_ls['year'], last_ls['month'], 1)
-        assert expires > dt_last
+        # Leap seconds were discontinued, so the built-in table never expires.
+        assert expires > datetime.now()
+        assert not erfa.leap_seconds.expired
 
 
 class TestLeapSeconds:
@@ -475,9 +475,6 @@ class TestLeapSeconds:
         assert_array_equal(new_leap_seconds, part_leap_seconds)
         # Check the 2017 leap second is indeed missing.
         assert erfa.dat(2018, 1, 1, 0.) == 36.0
-        # And that this would be expected from the expiration date.
-        assert erfa.leap_seconds.expires < datetime(2018, 1, 1)
-        assert erfa.leap_seconds.expired
         # Reset and check it is back.
         erfa.leap_seconds.set()
         assert erfa.dat(2018, 1, 1, 0.) == 37.0
